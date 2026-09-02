@@ -19,3 +19,7 @@ yarn-error.*
 
 # Sistema
 .DS_Store
+
+
+.postman/
+Usuarios.txt
