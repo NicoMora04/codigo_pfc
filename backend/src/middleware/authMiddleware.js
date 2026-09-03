@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
+const pool = require('../config/db');
 
-const verificarToken = (req, res, next) => {
+const verificarToken =async (req, res, next) => {
 
   // Obtener el header Authorization
   const authHeader = req.headers.authorization;
@@ -35,6 +36,28 @@ const verificarToken = (req, res, next) => {
       process.env.JWT_SECRET
     );
 
+// Verificar que el usuario siga existiendo
+// y que su cuenta continúe activa
+      const userResult = await pool.query(
+        `
+        SELECT estado_cuenta
+        FROM usuario
+        WHERE id_usuario = $1
+        `,
+        [decoded.id]
+      );
+
+      if (userResult.rows.length === 0) {
+        return res.status(401).json({
+          error: 'Usuario no encontrado'
+        });
+      }
+
+      if (userResult.rows[0].estado_cuenta !== 'ACTIVA') {
+        return res.status(403).json({
+          error: 'La cuenta no se encuentra activa'
+        });
+      }
     // Guardar los datos del usuario
     // dentro de la petición
     req.user = decoded;

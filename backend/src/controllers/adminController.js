@@ -1,5 +1,5 @@
 const pool = require('../config/db');
-
+const adminService =require('../services/adminService');
 
 // ======================================================
 // 1. LISTAR ORGANIZACIONES PENDIENTES
@@ -113,6 +113,13 @@ exports.aprobarOrganizacion = async (req, res) => {
 exports.rechazarOrganizacion = async (req, res) => {
 
   const { idOrganizacion } = req.params;
+  const { motivo } = req.body;
+
+  if (!motivo || !motivo.trim()) {
+  return res.status(400).json({
+    error: 'El motivo del rechazo es obligatorio'
+  });
+}
 
   try {
 
@@ -121,6 +128,7 @@ exports.rechazarOrganizacion = async (req, res) => {
       UPDATE organizacion
       SET
         estado_verificacion = 'RECHAZADA',
+        motivo_rechazo = $2,
         actualizado_en = CURRENT_TIMESTAMP
       WHERE id_organizacion = $1
         AND estado_verificacion = 'PENDIENTE'
@@ -128,9 +136,10 @@ exports.rechazarOrganizacion = async (req, res) => {
         id_organizacion,
         razon_social,
         cuit,
-        estado_verificacion
+        estado_verificacion,
+        motivo_rechazo
       `,
-      [idOrganizacion]
+      [idOrganizacion,motivo.trim()]
     );
 
     if (result.rows.length === 0) {
@@ -155,6 +164,82 @@ exports.rechazarOrganizacion = async (req, res) => {
 
     return res.status(500).json({
       error: 'No se pudo rechazar la organización'
+    });
+
+  }
+
+};
+
+
+// ======================================================
+// 4. BLOQUEAR USUARIO
+// ======================================================
+
+exports.bloquearUsuario = async (req, res) => {
+
+  const { idUsuario } = req.params;
+  const { motivo } = req.body;
+
+  try {
+
+    const usuario =
+      await adminService.bloquearUsuario(idUsuario,motivo);
+
+    return res.status(200).json({
+      message: 'Usuario bloqueado correctamente',
+      usuario
+    });
+
+  } catch (error) {
+
+    console.error(
+      'ERROR AL BLOQUEAR USUARIO:',
+      error
+    );
+
+    return res.status(error.status || 500).json({
+      error:
+        error.status
+          ? error.message
+          : 'No se pudo bloquear el usuario'
+    });
+
+  }
+
+};
+
+
+
+// ======================================================
+// 5. REHABILITAR USUARIO
+// ======================================================
+
+exports.rehabilitarUsuario = async (req, res) => {
+
+  const { idUsuario } = req.params;
+
+  try {
+
+    const usuario =
+      await adminService.rehabilitarUsuario(idUsuario);
+
+    return res.status(200).json({
+      message: 'Usuario rehabilitado correctamente',
+      usuario
+    });
+
+  } catch (error) {
+
+    console.error(
+      'ERROR AL REHABILITAR USUARIO:',
+      error
+    );
+
+    return res.status(error.status || 500).json({
+      error:
+        error.status
+          ? error.message
+          : 'No se pudo rehabilitar el usuario'
     });
 
   }

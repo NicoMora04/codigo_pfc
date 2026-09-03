@@ -311,6 +311,15 @@ exports.login = async (req, res) => {
       user.password_hash
     );
 
+    // Verificar que la cuenta se encuentre activa
+    if (user.estado_cuenta !== 'ACTIVA') {
+
+      return res.status(403).json({
+        error: 'La cuenta no se encuentra activa'
+      });
+
+    }
+
 
     if (!validPassword) {
 

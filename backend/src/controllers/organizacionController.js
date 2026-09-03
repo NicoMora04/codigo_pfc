@@ -1,5 +1,6 @@
 const pool = require('../config/db');
-
+const organizacionService =
+  require('../services/organizacionService');
 
 // ======================================================
 // 1. CONSULTAR ESTADO DE VERIFICACIÓN
@@ -44,6 +45,46 @@ exports.obtenerEstadoVerificacion = async (req, res) => {
 
     return res.status(500).json({
       error: 'No se pudo consultar el estado de verificación'
+    });
+
+  }
+
+};
+
+
+// ======================================================
+// 2. VOLVER A SOLICITAR VERIFICACIÓN
+// ======================================================
+
+exports.solicitarNuevaVerificacion = async (req, res) => {
+
+  const idUsuario = req.user.id;
+
+  try {
+
+    const organizacion =
+      await organizacionService.solicitarNuevaVerificacion(
+        idUsuario
+      );
+
+    return res.status(200).json({
+      message:
+        'La organización volvió a ser enviada a revisión',
+      organizacion
+    });
+
+  } catch (error) {
+
+    console.error(
+      'ERROR AL SOLICITAR NUEVA VERIFICACIÓN:',
+      error
+    );
+
+    return res.status(error.status || 500).json({
+      error:
+        error.status
+          ? error.message
+          : 'No se pudo solicitar una nueva verificación'
     });
 
   }

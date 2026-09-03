@@ -34,4 +34,19 @@ router.patch(
   adminController.rechazarOrganizacion
 );
 
+router.patch(
+  '/usuarios/:idUsuario/bloquear',
+  verificarToken,
+  verificarRol('ADMIN'),
+  adminController.bloquearUsuario
+);
+
+router.patch(
+  '/usuarios/:idUsuario/rehabilitar',
+  verificarToken,
+  verificarRol('ADMIN'),
+  adminController.rehabilitarUsuario
+);
+
+
 module.exports = router;

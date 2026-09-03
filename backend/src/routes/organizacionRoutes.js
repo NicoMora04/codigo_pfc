@@ -23,6 +23,12 @@ router.get(
 );
 
 
+router.patch(
+  '/solicitar-verificacion',
+  verificarToken,
+  verificarRol('ORGANIZACION'),
+  organizacionController.solicitarNuevaVerificacion
+);
 
 
 module.exports = router;
