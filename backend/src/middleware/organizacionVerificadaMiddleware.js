@@ -7,14 +7,15 @@ const verificarOrganizacionVerificada = async (req, res, next) => {
     const idUsuario = req.user.id;
 
     const result = await pool.query(
-      `
-      SELECT estado_verificacion
-      FROM organizacion
-      WHERE id_usuario = $1
-      `,
-      [idUsuario]
-    );
-
+    `
+    SELECT
+      id_organizacion,
+      estado_verificacion
+    FROM organizacion
+    WHERE id_usuario = $1
+    `,
+    [idUsuario]
+  );
     if (result.rows.length === 0) {
 
       return res.status(404).json({
@@ -32,7 +33,7 @@ const verificarOrganizacionVerificada = async (req, res, next) => {
       });
 
     }
-
+    req.organizacion = result.rows[0];
     next();
 
   } catch (error) {

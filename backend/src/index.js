@@ -6,17 +6,23 @@ const pool = require('./config/db');
 const authRoutes = require('./routes/authRoutes'); // Importamos las rutas de auth
 const adminRoutes = require('./routes/adminRoutes');
 const organizacionRoutes = require('./routes/organizacionRoutes');
+const oportunidadRoutes =require('./routes/oportunidadRoutes');
+const ubicacionRoutes =require('./routes/ubicacionRoutes');
+const tipoActividadRoutes =require('./routes/tipoActividadRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use('/api/ubicaciones',ubicacionRoutes);
 
 // Enlazamos las rutas bajo el prefijo /api/auth
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/oportunidades', oportunidadRoutes);
 app.use('/api/organizaciones', organizacionRoutes);
+app.use('/api/tipos-actividad',tipoActividadRoutes);
 
 // Ruta de diagnóstico (Health Check)
 app.get('/api/health', async (req, res) => {

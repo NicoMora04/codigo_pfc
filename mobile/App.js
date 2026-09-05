@@ -6,7 +6,7 @@ import {
   ScrollView,
   Modal,
   Text,
-  TouchableOpacity
+  TouchableOpacity,
 } from 'react-native';
 
 import axios from 'axios';
@@ -16,6 +16,8 @@ import RoleSelectionScreen from './src/screens/RoleSelectionScreen';
 import RegisterVoluntario from './src/screens/RegisterVoluntario';
 import RegisterOrganizacion from './src/screens/RegisterOrganizacion';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import MisOportunidadesScreen from './src/screens/MisOportunidadesScreen';
+import OportunidadFormScreen from './src/screens/OportunidadFormScreen';
 
 import {
   guardarToken,
@@ -28,6 +30,9 @@ export default function App() {
 
   const [currentScreen, setCurrentScreen] = useState('A01');
   const [loading, setLoading] = useState(false);
+  const [oportunidades, setOportunidades] = useState([]);
+  const [tiposActividad, setTiposActividad] = useState([]);
+  const [oportunidadEditando, setOportunidadEditando] = useState(null);
 
   // Modal de cierre de sesión
   const [logoutVisible, setLogoutVisible] = useState(false);
@@ -71,6 +76,7 @@ export default function App() {
       else if (rol === 'ORGANIZACION') {
 
         setCurrentScreen('ORGANIZACION_HOME');
+        await cargarOportunidades();
 
       }
       else if (rol === 'ADMIN') {
@@ -187,6 +193,7 @@ export default function App() {
       }
       else if (rol === 'ORGANIZACION') {
         setCurrentScreen('ORGANIZACION_HOME');
+        await cargarOportunidades();
       }
       else if (rol === 'ADMIN') {
         setCurrentScreen('ADMIN_HOME');
@@ -517,6 +524,46 @@ export default function App() {
 
   };
 
+const cargarOportunidades = async () => {
+
+  setLoading(true);
+
+  try {
+
+    const token = await obtenerToken();
+
+    const response = await axios.get(
+      'http://192.168.0.93:3000/api/oportunidades/mias',
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    setOportunidades(
+      response.data.oportunidades
+    );
+
+  } catch (error) {
+
+    const errorMsg =
+      error.response?.data?.error ||
+      'No se pudieron cargar las oportunidades';
+
+    showAlert(
+      'error',
+      'Error',
+      errorMsg
+    );
+
+  } finally {
+
+    setLoading(false);
+
+  }
+
+};
 
 
   // ======================================================
@@ -541,6 +588,29 @@ export default function App() {
     );
 
   };
+
+
+  const cargarTiposActividad = async () => {
+  try {
+    const token = await obtenerToken();
+
+    const response = await axios.get(
+      'http://192.168.0.93:3000/api/tipos-actividad',
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setTiposActividad(response.data.tiposActividad);
+  } catch (error) {
+    console.log(
+      'Error cargando tipos de actividad:',
+      error.response?.data || error.message
+    );
+  }
+};
 
 
 
@@ -748,43 +818,253 @@ export default function App() {
 
     {currentScreen === 'ORGANIZACION_HOME' && (
 
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center'
-        }}
-      >
+  <MisOportunidadesScreen
 
-        <Text
-          style={{
-            fontSize: 22,
-            marginBottom: 10
-          }}
-        >
-          Inicio Organización
-        </Text>
+    oportunidades={oportunidades}
 
-        <Text
-          style={{
-            fontSize: 15,
-            marginBottom: 20
-          }}
-        >
-          Rol: ORGANIZACION
-        </Text>
+    loading={loading}
 
-        <TouchableOpacity
-          onPress={handleLogout}
-        >
-          <Text style={{ fontSize: 18 }}>
-            Cerrar sesión
-          </Text>
-        </TouchableOpacity>
+    onNuevaOportunidad={async () => {
+      setOportunidadEditando(null)
+      await cargarTiposActividad();
+      setCurrentScreen('OPORTUNIDAD_FORM');
+    }}
 
-      </View>
+    onEditar={async (idOportunidad) => {
+    try {
+      setLoading(true);
 
-    )}
+      const token = await obtenerToken();
+
+      const response = await axios.get(
+        `http://192.168.0.93:3000/api/oportunidades/${idOportunidad}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+
+      setOportunidadEditando(
+        response.data.oportunidad
+      );
+
+      await cargarTiposActividad();
+
+      setCurrentScreen('OPORTUNIDAD_FORM');
+
+    } catch (error) {
+
+      console.log(
+        'Error cargando oportunidad:',
+        error.response?.data || error.message
+      );
+
+      showAlert(
+        'error',
+        'Error',
+        'No se pudo cargar la oportunidad.'
+      );
+
+    } finally {
+      setLoading(false);
+    }
+  }}
+
+    onPublicar={async (idOportunidad) => {
+          try {
+        setLoading(true);
+
+        const token = await obtenerToken();
+
+        await axios.patch(
+          `http://192.168.0.93:3000/api/oportunidades/${idOportunidad}/publicar`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        showAlert(
+          'success',
+          'Oportunidad publicada',
+          'La oportunidad se publicó correctamente.'
+        );
+
+        await cargarOportunidades();
+
+      } catch (error) {
+
+        console.log(
+          'Error publicando oportunidad:',
+          error.response?.data || error.message
+        );
+
+        showAlert(
+          'error',
+          'No se pudo publicar',
+          error.response?.data?.error ||
+            'Ocurrió un error al publicar la oportunidad.'
+        );
+
+      } finally {
+        setLoading(false);
+      }
+    }}
+
+    onCancelar={async (idOportunidad) => {
+    try {
+      setLoading(true);
+
+      const token = await obtenerToken();
+
+      await axios.patch(
+        `http://192.168.0.93:3000/api/oportunidades/${idOportunidad}/cancelar`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      showAlert(
+        'success',
+        'Oportunidad cancelada',
+        'La oportunidad se canceló correctamente.'
+      );
+
+      await cargarOportunidades();
+
+    } catch (error) {
+
+      console.log(
+        'Error cancelando oportunidad:',
+        error.response?.data || error.message
+      );
+
+      showAlert(
+        'error',
+        'No se pudo cancelar',
+        error.response?.data?.error ||
+          'Ocurrió un error al cancelar la oportunidad.'
+      );
+
+    } finally {
+      setLoading(false);
+    }
+  }}
+
+
+  onCerrar={async (idOportunidad) => {
+  try {
+    setLoading(true);
+
+    const token = await obtenerToken();
+
+    await axios.patch(
+      `http://192.168.0.93:3000/api/oportunidades/${idOportunidad}/cerrar`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    showAlert(
+      'success',
+      'Oportunidad cerrada',
+      'La oportunidad se cerró correctamente.'
+    );
+
+    await cargarOportunidades();
+
+  } catch (error) {
+
+    console.log(
+      'Error cerrando oportunidad:',
+      error.response?.data || error.message
+    );
+
+    showAlert(
+      'error',
+      'No se pudo cerrar',
+      error.response?.data?.error ||
+        'Ocurrió un error al cerrar la oportunidad.'
+    );
+
+  } finally {
+    setLoading(false);
+  }
+}}
+
+onFinalizar={async (idOportunidad) => {
+  try {
+    setLoading(true);
+
+    const token = await obtenerToken();
+
+    await axios.patch(
+      `http://192.168.0.93:3000/api/oportunidades/${idOportunidad}/finalizar`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    showAlert(
+      'success',
+      'Oportunidad finalizada',
+      'La oportunidad se finalizó correctamente.'
+    );
+
+    await cargarOportunidades();
+
+  } catch (error) {
+
+    console.log(
+      'Error finalizando oportunidad:',
+      error.response?.data || error.message
+    );
+
+    showAlert(
+      'error',
+      'No se pudo finalizar',
+      error.response?.data?.error ||
+        'Ocurrió un error al finalizar la oportunidad.'
+    );
+
+  } finally {
+    setLoading(false);
+  }
+}}
+
+    onLogout={handleLogout}
+
+  />
+
+)}
+
+
+{currentScreen === 'OPORTUNIDAD_FORM' && (
+  <OportunidadFormScreen  tiposActividad={tiposActividad} oportunidadEditando={oportunidadEditando}
+    onVolver={() =>
+      setCurrentScreen('ORGANIZACION_HOME')}
+    onGuardado={async () => {
+    await cargarOportunidades();
+    setCurrentScreen('ORGANIZACION_HOME');
+  }}
+
+  showAlert={showAlert}
+  />
+)}
+
 
 
     {
