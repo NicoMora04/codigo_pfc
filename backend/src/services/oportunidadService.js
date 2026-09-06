@@ -28,7 +28,7 @@ exports.crearOportunidad = async (datos) => {
 
         if (
     !Number.isInteger(idTipoActividad) ||
-    idTipoActividad <= 0
+    idTipoActividad <= 0 || idTipoActividad > 32767
     ) {
     const error = new Error(
         'El tipo de actividad debe ser un identificador válido'
@@ -79,7 +79,7 @@ exports.crearOportunidad = async (datos) => {
     throw error;
     }
 
-        if (idUbicacion) {
+        if (idUbicacion!=null) {
             
             if (
                 typeof idUbicacion !== 'string' ||
@@ -181,7 +181,7 @@ if (
 
 
   if (
-    tipoUbicacion &&
+    tipoUbicacion!=null &&
     !['EXACTA', 'RADIO'].includes(tipoUbicacion)
   ) {
     const error = new Error(
@@ -198,11 +198,11 @@ if (
     (
         typeof radioKm !== 'number' ||
         !Number.isFinite(radioKm) ||
-        radioKm <= 0
+        radioKm <= 0||radioKm>999.99
     )
     ) {
     const error = new Error(
-        'El radio debe ser un número mayor que cero'
+        'El radio debe ser un número mayor que cero y menor o igual a 999.99 km'
     );
 
     error.status = 400;
@@ -311,7 +311,7 @@ exports.actualizarOportunidad = async (
 
         if (
     !Number.isInteger(idTipoActividad) ||
-    idTipoActividad <= 0
+    idTipoActividad <= 0 || idTipoActividad > 32767
     ) {
     const error = new Error(
         'El tipo de actividad debe ser un identificador válido'
@@ -333,7 +333,7 @@ exports.actualizarOportunidad = async (
     throw error;
     }
 
-    if (idUbicacion) {
+    if (idUbicacion!=null) {
 
     if (
         typeof idUbicacion !== 'string' ||
@@ -452,7 +452,7 @@ exports.actualizarOportunidad = async (
 
     // Validación de ubicación
     if (
-    tipoUbicacion &&
+    tipoUbicacion !=null &&
     !['EXACTA', 'RADIO'].includes(tipoUbicacion)
     ) {
     const error = new Error(
@@ -493,11 +493,11 @@ exports.actualizarOportunidad = async (
     (
         typeof radioKm !== 'number' ||
         !Number.isFinite(radioKm) ||
-        radioKm <= 0
+        radioKm <= 0||radioKm>999.99
     )
     ) {
     const error = new Error(
-        'El radio debe ser un número mayor que cero'
+        'El radio debe ser un número mayor que cero y menor o igual a 999.99 km'
     );
 
     error.status = 400;
@@ -737,6 +737,18 @@ exports.cerrarOportunidad = async (
   idOrganizacion
 ) => {
 
+    if (
+    typeof idOportunidad !== 'string' ||
+    !uuidRegex.test(idOportunidad)
+  ) {
+    const error = new Error(
+      'El identificador de oportunidad no es válido'
+    );
+
+    error.status = 400;
+    throw error;
+  }
+
   const oportunidad =
     await oportunidadRepository.buscarOportunidadPorId(
       idOportunidad
@@ -780,6 +792,18 @@ exports.finalizarOportunidad = async (
   idOrganizacion
 ) => {
 
+  if (
+    typeof idOportunidad !== 'string' ||
+    !uuidRegex.test(idOportunidad)
+  ) {
+    const error = new Error(
+      'El identificador de oportunidad no es válido'
+    );
+
+    error.status = 400;
+    throw error;
+  }
+
   const oportunidad =
     await oportunidadRepository.buscarOportunidadPorId(
       idOportunidad
@@ -818,3 +842,210 @@ exports.finalizarOportunidad = async (
 };
 
 
+
+exports.obtenerOportunidadesPublicadas = async (filtros = {}) => {
+
+  const filtrosNormalizados = {};
+
+  if (filtros.tipoActividad != null) {
+
+    const idTipoActividad =
+      Number(filtros.tipoActividad);
+
+    if (
+      !Number.isInteger(idTipoActividad) ||
+      idTipoActividad <= 0 ||
+      idTipoActividad > 32767
+    ) {
+      const error = new Error(
+        'El tipo de actividad no es válido'
+      );
+      error.status = 400;
+      throw error;
+    }
+
+    const existeTipo =
+      await oportunidadRepository.existeTipoActividad(
+        idTipoActividad
+      );
+
+    if (!existeTipo) {
+      const error = new Error(
+        'El tipo de actividad no existe'
+      );
+      error.status = 400;
+      throw error;
+    }
+
+    filtrosNormalizados.tipoActividad =
+      idTipoActividad;
+  }
+
+  if (filtros.urgencia != null) {
+
+    const urgencia =
+      String(filtros.urgencia).trim().toUpperCase();
+
+    const urgenciasValidas = [
+      'BAJA',
+      'MEDIA',
+      'ALTA'
+    ];
+
+  if (!urgenciasValidas.includes(urgencia)) {
+      const error = new Error(
+        'La urgencia no es válida'
+      );
+      error.status = 400;
+      throw error;
+    }
+
+    filtrosNormalizados.urgencia = urgencia;
+  }
+
+  if (filtros.fecha != null) {
+
+  const fecha = String(filtros.fecha).trim();
+
+  const formatoFecha = /^\d{4}-\d{2}-\d{2}$/;
+
+  if (!formatoFecha.test(fecha)) {
+    const error = new Error(
+      'La fecha no es válida'
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  const fechaParseada = new Date(`${fecha}T00:00:00Z`);
+
+  if (
+    Number.isNaN(fechaParseada.getTime()) ||
+    fechaParseada.toISOString().slice(0, 10) !== fecha
+  ) {
+    const error = new Error(
+      'La fecha no es válida'
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  filtrosNormalizados.fecha = fecha;
+}
+
+
+const tieneLatitud = filtros.latitud != null;
+const tieneLongitud = filtros.longitud != null;
+const tieneRadioBusqueda = filtros.radioBusquedaKm != null;
+
+const cantidadParametrosUbicacion = [
+  tieneLatitud,
+  tieneLongitud,
+  tieneRadioBusqueda
+].filter(Boolean).length;
+
+if (
+  cantidadParametrosUbicacion > 0 &&
+  cantidadParametrosUbicacion < 3
+) {
+  const error = new Error(
+    'Para filtrar por ubicación se requieren latitud, longitud y radio de búsqueda'
+  );
+  error.status = 400;
+  throw error;
+}
+
+if (cantidadParametrosUbicacion === 3) {
+
+  const latitud = Number(filtros.latitud);
+  const longitud = Number(filtros.longitud);
+  const radioBusquedaKm = Number(filtros.radioBusquedaKm);
+
+  if (
+    !Number.isFinite(latitud) ||
+    latitud < -90 ||
+    latitud > 90
+  ) {
+    const error = new Error(
+      'La latitud no es válida'
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  if (
+    !Number.isFinite(longitud) ||
+    longitud < -180 ||
+    longitud > 180
+  ) {
+    const error = new Error(
+      'La longitud no es válida'
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  if (
+    !Number.isFinite(radioBusquedaKm) ||
+    radioBusquedaKm <= 0
+  ) {
+    const error = new Error(
+      'El radio de búsqueda no es válido'
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  filtrosNormalizados.latitud = latitud;
+  filtrosNormalizados.longitud = longitud;
+  filtrosNormalizados.radioBusquedaKm = radioBusquedaKm;
+}
+
+
+
+  const oportunidades =
+    await oportunidadRepository.buscarOportunidadesPublicadas(
+      filtrosNormalizados
+    );
+
+  return oportunidades;
+};
+
+
+
+// ======================================================
+// OBTENER DETALLE DE OPORTUNIDAD PARA VOLUNTARIO
+// ======================================================
+
+exports.obtenerDetalleOportunidadVoluntario = async (
+  idOportunidad
+) => {
+
+  if (
+    typeof idOportunidad !== 'string' ||
+    !uuidRegex.test(idOportunidad)
+  ) {
+    const error = new Error(
+      'El identificador de oportunidad no es válido'
+    );
+
+    error.status = 400;
+    throw error;
+  }
+
+  const oportunidad =
+    await oportunidadRepository.buscarOportunidadPublicadaPorId(
+      idOportunidad
+    );
+
+  if (!oportunidad) {
+    const error = new Error(
+      'La oportunidad no existe o no está disponible'
+    );
+
+    error.status = 404;
+    throw error;
+  }
+
+  return oportunidad;
+};

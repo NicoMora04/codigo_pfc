@@ -92,7 +92,9 @@ exports.buscarDirecciones = async (texto) => {
 
   const data = await response.json();
 
-  return data.results;
+  return Array.isArray(data.results)
+  ? data.results
+  : [];
 };
 
 

@@ -42,9 +42,10 @@ exports.buscarDirecciones = async (req, res) => {
     );
 
     return res.status(error.status || 500).json({
-      mensaje:
-        error.message ||
-        'Error al buscar ubicaciones',
+      error:
+      error.status
+      ? error.message
+      : 'Error al buscar ubicaciones'
     });
   }
 };

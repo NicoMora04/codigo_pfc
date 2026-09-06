@@ -236,8 +236,7 @@ exports.obtenerOportunidadOrganizacion = async (
 
 exports.cerrarOportunidad = async (
   req,
-  res,
-  next
+  res
 ) => {
 
   try {
@@ -255,15 +254,24 @@ exports.cerrarOportunidad = async (
     });
 
   } catch (error) {
-    next(error);
+      console.error(
+      'ERROR AL CERRAR OPORTUNIDAD:',
+      error
+    );
+
+    return res.status(error.status || 500).json({
+      error:
+        error.status
+          ? error.message
+          : 'No se pudo cerrar la oportunidad'
+    });
   }
 };
 
 
 exports.finalizarOportunidad = async (
   req,
-  res,
-  next
+  res
 ) => {
 
   try {
@@ -281,6 +289,98 @@ exports.finalizarOportunidad = async (
     });
 
   } catch (error) {
-    next(error);
+    console.error(
+        'ERROR AL FINALIZAR OPORTUNIDAD:',
+        error
+      );
+
+      return res.status(error.status || 500).json({
+        error:
+          error.status
+            ? error.message
+            : 'No se pudo finalizar la oportunidad'
+      });
+
+      }
+};
+
+
+exports.obtenerOportunidadesPublicadas = async (req, res) => {
+  try {
+
+    const filtros = {
+      tipoActividad: req.query.tipoActividad,
+      urgencia: req.query.urgencia,
+      fecha: req.query.fecha,
+      latitud: req.query.latitud,
+      longitud: req.query.longitud,
+      radioBusquedaKm: req.query.radioBusquedaKm
+    };
+
+    const oportunidades =
+      await oportunidadService.obtenerOportunidadesPublicadas(
+        filtros
+      );
+
+    return res.status(200).json({
+      oportunidades
+    });
+
+  } catch (error) {
+
+    console.log(
+      'Error obteniendo oportunidades publicadas:',
+      error
+    );
+
+    return res.status(error.status || 500).json({
+      error:
+        error.status
+          ? error.message
+          : 'Error al obtener las oportunidades'
+    });
   }
+};
+
+
+
+
+// ======================================================
+// OBTENER DETALLE DE OPORTUNIDAD PARA VOLUNTARIO
+// ======================================================
+
+exports.obtenerDetalleOportunidadVoluntario = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const idOportunidad = req.params.id;
+
+    const oportunidad =
+      await oportunidadService.obtenerDetalleOportunidadVoluntario(
+        idOportunidad
+      );
+
+    return res.status(200).json({
+      oportunidad
+    });
+
+  } catch (error) {
+
+    console.error(
+      'ERROR AL OBTENER DETALLE DE OPORTUNIDAD:',
+      error
+    );
+
+    return res.status(error.status || 500).json({
+      error:
+        error.status
+          ? error.message
+          : 'No se pudo obtener la oportunidad'
+    });
+
+  }
+
 };

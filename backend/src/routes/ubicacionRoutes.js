@@ -25,8 +25,6 @@ router.post(
 router.get(
   '/buscar',
   verificarToken,
-  verificarRol('ORGANIZACION'),
-  verificarOrganizacionVerificada,
   ubicacionController.buscarDirecciones
 );
 

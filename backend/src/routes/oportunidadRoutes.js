@@ -74,11 +74,17 @@ router.get(
 );
 
 router.get(
-  '/mias',
+  '/',
   verificarToken,
-  verificarRol('ORGANIZACION'),
-  verificarOrganizacionVerificada,
-  oportunidadController.listarOportunidadesOrganizacion
+  verificarRol('VOLUNTARIO'),
+  oportunidadController.obtenerOportunidadesPublicadas
+);
+
+router.get(
+  '/:id/detalle',
+  verificarToken,
+  verificarRol('VOLUNTARIO'),
+  oportunidadController.obtenerDetalleOportunidadVoluntario
 );
 
 router.get(

@@ -149,7 +149,7 @@ exports.obtenerOCrearUbicacion = async (datos) => {
 
 exports.buscarDirecciones = async (texto) => {
 
-  if (!texto || texto.trim().length < 3) {
+  if (typeof texto !== 'string'|| texto.trim().length < 3) {
     const error = new Error(
       'Ingresá al menos 3 caracteres para buscar una ubicación'
     );
@@ -170,6 +170,7 @@ exports.buscarDirecciones = async (texto) => {
       resultado.formatted,
 
     detalle: [
+      resultado.address_line1,
       resultado.city,
       resultado.state
     ]

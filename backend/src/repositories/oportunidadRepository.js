@@ -244,7 +244,7 @@ exports.buscarOportunidadesPorOrganizacion = async (
       u.localidad,
       u.provincia,
       u.es_aproximada,
-      u,direccion
+      u.direccion
     FROM oportunidad o
     INNER JOIN tipo_actividad ta
       ON ta.id_tipo_actividad = o.id_tipo_actividad
@@ -297,4 +297,185 @@ exports.finalizarOportunidad = async (
   );
 
   return result.rows[0];
+};
+
+
+exports.buscarOportunidadesPublicadas = async (filtros = {}) => {
+
+  const {
+    tipoActividad,
+    urgencia,
+    fecha,
+    latitud,
+    longitud,
+    radioBusquedaKm
+  } = filtros;
+
+  const valores = [];
+
+  const condiciones = [
+    `o.estado = 'PUBLICADA'`,
+    `o.fecha_fin >= NOW()`
+  ];
+
+  let selectDistancia = '';
+
+  // FILTRO: TIPO DE ACTIVIDAD
+  if (tipoActividad != null) {
+
+    valores.push(tipoActividad);
+
+    condiciones.push(
+      `o.id_tipo_actividad = $${valores.length}`
+    );
+  }
+
+  // FILTRO: URGENCIA
+  if (urgencia != null) {
+
+    valores.push(urgencia);
+
+    condiciones.push(
+      `o.urgencia = $${valores.length}`
+    );
+  }
+
+  // FILTRO: FECHA
+  if (fecha != null) {
+
+    valores.push(fecha);
+    const indiceFecha = valores.length;
+
+    condiciones.push(`
+      o.fecha_inicio < ($${indiceFecha}::date + INTERVAL '1 day')
+      AND o.fecha_fin >= $${indiceFecha}::date
+    `);
+  }
+
+  // FILTRO: UBICACIÓN Y RADIO DE BÚSQUEDA
+  if (
+    latitud != null &&
+    longitud != null &&
+    radioBusquedaKm != null
+  ) {
+
+    valores.push(latitud);
+    const indiceLatitud = valores.length;
+
+    valores.push(longitud);
+    const indiceLongitud = valores.length;
+
+    valores.push(radioBusquedaKm);
+    const indiceRadio = valores.length;
+
+    const expresionDistancia = `
+      (
+        6371 * 2 * ASIN(
+          SQRT(
+            POWER(
+              SIN(
+                RADIANS(
+                  u.latitud - $${indiceLatitud}
+                ) / 2
+              ),
+              2
+            )
+            +
+            COS(RADIANS($${indiceLatitud}))
+            * COS(RADIANS(u.latitud))
+            * POWER(
+                SIN(
+                  RADIANS(
+                    u.longitud - $${indiceLongitud}
+                  ) / 2
+                ),
+                2
+              )
+          )
+        )
+      )
+    `;
+
+    selectDistancia = `,
+      ROUND(
+        (${expresionDistancia})::numeric,
+        2
+      ) AS distancia_km
+    `;
+
+    condiciones.push(`
+      u.latitud IS NOT NULL
+      AND u.longitud IS NOT NULL
+      AND ${expresionDistancia} <= $${indiceRadio}
+    `);
+  }
+
+  const query = `
+    SELECT
+      o.*,
+      ta.nombre AS tipo_actividad,
+      org.razon_social AS organizacion,
+      u.latitud,
+      u.longitud,
+      u.localidad,
+      u.provincia,
+      u.es_aproximada,
+      u.direccion
+      ${selectDistancia}
+    FROM oportunidad o
+    INNER JOIN tipo_actividad ta
+      ON ta.id_tipo_actividad = o.id_tipo_actividad
+    INNER JOIN organizacion org
+      ON org.id_organizacion = o.id_organizacion
+    LEFT JOIN ubicacion u
+      ON u.id_ubicacion = o.id_ubicacion
+    WHERE ${condiciones.join('\n AND ')}
+    ORDER BY o.fecha_inicio ASC
+  `;
+
+  const result = await pool.query(
+    query,
+    valores
+  );
+
+  return result.rows;
+};
+
+
+
+// ======================================================
+// OBTENER DETALLE DE OPORTUNIDAD PARA VOLUNTARIO
+// ======================================================
+
+exports.buscarOportunidadPublicadaPorId = async (
+  idOportunidad
+) => {
+
+  const result = await pool.query(
+    `
+    SELECT
+      o.*,
+      ta.nombre AS tipo_actividad,
+      org.razon_social AS organizacion,
+      u.latitud,
+      u.longitud,
+      u.localidad,
+      u.provincia,
+      u.es_aproximada,
+      u.direccion
+    FROM oportunidad o
+    INNER JOIN tipo_actividad ta
+      ON ta.id_tipo_actividad = o.id_tipo_actividad
+    INNER JOIN organizacion org
+      ON org.id_organizacion = o.id_organizacion
+    LEFT JOIN ubicacion u
+      ON u.id_ubicacion = o.id_ubicacion
+    WHERE o.id_oportunidad = $1
+      AND o.estado = 'PUBLICADA'
+      AND o.fecha_fin >= NOW()
+    `,
+    [idOportunidad]
+  );
+
+  return result.rows[0] || null;
 };

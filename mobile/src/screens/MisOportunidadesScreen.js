@@ -43,7 +43,7 @@ export default function MisOportunidadesScreen({
     oportunidad.estado === filtroEstado;
 
   const coincideBusqueda =
-    oportunidad.titulo
+    (oportunidad.titulo || '')
       .toLowerCase()
       .includes(busqueda.trim().toLowerCase());
 
@@ -149,7 +149,19 @@ export default function MisOportunidadesScreen({
           </Text>
         </View>
 
-      ) : (
+      ) : oportunidadesFiltradas.length === 0 ? (
+
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>
+              No se encontraron oportunidades
+            </Text>
+
+            <Text style={styles.emptyText}>
+              No hay oportunidades que coincidan con los filtros seleccionados.
+            </Text>
+          </View>
+
+        ) : (
 
         oportunidadesFiltradas.map((oportunidad) => (
 
@@ -186,7 +198,7 @@ export default function MisOportunidadesScreen({
               }
             </Text>
             
-            {oportunidad.estado === 'FINALIZADA' && (
+            
             <Text style={styles.cardInfo}>
               Fin Previsto: {
                 new Date(
@@ -194,7 +206,7 @@ export default function MisOportunidadesScreen({
                 ).toLocaleString('es-AR')
               }
             </Text>
-          )}
+          
 
             {(oportunidad.direccion || oportunidad.localidad) && (
               <Text style={styles.cardInfo}>
@@ -344,6 +356,7 @@ export default function MisOportunidadesScreen({
       destructive={confirmacion?.destructive}
       onCancel={cerrarConfirmacion}
       onConfirm={confirmarAccion}
+      loading={loading}
       />
 
     </View>

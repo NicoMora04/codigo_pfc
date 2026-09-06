@@ -13,7 +13,7 @@ import {
 import ConfirmModal from '../components/ConfirmModal';
 
 export default function OportunidadFormScreen({tiposActividad,
-  onVolver,onGuardado,showAlert,oportunidadEditando,
+  onVolver,onGuardado,showAlert,oportunidadEditando,loading
 }) {
     const [titulo, setTitulo] = React.useState('');
     const [descripcion, setDescripcion] = React.useState('');
@@ -124,6 +124,15 @@ export default function OportunidadFormScreen({tiposActividad,
         return false;
     }
 
+    if (titulo.trim().length > 150) {
+    showAlert(
+        'error',
+        'Campo inválido',
+        'El título no puede superar los 150 caracteres.'
+    );
+    return false;
+    }
+
     if (!descripcion.trim()) {
         showAlert(
         'error',
@@ -142,13 +151,15 @@ export default function OportunidadFormScreen({tiposActividad,
         return false;
     }
 
-    if (!cupo || Number(cupo) <= 0) {
-        showAlert(
+    const cupoNumerico = Number(cupo);
+
+    if ( !cupo || !Number.isInteger(cupoNumerico) || cupoNumerico <= 0 ) {
+    showAlert(
         'error',
         'Campo inválido',
-        'Ingresá un cupo mayor a 0.'
-        );
-        return false;
+        'Ingresá un cupo entero mayor a 0.'
+    );
+    return false;
     }
 
     if (!fechaInicio) {
@@ -206,19 +217,25 @@ export default function OportunidadFormScreen({tiposActividad,
         );
         return false;
         }
+    }
 
-        if (
-        tipoUbicacion === 'RADIO' &&
-        (!radioKm || Number(radioKm) <= 0)
+    const radioNumerico = Number(radioKm);
+
+        if ( tipoUbicacion === 'RADIO' && (
+            !radioKm ||
+            !Number.isFinite(radioNumerico) ||
+            radioNumerico <= 0 ||
+            radioNumerico > 999.99
+        )
         ) {
         showAlert(
             'error',
             'Campo inválido',
-            'Ingresá un radio de cobertura mayor a 0 km.'
+            'Ingresá un radio mayor a 0 y menor o igual a 999,99 km.'
         );
         return false;
         }
-    }
+    
 
     return true;
     };
@@ -233,7 +250,7 @@ export default function OportunidadFormScreen({tiposActividad,
         const idUbicacion =
         await obtenerIdUbicacion();
 
-        const response = await axios.post(
+        await axios.post(
         'http://192.168.0.93:3000/api/oportunidades',
         {
             idTipoActividad: idTipoActividad,
@@ -273,8 +290,15 @@ export default function OportunidadFormScreen({tiposActividad,
     } catch (error) {
 
         console.log(
-        'Error guardando borrador:',
-        error.response?.data || error.message
+            'Error guardando borrador:',
+            error.response?.data || error.message
+        );
+
+        showAlert(
+            'error',
+            'Error',
+            error.response?.data?.error ||
+            'No se pudo guardar el borrador.'
         );
     }
     };
@@ -558,13 +582,17 @@ export default function OportunidadFormScreen({tiposActividad,
     <View style={styles.formContainer}>   
         <View style={styles.titleContainer}>
         <Text style={styles.title}>
-            Nueva Oportunidad
+        {oportunidadEditando
+            ? 'Editar oportunidad'
+            : 'Nueva Oportunidad'}
         </Text>
 
 
-      <Text style={styles.subtitle}>
-        Completá los datos de la actividad
-      </Text>
+        <Text style={styles.subtitle}>
+        {oportunidadEditando
+            ? 'Modificá los datos del borrador'
+            : 'Completá los datos de la actividad'}
+        </Text>
     </View>
 
         <Text style={styles.label}>
@@ -1001,6 +1029,7 @@ export default function OportunidadFormScreen({tiposActividad,
             setConfirmacionPublicar(false);
             publicarOportunidad();
         }}
+        loading={loading}
         />
         
       </View>

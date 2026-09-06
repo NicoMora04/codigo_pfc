@@ -16,6 +16,7 @@ export default function ConfirmModal({
   onConfirm,
   onCancel,
   destructive = false,
+  loading=false,
 }) {
   return (
     <Modal
@@ -49,13 +50,13 @@ export default function ConfirmModal({
             <TouchableOpacity
               style={[
                 styles.confirmButton,
-                destructive &&
-                  styles.destructiveButton
+                destructive && styles.destructiveButton, loading && styles.disabledButton,
               ]}
               onPress={onConfirm}
+              disabled={loading}
             >
               <Text style={styles.confirmButtonText}>
-                {confirmText}
+                {loading ? 'Procesando...' : confirmText}
               </Text>
             </TouchableOpacity>
 
@@ -131,6 +132,9 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  disabledButton: {
+  opacity: 0.6,
   },
 
 });
