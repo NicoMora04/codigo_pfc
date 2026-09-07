@@ -18,21 +18,41 @@ export default function BuscarOportunidadesScreen({
   onFiltrar,
   onBuscarUbicacion,
   onVerDetalle,
+  filtrosGuardados={},
+  estadoUbicacionGuardado,
+  onGuardarEstadoUbicacion,
 }) {
 
   const [tipoSeleccionado, setTipoSeleccionado] = React.useState(null);
   const [urgenciaSeleccionada, setUrgenciaSeleccionada] = React.useState(null);
   const [fechaSeleccionada, setFechaSeleccionada] = React.useState(null);
   const [mostrarFecha, setMostrarFecha] = React.useState(false);
-  const [ubicacionActual, setUbicacionActual] = React.useState(null);
   const [obteniendoUbicacion, setObteniendoUbicacion] = React.useState(false);
-  const [radioBusquedaKm, setRadioBusquedaKm] = React.useState('10');
-  const [direccionActual, setDireccionActual] = React.useState('');
-  const [textoUbicacion, setTextoUbicacion] = React.useState('');
   const [resultadosUbicacion, setResultadosUbicacion] = React.useState([]);
   const [buscandoUbicacion, setBuscandoUbicacion] = React.useState(false);
-  const [ubicacionManualSeleccionada, setUbicacionManualSeleccionada] = React.useState(null);
-  const [modoUbicacion, setModoUbicacion] = React.useState(null);
+  const [ubicacionActual, setUbicacionActual] = React.useState(
+  estadoUbicacionGuardado?.ubicacionActual ?? null
+);
+  const [radioBusquedaKm, setRadioBusquedaKm] = React.useState(
+    estadoUbicacionGuardado?.radioBusquedaKm ?? '10'
+  );
+
+  const [direccionActual, setDireccionActual] = React.useState(
+    estadoUbicacionGuardado?.direccionActual ?? ''
+  );
+
+  const [textoUbicacion, setTextoUbicacion] = React.useState(
+    estadoUbicacionGuardado?.textoUbicacion ?? ''
+  );
+
+  const [ubicacionManualSeleccionada, setUbicacionManualSeleccionada] =
+    React.useState(
+      estadoUbicacionGuardado?.ubicacionManualSeleccionada ?? null
+    );
+
+  const [modoUbicacion, setModoUbicacion] = React.useState(
+    estadoUbicacionGuardado?.modoUbicacion ?? null
+  );
 
   const obtenerUbicacionActual = async () => {
 
@@ -160,7 +180,11 @@ export default function BuscarOportunidadesScreen({
 React.useEffect(() => {
 
   if (textoUbicacion.trim().length < 3) {
-    setResultadosUbicacion([]);
+
+    if (resultadosUbicacion.length > 0) {
+      setResultadosUbicacion([]);
+    }
+
     return;
   }
 
@@ -194,8 +218,38 @@ React.useEffect(() => {
 }, [
   textoUbicacion,
   ubicacionManualSeleccionada,
-  onBuscarUbicacion
+  resultadosUbicacion.length
 ]);
+
+React.useEffect(() => {
+
+  setTipoSeleccionado(
+    filtrosGuardados.tipoActividad ?? null
+  );
+
+  setUrgenciaSeleccionada(
+    filtrosGuardados.urgencia ?? null
+  );
+
+  if (filtrosGuardados.fecha) {
+
+    const [anio, mes, dia] =
+      filtrosGuardados.fecha
+        .split('-')
+        .map(Number);
+
+    setFechaSeleccionada(
+      new Date(anio, mes - 1, dia)
+    );
+
+  } else {
+
+    setFechaSeleccionada(null);
+
+  }
+
+}, [filtrosGuardados]);
+
 
 const limpiarFiltros = async () => {
 
@@ -611,6 +665,15 @@ const limpiarFiltros = async () => {
                   );
                   return;
                 }
+
+                onGuardarEstadoUbicacion?.({
+                  modoUbicacion,
+                  ubicacionActual,
+                  ubicacionManualSeleccionada,
+                  direccionActual,
+                  textoUbicacion,
+                  radioBusquedaKm,
+                });
 
                 onFiltrar(
                   construirFiltros({

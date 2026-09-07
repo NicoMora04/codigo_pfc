@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect} from 'react';
 import {
   StyleSheet,
   View,
@@ -38,6 +38,18 @@ export default function App() {
   const [oportunidadEditando, setOportunidadEditando] = useState(null);
   const [oportunidadSeleccionada,setOportunidadSeleccionada] = useState(null);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [scrollYVoluntario, setScrollYVoluntario] = useState(0);
+  const scrollRef = React.useRef(null);
+  const [filtrosVoluntario, setFiltrosVoluntario] = useState({});
+  const [estadoUbicacionVoluntario, setEstadoUbicacionVoluntario] = useState({
+  modoUbicacion: null,
+  ubicacionActual: null,
+  ubicacionManualSeleccionada: null,
+  direccionActual: '',
+  textoUbicacion: '',
+  radioBusquedaKm: '10',
+});
+ 
 
   // Modal de cierre de sesión
   const [logoutVisible, setLogoutVisible] = useState(false);
@@ -107,9 +119,7 @@ export default function App() {
 
         setCurrentScreen('A01');
 
-        console.log(
-          'TOKEN VENCIDO O INVÁLIDO. SESIÓN ELIMINADA.'
-        );
+      
 
       }
 
@@ -415,14 +425,6 @@ export default function App() {
       setLoading(false);
 
 
-      console.error(
-        'ERROR DEL BACKEND:'
-      );
-
-      console.error(
-        error.response?.data ||
-        error.message
-      );
 
 
       const errorMsg =
@@ -586,18 +588,34 @@ const cargarOportunidades = async () => {
 
   const confirmarLogout = async () => {
 
-  await eliminarToken();
+      await eliminarToken();
 
-  setOportunidades([]);
-  setTiposActividad([]);
-  setOportunidadEditando(null);
+      setOportunidades([]);
+      setOportunidadesVoluntario([]);
+      setTiposActividad([]);
 
-  setLogoutVisible(false);
+      setOportunidadEditando(null);
+      setOportunidadSeleccionada(null);
 
-  setCurrentScreen('A01');
+      setLoadingDetalle(false);
 
-  };
+      setFiltrosVoluntario({});
 
+      setEstadoUbicacionVoluntario({
+        modoUbicacion: null,
+        ubicacionActual: null,
+        ubicacionManualSeleccionada: null,
+        direccionActual: '',
+        textoUbicacion: '',
+        radioBusquedaKm: '10',
+      });
+
+      setScrollYVoluntario(0);
+
+      setLogoutVisible(false);
+      setCurrentScreen('A01');
+
+    };
 ///TIPOOS DE ACTIVIDAD ORGANIZACION 
   const cargarTiposActividad = async () => {
   try {
@@ -673,10 +691,6 @@ const cargarOportunidades = async () => {
       return false;
     }
 
-    console.log(
-      'Error cargando tipos de actividad:',
-      error.response?.data || error.message
-    );
     showAlert(
     'error',
     'Error',
@@ -746,10 +760,6 @@ const cargarOportunidadesVoluntario = async (filtros={}) => {
       return;
     }
 
-    console.log(
-      'Error cargando oportunidades para voluntario:',
-      error.response?.data || error.message
-    );
 
     showAlert(
       'error',
@@ -829,10 +839,7 @@ const cargarDetalleOportunidadVoluntario = async (
       return false;
     }
 
-    console.log(
-      'Error cargando detalle de oportunidad:',
-      error.response?.data || error.message
-    );
+  
 
     showAlert(
       'error',
@@ -916,11 +923,7 @@ const buscarUbicaciones = async (texto) => {
       return [];
     }
 
-    console.log(
-      'Error buscando ubicaciones:',
-      error.response?.data || error.message
-    );
-
+    
     showAlert(
       'error',
       'Error',
@@ -932,6 +935,8 @@ const buscarUbicaciones = async (texto) => {
   }
 
 };
+
+
 
 
   // ======================================================
@@ -949,11 +954,17 @@ const buscarUbicaciones = async (texto) => {
           opacity: 0.22
         }}
       >
-
-        <ScrollView
-          contentContainerStyle={
-            styles.scrollContainer
-          }
+      <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.scrollContainer}
+          onScroll={(event) => {
+            if (currentScreen === 'VOLUNTARIO_HOME') {
+              setScrollYVoluntario(
+                event.nativeEvent.contentOffset.y
+              );
+            }
+          }}
+          scrollEventThrottle={16}
         >
 
 
@@ -1099,6 +1110,7 @@ const buscarUbicaciones = async (texto) => {
         tiposActividad={tiposActividad}
         loading={loading}
           onFiltrar={async (filtros) => {
+          setFiltrosVoluntario(filtros); 
           await cargarOportunidadesVoluntario(filtros);
           } }
         onBuscarUbicacion={buscarUbicaciones}  
@@ -1106,6 +1118,10 @@ const buscarUbicaciones = async (texto) => {
         onVerDetalle={async (idOportunidad) => {
            await cargarDetalleOportunidadVoluntario(idOportunidad );
         }}
+        filtrosGuardados={filtrosVoluntario}
+        estadoUbicacionGuardado={estadoUbicacionVoluntario}
+        onGuardarEstadoUbicacion={setEstadoUbicacionVoluntario}
+          
 
       />)}
 
@@ -1118,10 +1134,24 @@ const buscarUbicaciones = async (texto) => {
 
           loading={loadingDetalle}
 
-          onVolver={() => {
-            setOportunidadSeleccionada(null);
-            setCurrentScreen('VOLUNTARIO_HOME');
-          }}
+          onVolver={async () => {
+
+              setOportunidadSeleccionada(null);
+
+              setCurrentScreen('VOLUNTARIO_HOME');
+
+              await cargarOportunidadesVoluntario(filtrosVoluntario);
+
+              setTimeout(() => {
+
+                scrollRef.current?.scrollTo({
+                  y: scrollYVoluntario,
+                  animated: true
+                });
+
+              }, 0.1);
+
+            }}
 
         />
 
@@ -1222,10 +1252,7 @@ const buscarUbicaciones = async (texto) => {
         return;
       }
 
-      console.log(
-        'Error cargando oportunidad:',
-        error.response?.data || error.message
-      );
+   
 
       showAlert(
         'error',
@@ -1302,10 +1329,7 @@ const buscarUbicaciones = async (texto) => {
           return;
         }
 
-        console.log(
-          'Error publicando oportunidad:',
-          error.response?.data || error.message
-        );
+      
 
         showAlert(
           'error',
@@ -1383,11 +1407,7 @@ const buscarUbicaciones = async (texto) => {
         return;
       }
 
-      console.log(
-        'Error cancelando oportunidad:',
-        error.response?.data || error.message
-      );
-
+      
       showAlert(
         'error',
         'No se pudo cancelar',
@@ -1465,10 +1485,6 @@ const buscarUbicaciones = async (texto) => {
       return;
     }
 
-    console.log(
-      'Error cerrando oportunidad:',
-      error.response?.data || error.message
-    );
 
     showAlert(
       'error',
@@ -1546,11 +1562,7 @@ onFinalizar={async (idOportunidad) => {
       return;
     }
 
-    console.log(
-      'Error finalizando oportunidad:',
-      error.response?.data || error.message
-    );
-
+    
     showAlert(
       'error',
       'No se pudo finalizar',
