@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 
-import axios from 'axios';
+
 
 import LoginScreen from './src/screens/LoginScreen';
 import RoleSelectionScreen from './src/screens/RoleSelectionScreen';
@@ -27,6 +27,29 @@ import {
   eliminarToken
 } from './src/services/authStorage';
 
+import {
+  login,
+  registrarUsuario,
+  recuperarPassword,
+  obtenerPerfilProtegido
+} from './src/services/authService';
+
+import {
+  obtenerMisOportunidades,
+  obtenerOportunidadesVoluntario,
+  obtenerDetalleOportunidadVoluntario,
+  obtenerOportunidadPorId,
+  obtenerTiposActividad,
+  publicarOportunidad,
+  cancelarOportunidad,
+  cerrarOportunidad,
+  finalizarOportunidad
+} from './src/services/oportunidadService';
+
+import {
+  buscarUbicacionesPorTexto
+} from './src/services/ubicacionService';
+
 
 export default function App() {
 
@@ -41,6 +64,10 @@ export default function App() {
   const [scrollYVoluntario, setScrollYVoluntario] = useState(0);
   const scrollRef = React.useRef(null);
   const [filtrosVoluntario, setFiltrosVoluntario] = useState({});
+  const [filtroEstadoOrganizacion, setFiltroEstadoOrganizacion] =
+  useState('TODAS');
+  const [busquedaOrganizacion, setBusquedaOrganizacion] =
+  useState('');
   const [estadoUbicacionVoluntario, setEstadoUbicacionVoluntario] = useState({
   modoUbicacion: null,
   ubicacionActual: null,
@@ -54,8 +81,7 @@ export default function App() {
   // Modal de cierre de sesión
   const [logoutVisible, setLogoutVisible] = useState(false);
 
-  // IP local para la API del Backend
-  const API_URL = 'http://192.168.0.93:3000/api/auth';
+ 
 
 
   // ======================================================
@@ -74,16 +100,8 @@ export default function App() {
 
     try {
 
-      const response = await axios.get(
-        `${API_URL}/perfil-protegido`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-
-      const rol = response.data.usuario.rol;
+      const data = await obtenerPerfilProtegido(token);
+      const rol = data.usuario.rol;
 
       if (rol === 'VOLUNTARIO') {
 
@@ -192,18 +210,10 @@ export default function App() {
 
     try {
 
-      const response = await axios.post(
-        `${API_URL}/login`,
-        {
-          email,
-          password
-        }
-      );
+    const data = await login(email, password);
+    await guardarToken(data.token);
+    const rol = data.user.rol;
 
-
-      await guardarToken(response.data.token);
-
-      const rol = response.data.user.rol;
 
       if (rol === 'VOLUNTARIO') {
         setCurrentScreen('VOLUNTARIO_HOME');
@@ -232,7 +242,7 @@ export default function App() {
       showAlert(
         'success',
         '¡Bienvenido/a!',
-        `Inicio de sesión exitoso.\nRol: ${response.data.user.rol}`
+        `Inicio de sesión exitoso.\nRol: ${data.user.rol}`
       );
 
 
@@ -288,13 +298,10 @@ export default function App() {
 
     try {
 
-      await axios.post(
-        `${API_URL}/register`,
-        data
-      );
+    await registrarUsuario(data);
 
 
-      setLoading(false);
+    setLoading(false);
 
 
       showAlert(
@@ -398,10 +405,7 @@ export default function App() {
 
     try {
 
-      await axios.post(
-        `${API_URL}/register`,
-        data
-      );
+    await registrarUsuario(data);
 
 
 
@@ -456,12 +460,8 @@ export default function App() {
 
     try {
 
-      const response = await axios.post(
-        `${API_URL}/forgot-password`,
-        {
-          email
-        }
-      );
+      const data = await recuperarPassword(email);
+      
 
 
       setLoading(false);
@@ -470,7 +470,7 @@ export default function App() {
       showAlert(
         'success',
         'Solicitud Enviada',
-        response.data.message
+        data.message
       );
 
 
@@ -522,18 +522,8 @@ const cargarOportunidades = async () => {
       return;
     }
 
-    const response = await axios.get(
-      'http://192.168.0.93:3000/api/oportunidades/mias',
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
-
-    setOportunidades(
-      response.data.oportunidades
-    );
+   const data = await obtenerMisOportunidades(token);
+  setOportunidades(data.oportunidades);
 
   } catch (error) {
 
@@ -641,20 +631,8 @@ const cargarOportunidades = async () => {
         return false;
       }
 
-    const response = await axios.get(
-      'http://192.168.0.93:3000/api/tipos-actividad',
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-
-  
-    
-
-    const tipos = response.data?.tiposActividad;
+    const data = await obtenerTiposActividad(token);
+    const tipos = data?.tiposActividad;
 
       if (!Array.isArray(tipos)) {
 
@@ -727,22 +705,11 @@ const cargarOportunidadesVoluntario = async (filtros={}) => {
       return;
     }
 
-    const response = await axios.get(
-      'http://192.168.0.93:3000/api/oportunidades',
-      {
-        params:filtros,
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
-
-   
-    setOportunidadesVoluntario(
-      response.data.oportunidades
-    );
+  const data = await obtenerOportunidadesVoluntario(token,filtros);
+  setOportunidadesVoluntario(data.oportunidades);
 
   } catch (error) {
+
 
     if (error.response?.status === 401) {
 
@@ -802,18 +769,9 @@ const cargarDetalleOportunidadVoluntario = async (
       return false;
     }
 
-    const response = await axios.get(
-      `http://192.168.0.93:3000/api/oportunidades/${idOportunidad}/detalle`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
-
-    setOportunidadSeleccionada(
-      response.data.oportunidad
-    );
+    const data =await obtenerDetalleOportunidadVoluntario(token,
+    idOportunidad);
+    setOportunidadSeleccionada(data.oportunidad);
 
     setCurrentScreen(
       'OPORTUNIDAD_DETALLE'
@@ -879,19 +837,8 @@ const buscarUbicaciones = async (texto) => {
       return [];
     }
 
-    const response = await axios.get(
-      'http://192.168.0.93:3000/api/ubicaciones/buscar',
-      {
-        params: {
-          q: texto
-        },
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
-
-    const resultados = response.data?.resultados;
+ const data = await buscarUbicacionesPorTexto(token,texto);
+ const resultados = data?.resultados;
 
     if (!Array.isArray(resultados)) {
 
@@ -956,12 +903,16 @@ const buscarUbicaciones = async (texto) => {
       >
       <ScrollView
           ref={scrollRef}
-          contentContainerStyle={styles.scrollContainer}
+          contentContainerStyle={[
+            styles.scrollContainer,
+            currentScreen === 'ORGANIZACION_HOME' &&
+            styles.scrollContainerOrganizacion
+            ]}
           onScroll={(event) => {
+            const y = event.nativeEvent.contentOffset.y;
+
             if (currentScreen === 'VOLUNTARIO_HOME') {
-              setScrollYVoluntario(
-                event.nativeEvent.contentOffset.y
-              );
+              setScrollYVoluntario(y);
             }
           }}
           scrollEventThrottle={16}
@@ -1121,6 +1072,7 @@ const buscarUbicaciones = async (texto) => {
         filtrosGuardados={filtrosVoluntario}
         estadoUbicacionGuardado={estadoUbicacionVoluntario}
         onGuardarEstadoUbicacion={setEstadoUbicacionVoluntario}
+        showAlert={showAlert}
           
 
       />)}
@@ -1170,6 +1122,10 @@ const buscarUbicaciones = async (texto) => {
     oportunidades={oportunidades}
 
     loading={loading}
+    filtroEstado={filtroEstadoOrganizacion}
+    onCambiarFiltroEstado={setFiltroEstadoOrganizacion}
+    busqueda={busquedaOrganizacion}
+    onCambiarBusqueda={setBusquedaOrganizacion}
 
     onNuevaOportunidad={async () => {
       setOportunidadEditando(null)
@@ -1206,30 +1162,26 @@ const buscarUbicaciones = async (texto) => {
         return;
       }
 
-      const response = await axios.get(
-        `http://192.168.0.93:3000/api/oportunidades/${idOportunidad}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const tiposCargados =
-        await cargarTiposActividad();
-
+    const data = await obtenerOportunidadPorId(token,idOportunidad);
+    const tiposCargados =await cargarTiposActividad();
       if (!tiposCargados) {
         return;
       }
-
-      
-
       setOportunidadEditando(
-        response.data.oportunidad
+        data.oportunidad
       );
+      
+    
 
 
       setCurrentScreen('OPORTUNIDAD_FORM');
+
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({
+          y: 0,
+          animated: true
+        });
+      }, 0.1);
 
     } catch (error) {
 
@@ -1290,15 +1242,7 @@ const buscarUbicaciones = async (texto) => {
           return;
         }
 
-        await axios.patch(
-          `http://192.168.0.93:3000/api/oportunidades/${idOportunidad}/publicar`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        await publicarOportunidad(token,idOportunidad);
 
         showAlert(
           'success',
@@ -1368,15 +1312,7 @@ const buscarUbicaciones = async (texto) => {
         return;
       }
 
-      await axios.patch(
-        `http://192.168.0.93:3000/api/oportunidades/${idOportunidad}/cancelar`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await cancelarOportunidad(token,idOportunidad);
 
       showAlert(
         'success',
@@ -1446,15 +1382,7 @@ const buscarUbicaciones = async (texto) => {
         return;
     }
 
-    await axios.patch(
-      `http://192.168.0.93:3000/api/oportunidades/${idOportunidad}/cerrar`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    await cerrarOportunidad(token,idOportunidad);
 
     showAlert(
       'success',
@@ -1523,15 +1451,7 @@ onFinalizar={async (idOportunidad) => {
         return;
     }
 
-    await axios.patch(
-      `http://192.168.0.93:3000/api/oportunidades/${idOportunidad}/finalizar`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    await finalizarOportunidad(token,idOportunidad);
 
     showAlert(
       'success',
@@ -1584,15 +1504,31 @@ onFinalizar={async (idOportunidad) => {
 
 {currentScreen === 'OPORTUNIDAD_FORM' && (
   <OportunidadFormScreen  tiposActividad={tiposActividad} oportunidadEditando={oportunidadEditando}
-    onVolver={() =>{
-      setOportunidadEditando(null);
-      setCurrentScreen('ORGANIZACION_HOME');
-    }}
+    onVolver={() => {
+        setOportunidadEditando(null);
+        setCurrentScreen('ORGANIZACION_HOME');
+
+        setTimeout(() => {
+          scrollRef.current?.scrollTo({
+            y: 0,
+            animated: true
+          });
+        }, 0.1);
+      }}
+
     onGuardado={async () => {
-    await cargarOportunidades();
-    setOportunidadEditando(null);
-    setCurrentScreen('ORGANIZACION_HOME');
-    }}
+        await cargarOportunidades();
+
+        setOportunidadEditando(null);
+        setCurrentScreen('ORGANIZACION_HOME');
+
+        setTimeout(() => {
+          scrollRef.current?.scrollTo({
+            y: 0,
+            animated: true
+          });
+        }, 0.1);
+      }}
 
   showAlert={showAlert}
   />
@@ -1927,6 +1863,10 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
     paddingHorizontal: 20
   },
+  
+  scrollContainerOrganizacion: {
+  justifyContent: 'flex-start'
+},
 
 
 

@@ -309,6 +309,7 @@ exports.obtenerOportunidadesPublicadas = async (req, res) => {
   try {
 
     const filtros = {
+      nombre: req.query.nombre,
       tipoActividad: req.query.tipoActividad,
       urgencia: req.query.urgencia,
       fecha: req.query.fecha,

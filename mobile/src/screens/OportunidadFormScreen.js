@@ -1,6 +1,5 @@
 import React from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker'
-import axios from 'axios';
 import {obtenerToken} from '../services/authStorage';
 import {
   View,
@@ -10,7 +9,20 @@ import {
   TextInput,
   ScrollView
 } from 'react-native';
+
 import ConfirmModal from '../components/ConfirmModal';
+
+import {
+  buscarUbicacionesPorTexto,
+  registrarUbicacion,
+  
+} from '../services/ubicacionService';
+
+import {
+  crearOportunidad,
+  publicarOportunidad as publicarOportunidadService,
+  actualizarOportunidad
+} from '../services/oportunidadService';
 
 export default function OportunidadFormScreen({tiposActividad,
   onVolver,onGuardado,showAlert,oportunidadEditando,loading
@@ -45,23 +57,9 @@ export default function OportunidadFormScreen({tiposActividad,
         setBuscandoUbicacion(true);
 
         const token = await obtenerToken();
+        const data = await buscarUbicacionesPorTexto(token,busqueda);
 
-        const response = await axios.get(
-        'http://192.168.0.93:3000/api/ubicaciones/buscar',
-        {
-            params: {
-            q: busqueda,
-            },
-            headers: {
-            Authorization: `Bearer ${token}`,
-            },
-        }
-        );
-
-        setResultadosUbicacion(
-        response.data.resultados
-        );
-
+        setResultadosUbicacion(data.resultados);
     } catch (error) {
         console.log(
         'Error buscando ubicación:',
@@ -83,24 +81,18 @@ export default function OportunidadFormScreen({tiposActividad,
     try {
         const token = await obtenerToken();
 
-        const response = await axios.post(
-        'http://192.168.0.93:3000/api/ubicaciones',
-        {
-            latitud: ubicacionSeleccionada.latitud,
-            longitud: ubicacionSeleccionada.longitud,
-            localidad: ubicacionSeleccionada.localidad,
-            provincia: ubicacionSeleccionada.provincia,
-            esAproximada: false,
-            direccion: ubicacionSeleccionada.nombre,
-        },
-        {
-            headers: {
-            Authorization: `Bearer ${token}`,
-            },
-        }
-        );
-
-        return response.data.ubicacion.id_ubicacion;
+        const data = await registrarUbicacion(
+            token,
+            {
+                latitud: ubicacionSeleccionada.latitud,
+                longitud: ubicacionSeleccionada.longitud,
+                localidad: ubicacionSeleccionada.localidad,
+                provincia: ubicacionSeleccionada.provincia,
+                esAproximada: false,
+                direccion: ubicacionSeleccionada.nombre,
+            }
+            );
+            return data.ubicacion.id_ubicacion;
 
     } catch (error) {
 
@@ -250,8 +242,8 @@ export default function OportunidadFormScreen({tiposActividad,
         const idUbicacion =
         await obtenerIdUbicacion();
 
-        await axios.post(
-        'http://192.168.0.93:3000/api/oportunidades',
+        await crearOportunidad(
+        token,
         {
             idTipoActividad: idTipoActividad,
             idUbicacion: idUbicacion,
@@ -271,11 +263,6 @@ export default function OportunidadFormScreen({tiposActividad,
             tipoUbicacion === 'RADIO'
                 ? Number(radioKm)
                 : null,
-        },
-        {
-            headers: {
-            Authorization: `Bearer ${token}`,
-            },
         }
         );
 
@@ -316,48 +303,35 @@ export default function OportunidadFormScreen({tiposActividad,
         await obtenerIdUbicacion();
 
         // 2. Crear la oportunidad como BORRADOR
-        const responseCreacion = await axios.post(
-        'http://192.168.0.93:3000/api/oportunidades',
-        {
-            idTipoActividad: idTipoActividad,
-            idUbicacion: idUbicacion,
-            titulo: titulo,
-            descripcion: descripcion,
-            requisitos: requisitos || null,
-            cupoTotal: Number(cupo),
-            fechaInicio: fechaInicio
-            ? fechaInicio.toISOString()
-            : null,
-            fechaFin: fechaFin
-            ? fechaFin.toISOString()
-            : null,
-            urgencia: urgencia,
-            tipoUbicacion: tipoUbicacion || null,
-            radioKm:
-            tipoUbicacion === 'RADIO'
-                ? Number(radioKm)
+       const dataCreacion = await crearOportunidad(
+            token,
+            {
+                idTipoActividad: idTipoActividad,
+                idUbicacion: idUbicacion,
+                titulo: titulo,
+                descripcion: descripcion,
+                requisitos: requisitos || null,
+                cupoTotal: Number(cupo),
+                fechaInicio: fechaInicio
+                ? fechaInicio.toISOString()
                 : null,
-        },
-        {
-            headers: {
-            Authorization: `Bearer ${token}`,
-            },
-        }
-        );
+                fechaFin: fechaFin
+                ? fechaFin.toISOString()
+                : null,
+                urgencia: urgencia,
+                tipoUbicacion: tipoUbicacion || null,
+                radioKm:
+                tipoUbicacion === 'RADIO'
+                    ? Number(radioKm)
+                    : null,
+            }
+            );
 
-        const idOportunidad =
-        responseCreacion.data.oportunidad.id_oportunidad;
+            const idOportunidad =
+            dataCreacion.oportunidad.id_oportunidad;
 
         // 3. Cambiar oficialmente BORRADOR → PUBLICADA
-        await axios.patch(
-        `http://192.168.0.93:3000/api/oportunidades/${idOportunidad}/publicar`,
-        {},
-        {
-            headers: {
-            Authorization: `Bearer ${token}`,
-            },
-        }
-        );
+        await publicarOportunidadService(token,idOportunidad);
 
         showAlert(
         'success',
@@ -395,40 +369,36 @@ export default function OportunidadFormScreen({tiposActividad,
             const idUbicacion =
             await obtenerIdUbicacion();
 
-            await axios.put(
-            `http://192.168.0.93:3000/api/oportunidades/${oportunidadEditando.id_oportunidad}`,
-            {
-                idTipoActividad,
-                idUbicacion,
-                titulo,
-                descripcion,
-                requisitos: requisitos || null,
-                cupoTotal: Number(cupo),
+            await actualizarOportunidad(
+                token,
+                oportunidadEditando.id_oportunidad,
+                {
+                    idTipoActividad,
+                    idUbicacion,
+                    titulo,
+                    descripcion,
+                    requisitos: requisitos || null,
+                    cupoTotal: Number(cupo),
 
-                fechaInicio: fechaInicio
-                ? fechaInicio.toISOString()
-                : null,
-
-                fechaFin: fechaFin
-                ? fechaFin.toISOString()
-                : null,
-
-                urgencia,
-
-                tipoUbicacion:
-                tipoUbicacion || null,
-
-                radioKm:
-                tipoUbicacion === 'RADIO'
-                    ? Number(radioKm)
+                    fechaInicio: fechaInicio
+                    ? fechaInicio.toISOString()
                     : null,
-            },
-            {
-                headers: {
-                Authorization: `Bearer ${token}`,
-                },
-            }
-            );
+
+                    fechaFin: fechaFin
+                    ? fechaFin.toISOString()
+                    : null,
+
+                    urgencia,
+
+                    tipoUbicacion:
+                    tipoUbicacion || null,
+
+                    radioKm:
+                    tipoUbicacion === 'RADIO'
+                        ? Number(radioKm)
+                        : null,
+                }
+                );
 
             showAlert(
             'success',

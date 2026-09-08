@@ -846,6 +846,25 @@ exports.finalizarOportunidad = async (
 exports.obtenerOportunidadesPublicadas = async (filtros = {}) => {
 
   const filtrosNormalizados = {};
+    
+  if (filtros.nombre != null) {
+
+    const nombre =
+      String(filtros.nombre).trim();
+
+    if (nombre.length > 150) {
+      const error = new Error(
+        'El nombre de búsqueda no puede superar los 150 caracteres'
+      );
+
+      error.status = 400;
+      throw error;
+    }
+
+    if (nombre !== '') {
+      filtrosNormalizados.nombre = nombre;
+    }
+  }
 
   if (filtros.tipoActividad != null) {
 

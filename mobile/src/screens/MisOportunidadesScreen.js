@@ -18,10 +18,13 @@ export default function MisOportunidadesScreen({
   onCancelar,
   onCerrar,
   onFinalizar,
-  onLogout
+  onLogout,
+  filtroEstado,
+  onCambiarFiltroEstado,
+  busqueda,
+  onCambiarBusqueda
 }) {
-  const [filtroEstado, setFiltroEstado] = React.useState('TODAS');
-  const [busqueda, setBusqueda] = React.useState('');
+ 
   const [confirmacion, setConfirmacion] = React.useState(null);
   
   
@@ -86,7 +89,7 @@ export default function MisOportunidadesScreen({
         style={styles.searchInput}
         placeholder="Buscar por título..."
         value={busqueda}
-        onChangeText={setBusqueda}
+        onChangeText={onCambiarBusqueda}
         autoFocus={false}
       />
       
@@ -109,7 +112,7 @@ export default function MisOportunidadesScreen({
           styles.filterButtonActive
       ]}
       onPress={() =>
-        setFiltroEstado(valor)
+         onCambiarFiltroEstado(valor)
       }
     >
 

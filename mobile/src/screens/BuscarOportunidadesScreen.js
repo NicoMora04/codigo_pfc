@@ -21,6 +21,7 @@ export default function BuscarOportunidadesScreen({
   filtrosGuardados={},
   estadoUbicacionGuardado,
   onGuardarEstadoUbicacion,
+  showAlert,
 }) {
 
   const [tipoSeleccionado, setTipoSeleccionado] = React.useState(null);
@@ -53,6 +54,9 @@ export default function BuscarOportunidadesScreen({
   const [modoUbicacion, setModoUbicacion] = React.useState(
     estadoUbicacionGuardado?.modoUbicacion ?? null
   );
+  const [nombreBusqueda, setNombreBusqueda] = React.useState(
+  filtrosGuardados.nombre ?? ''
+);
 
   const obtenerUbicacionActual = async () => {
 
@@ -64,9 +68,11 @@ export default function BuscarOportunidadesScreen({
           await Location.requestForegroundPermissionsAsync();
 
         if (status !== 'granted') {
-          alert(
-            'Necesitamos permiso de ubicación para buscar oportunidades cercanas.'
-          );
+        showAlert(
+          'error',
+          'Permiso de ubicación',
+          'No fue posible acceder a tu ubicación actual. Verificá el permiso de ubicación de la aplicación en la configuración del dispositivo. También podés buscar una ubicación manualmente.'
+        );
           return;
         }
 
@@ -121,7 +127,9 @@ export default function BuscarOportunidadesScreen({
           error.message
         );
 
-        alert(
+        showAlert(
+          'error',
+          'Ubicación no disponible',
           'No se pudo obtener tu ubicación actual.'
         );
 
@@ -134,6 +142,7 @@ export default function BuscarOportunidadesScreen({
     };
 
   const construirFiltros = ({
+        nombre = nombreBusqueda,
         tipo = tipoSeleccionado,
         urgencia = urgenciaSeleccionada,
         fecha = fechaSeleccionada,
@@ -142,6 +151,9 @@ export default function BuscarOportunidadesScreen({
       } = {}) => {
 
     const filtros = {};
+        if (nombre.trim() !== '') {
+          filtros.nombre = nombre.trim();
+        }
 
       if (tipo !== null) {
         filtros.tipoActividad = tipo;
@@ -223,6 +235,10 @@ React.useEffect(() => {
 
 React.useEffect(() => {
 
+  setNombreBusqueda(
+  filtrosGuardados.nombre ?? ''
+  );
+
   setTipoSeleccionado(
     filtrosGuardados.tipoActividad ?? null
   );
@@ -252,7 +268,7 @@ React.useEffect(() => {
 
 
 const limpiarFiltros = async () => {
-
+  setNombreBusqueda('');
   setTipoSeleccionado(null);
   setUrgenciaSeleccionada(null);
 
@@ -296,6 +312,32 @@ const limpiarFiltros = async () => {
       </View>
 
       <View style={styles.filterSection}>
+
+        <Text style={styles.filterTitle}>
+          Buscar por nombre
+        </Text>
+
+        <TextInput
+          style={styles.nameInput}
+          placeholder="Ej. Colecta de alimentos"
+          value={nombreBusqueda}
+          onChangeText={setNombreBusqueda}
+          onSubmitEditing={() =>
+            onFiltrar(construirFiltros())
+          }
+          returnKeyType="search"
+        />
+
+        <TouchableOpacity
+          style={styles.searchNameButton}
+          onPress={() =>
+            onFiltrar(construirFiltros())
+          }
+        >
+          <Text style={styles.searchNameButtonText}>
+            Buscar
+          </Text>
+        </TouchableOpacity>
 
         <Text style={styles.filterTitle}>
           Tipo de actividad
@@ -734,13 +776,9 @@ const limpiarFiltros = async () => {
 
         oportunidades.map((oportunidad) => (
 
-        <TouchableOpacity
+        <View
             key={oportunidad.id_oportunidad}
             style={styles.card}
-            activeOpacity={0.85}
-            onPress={() =>
-              onVerDetalle(oportunidad.id_oportunidad)
-            }
           >
 
             <Text style={styles.cardTitle}>
@@ -803,7 +841,20 @@ const limpiarFiltros = async () => {
 
             )}
 
+            <TouchableOpacity
+            style={styles.detailButton}
+            onPress={() =>
+              onVerDetalle(oportunidad.id_oportunidad)
+            }
+          >
+            <Text style={styles.detailButtonText}>
+              Ver detalle
+            </Text>
           </TouchableOpacity>
+
+          </View>
+
+          
 
         ))
 
@@ -1130,6 +1181,44 @@ clearFiltersButtonText: {
   fontSize: 13,
   fontWeight: '700',
   color: '#C62828',
+},
+detailButton: {
+  backgroundColor: '#1F6F5C',
+  borderRadius: 10,
+  paddingVertical: 10,
+  paddingHorizontal: 14,
+  alignItems: 'center',
+  marginTop: 14,
+},
+
+detailButtonText: {
+  color: '#FFFFFF',
+  fontSize: 13,
+  fontWeight: '700',
+},
+nameInput: {
+  backgroundColor: '#FFFFFF',
+  borderWidth: 1,
+  borderColor: '#D7DEDA',
+  borderRadius: 10,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+},
+
+searchNameButton: {
+  backgroundColor: '#1F6F5C',
+  borderRadius: 10,
+  paddingHorizontal: 14,
+  paddingVertical: 10,
+  alignSelf: 'flex-start',
+  marginTop: 8,
+  marginBottom: 18,
+},
+
+searchNameButtonText: {
+  color: '#FFFFFF',
+  fontSize: 13,
+  fontWeight: '700',
 },
 
 });

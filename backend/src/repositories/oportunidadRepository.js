@@ -303,6 +303,7 @@ exports.finalizarOportunidad = async (
 exports.buscarOportunidadesPublicadas = async (filtros = {}) => {
 
   const {
+    nombre,
     tipoActividad,
     urgencia,
     fecha,
@@ -319,6 +320,15 @@ exports.buscarOportunidadesPublicadas = async (filtros = {}) => {
   ];
 
   let selectDistancia = '';
+  // FILTRO: NOMBRE DE OPORTUNIDAD
+  if (nombre != null) {
+
+      valores.push(`%${nombre}%`);
+
+      condiciones.push(
+        `o.titulo ILIKE $${valores.length}`
+      );
+  }
 
   // FILTRO: TIPO DE ACTIVIDAD
   if (tipoActividad != null) {
