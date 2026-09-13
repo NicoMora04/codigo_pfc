@@ -1,4 +1,5 @@
 import React from 'react';
+import MapaLeaflet from '../components/MapaLeaflet';
 
 import {
   View,
@@ -151,6 +152,31 @@ export default function DetalleOportunidadScreen({
             'Ubicación no especificada.'}
         </Text>
 
+              {(
+        oportunidad.latitud != null &&
+        oportunidad.longitud != null
+      ) && (
+
+        <View style={styles.mapSection}>
+
+          <Text style={styles.mapTitle}>
+            Ubicación de la oportunidad
+          </Text>
+
+          <Text style={styles.mapSubtitle}>
+            Consultá en el mapa dónde se realizará la actividad.
+          </Text>
+
+          <MapaLeaflet
+            oportunidades={[oportunidad]}
+            mostrarBotonDetalle={false}
+            zoom={15}
+          />
+
+        </View>
+
+      )}
+
       </View>
 
     </View>
@@ -230,5 +256,28 @@ backButton: {
     color: '#164C40',
     marginBottom: 14,
   },
+
+  mapSection: {
+  backgroundColor: '#FFFFFF',
+  borderRadius: 16,
+  padding: 16,
+  marginTop: 18,
+  marginBottom: 18,
+  borderWidth: 1,
+  borderColor: '#DDE5E2',
+},
+
+mapTitle: {
+  fontSize: 18,
+  fontWeight: '700',
+  color: '#164C40',
+  marginBottom: 4,
+},
+
+mapSubtitle: {
+  fontSize: 12,
+  color: '#5F6B76',
+  marginBottom: 12,
+},
 
 });

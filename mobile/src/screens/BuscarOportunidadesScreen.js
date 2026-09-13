@@ -1,6 +1,8 @@
 import React from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Location from 'expo-location';
+import MapaLeaflet from '../components/MapaLeaflet';
+
 import {
   View,
   Text,
@@ -10,291 +12,406 @@ import {
   TextInput,
 } from 'react-native';
 
+
 export default function BuscarOportunidadesScreen({
-  oportunidades=[],
+  oportunidades = [],
   loading,
   onLogout,
-  tiposActividad=[],
+  tiposActividad = [],
   onFiltrar,
   onBuscarUbicacion,
   onVerDetalle,
-  filtrosGuardados={},
+  filtrosGuardados = {},
   estadoUbicacionGuardado,
   onGuardarEstadoUbicacion,
   showAlert,
 }) {
 
-  const [tipoSeleccionado, setTipoSeleccionado] = React.useState(null);
-  const [urgenciaSeleccionada, setUrgenciaSeleccionada] = React.useState(null);
-  const [fechaSeleccionada, setFechaSeleccionada] = React.useState(null);
-  const [mostrarFecha, setMostrarFecha] = React.useState(false);
-  const [obteniendoUbicacion, setObteniendoUbicacion] = React.useState(false);
-  const [resultadosUbicacion, setResultadosUbicacion] = React.useState([]);
-  const [buscandoUbicacion, setBuscandoUbicacion] = React.useState(false);
-  const [ubicacionActual, setUbicacionActual] = React.useState(
-  estadoUbicacionGuardado?.ubicacionActual ?? null
-);
-  const [radioBusquedaKm, setRadioBusquedaKm] = React.useState(
-    estadoUbicacionGuardado?.radioBusquedaKm ?? '10'
-  );
+  const [tipoSeleccionado, setTipoSeleccionado] =
+    React.useState(null);
 
-  const [direccionActual, setDireccionActual] = React.useState(
-    estadoUbicacionGuardado?.direccionActual ?? ''
-  );
+  const [urgenciaSeleccionada, setUrgenciaSeleccionada] =
+    React.useState(null);
 
-  const [textoUbicacion, setTextoUbicacion] = React.useState(
-    estadoUbicacionGuardado?.textoUbicacion ?? ''
-  );
+  const [fechaSeleccionada, setFechaSeleccionada] =
+    React.useState(null);
 
-  const [ubicacionManualSeleccionada, setUbicacionManualSeleccionada] =
+  const [mostrarFecha, setMostrarFecha] =
+    React.useState(false);
+
+  const [obteniendoUbicacion, setObteniendoUbicacion] =
+    React.useState(false);
+
+  const [resultadosUbicacion, setResultadosUbicacion] =
+    React.useState([]);
+
+  const [buscandoUbicacion, setBuscandoUbicacion] =
+    React.useState(false);
+
+  const [ubicacionActual, setUbicacionActual] =
     React.useState(
-      estadoUbicacionGuardado?.ubicacionManualSeleccionada ?? null
+      estadoUbicacionGuardado?.ubicacionActual ?? null
     );
 
-  const [modoUbicacion, setModoUbicacion] = React.useState(
-    estadoUbicacionGuardado?.modoUbicacion ?? null
+  const [radioBusquedaKm, setRadioBusquedaKm] =
+    React.useState(
+      estadoUbicacionGuardado?.radioBusquedaKm ?? '10'
+    );
+
+  const [direccionActual, setDireccionActual] =
+    React.useState(
+      estadoUbicacionGuardado?.direccionActual ?? ''
+    );
+
+  const [textoUbicacion, setTextoUbicacion] =
+    React.useState(
+      estadoUbicacionGuardado?.textoUbicacion ?? ''
+    );
+
+  const [
+    ubicacionManualSeleccionada,
+    setUbicacionManualSeleccionada
+  ] = React.useState(
+    estadoUbicacionGuardado?.ubicacionManualSeleccionada ?? null
   );
-  const [nombreBusqueda, setNombreBusqueda] = React.useState(
-  filtrosGuardados.nombre ?? ''
-);
+
+  const [modoUbicacion, setModoUbicacion] =
+    React.useState(
+      estadoUbicacionGuardado?.modoUbicacion ?? null
+    );
+
+  const [nombreBusqueda, setNombreBusqueda] =
+    React.useState(
+      filtrosGuardados.nombre ?? ''
+    );
+
+
+  // =====================================================
+  // OBTENER UBICACIÓN ACTUAL
+  // =====================================================
 
   const obtenerUbicacionActual = async () => {
 
-      try {
+    try {
 
-        setObteniendoUbicacion(true);
+      setObteniendoUbicacion(true);
 
-        const { status } =
-          await Location.requestForegroundPermissionsAsync();
+      const { status } =
+        await Location.requestForegroundPermissionsAsync();
 
-        if (status !== 'granted') {
+      if (status !== 'granted') {
+
         showAlert(
           'error',
           'Permiso de ubicación',
           'No fue posible acceder a tu ubicación actual. Verificá el permiso de ubicación de la aplicación en la configuración del dispositivo. También podés buscar una ubicación manualmente.'
         );
-          return;
-        }
 
-        const ubicacion =
-          await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-
-        const coordenadas = {
-          latitud: ubicacion.coords.latitude,
-          longitud: ubicacion.coords.longitude,
-        };
-
-        setUbicacionManualSeleccionada(null);
-        setTextoUbicacion('');
-        setResultadosUbicacion([]);
-    
+        return;
+      }
 
 
-        setUbicacionActual(coordenadas);
-        setModoUbicacion('GPS');
+      const ubicacion =
+        await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
 
-        const direcciones = await Location.reverseGeocodeAsync({
+
+      const coordenadas = {
+        latitud: ubicacion.coords.latitude,
+        longitud: ubicacion.coords.longitude,
+      };
+
+
+      setUbicacionManualSeleccionada(null);
+      setTextoUbicacion('');
+      setResultadosUbicacion([]);
+
+      setUbicacionActual(coordenadas);
+      setModoUbicacion('GPS');
+
+
+      const direcciones =
+        await Location.reverseGeocodeAsync({
           latitude: ubicacion.coords.latitude,
           longitude: ubicacion.coords.longitude,
         });
 
-        if (direcciones.length > 0) {
 
-          const direccion = direcciones[0];
+      if (direcciones.length > 0) {
 
-          const partes = [
-            direccion.street,
-            direccion.streetNumber,
-            direccion.city,
-            direccion.region
-          ].filter(Boolean);
+        const direccion =
+          direcciones[0];
 
-          setDireccionActual(partes.join(', '));
+        const partes = [
+          direccion.street,
+          direccion.streetNumber,
+          direccion.city,
+          direccion.region
+        ].filter(Boolean);
 
-        }
-
-        console.log(
-          'Ubicación actual:',
-          coordenadas
+        setDireccionActual(
+          partes.join(', ')
         );
-
-      } catch (error) {
-
-        console.log(
-          'Error obteniendo ubicación:',
-          error.message
-        );
-
-        showAlert(
-          'error',
-          'Ubicación no disponible',
-          'No se pudo obtener tu ubicación actual.'
-        );
-
-      } finally {
-
-        setObteniendoUbicacion(false);
-
       }
 
-    };
 
-  const construirFiltros = ({
-        nombre = nombreBusqueda,
-        tipo = tipoSeleccionado,
-        urgencia = urgenciaSeleccionada,
-        fecha = fechaSeleccionada,
-        ubicacion = ubicacionManualSeleccionada||ubicacionActual,
-        radio = radioBusquedaKm,
-      } = {}) => {
+      console.log(
+        'Ubicación actual:',
+        coordenadas
+      );
 
-    const filtros = {};
-        if (nombre.trim() !== '') {
-          filtros.nombre = nombre.trim();
-        }
+    } catch (error) {
 
-      if (tipo !== null) {
-        filtros.tipoActividad = tipo;
-      }
+      console.log(
+        'Error obteniendo ubicación:',
+        error.message
+      );
 
-      if (urgencia !== null) {
-        filtros.urgencia = urgencia;
-      }
-
-      if (fecha !== null) {
-        filtros.fecha =
-          `${fecha.getFullYear()}-` +
-          `${String(fecha.getMonth() + 1).padStart(2, '0')}-` +
-          `${String(fecha.getDate()).padStart(2, '0')}`;
-      }
-
-      if (ubicacion !== null) {
-
-        const radioNumerico = Number(radio);
-
-        if (
-          Number.isFinite(radioNumerico) &&
-          radioNumerico > 0
-        ) {
-          filtros.latitud = ubicacion.latitud;
-          filtros.longitud = ubicacion.longitud;
-          filtros.radioBusquedaKm = radioNumerico;
-        }
-      }
-
-      return filtros;
-    };
-
-
-
-React.useEffect(() => {
-
-  if (textoUbicacion.trim().length < 3) {
-
-    if (resultadosUbicacion.length > 0) {
-      setResultadosUbicacion([]);
-    }
-
-    return;
-  }
-
-  if (ubicacionManualSeleccionada) {
-    return;
-  }
-
-  const timeout = setTimeout(async () => {
-
-    try {
-
-      setBuscandoUbicacion(true);
-
-      const resultados =
-        await onBuscarUbicacion(
-          textoUbicacion.trim()
-        );
-
-      setResultadosUbicacion(resultados);
+      showAlert(
+        'error',
+        'Ubicación no disponible',
+        'No se pudo obtener tu ubicación actual.'
+      );
 
     } finally {
 
-      setBuscandoUbicacion(false);
+      setObteniendoUbicacion(false);
 
     }
 
-  }, 600);
+  };
 
-  return () => clearTimeout(timeout);
 
-}, [
-  textoUbicacion,
-  ubicacionManualSeleccionada,
-  resultadosUbicacion.length
-]);
+  // =====================================================
+  // CONSTRUIR FILTROS
+  // =====================================================
 
-React.useEffect(() => {
+  const construirFiltros = ({
+    nombre = nombreBusqueda,
+    tipo = tipoSeleccionado,
+    urgencia = urgenciaSeleccionada,
+    fecha = fechaSeleccionada,
+    ubicacion =
+      ubicacionManualSeleccionada ||
+      ubicacionActual,
+    radio = radioBusquedaKm,
+  } = {}) => {
 
-  setNombreBusqueda(
-  filtrosGuardados.nombre ?? ''
-  );
+    const filtros = {};
 
-  setTipoSeleccionado(
-    filtrosGuardados.tipoActividad ?? null
-  );
 
-  setUrgenciaSeleccionada(
-    filtrosGuardados.urgencia ?? null
-  );
+    if (nombre.trim() !== '') {
+      filtros.nombre =
+        nombre.trim();
+    }
 
-  if (filtrosGuardados.fecha) {
 
-    const [anio, mes, dia] =
-      filtrosGuardados.fecha
-        .split('-')
-        .map(Number);
+    if (tipo !== null) {
+      filtros.tipoActividad =
+        tipo;
+    }
 
-    setFechaSeleccionada(
-      new Date(anio, mes - 1, dia)
+
+    if (urgencia !== null) {
+      filtros.urgencia =
+        urgencia;
+    }
+
+
+    if (fecha !== null) {
+
+      filtros.fecha =
+        `${fecha.getFullYear()}-` +
+        `${String(fecha.getMonth() + 1).padStart(2, '0')}-` +
+        `${String(fecha.getDate()).padStart(2, '0')}`;
+
+    }
+
+
+    if (ubicacion !== null) {
+
+      const radioNumerico =
+        Number(radio);
+
+      if (
+        Number.isFinite(radioNumerico) &&
+        radioNumerico > 0
+      ) {
+
+        filtros.latitud =
+          ubicacion.latitud;
+
+        filtros.longitud =
+          ubicacion.longitud;
+
+        filtros.radioBusquedaKm =
+          radioNumerico;
+      }
+
+    }
+
+
+    return filtros;
+  };
+
+
+  // =====================================================
+  // BÚSQUEDA DE UBICACIÓN MANUAL
+  // =====================================================
+
+  React.useEffect(() => {
+
+    if (
+      textoUbicacion.trim().length < 3
+    ) {
+
+      if (
+        resultadosUbicacion.length > 0
+      ) {
+        setResultadosUbicacion([]);
+      }
+
+      return;
+    }
+
+
+    if (
+      ubicacionManualSeleccionada
+    ) {
+      return;
+    }
+
+
+    const timeout =
+      setTimeout(async () => {
+
+        try {
+
+          setBuscandoUbicacion(true);
+
+          const resultados =
+            await onBuscarUbicacion(
+              textoUbicacion.trim()
+            );
+
+          setResultadosUbicacion(
+            resultados
+          );
+
+        } finally {
+
+          setBuscandoUbicacion(false);
+
+        }
+
+      }, 600);
+
+
+    return () =>
+      clearTimeout(timeout);
+
+  }, [
+    textoUbicacion,
+    ubicacionManualSeleccionada,
+    resultadosUbicacion.length
+  ]);
+
+
+  // =====================================================
+  // RESTAURAR FILTROS GUARDADOS
+  // =====================================================
+
+  React.useEffect(() => {
+
+    setNombreBusqueda(
+      filtrosGuardados.nombre ?? ''
     );
 
-  } else {
+
+    setTipoSeleccionado(
+      filtrosGuardados.tipoActividad ?? null
+    );
+
+
+    setUrgenciaSeleccionada(
+      filtrosGuardados.urgencia ?? null
+    );
+
+
+    if (
+      filtrosGuardados.fecha
+    ) {
+
+      const [anio, mes, dia] =
+        filtrosGuardados.fecha
+          .split('-')
+          .map(Number);
+
+
+      setFechaSeleccionada(
+        new Date(
+          anio,
+          mes - 1,
+          dia
+        )
+      );
+
+    } else {
+
+      setFechaSeleccionada(null);
+
+    }
+
+  }, [filtrosGuardados]);
+
+
+  // =====================================================
+  // LIMPIAR FILTROS
+  // =====================================================
+
+  const limpiarFiltros = async () => {
+
+    setNombreBusqueda('');
+    setTipoSeleccionado(null);
+    setUrgenciaSeleccionada(null);
 
     setFechaSeleccionada(null);
+    setMostrarFecha(false);
 
-  }
+    setUbicacionActual(null);
+    setDireccionActual('');
 
-}, [filtrosGuardados]);
+    setUbicacionManualSeleccionada(null);
+    setTextoUbicacion('');
+    setResultadosUbicacion([]);
+
+    setModoUbicacion(null);
+
+    setRadioBusquedaKm('10');
+
+    await onFiltrar({});
+
+  };
 
 
-const limpiarFiltros = async () => {
-  setNombreBusqueda('');
-  setTipoSeleccionado(null);
-  setUrgenciaSeleccionada(null);
-
-  setFechaSeleccionada(null);
-  setMostrarFecha(false);
-
-  setUbicacionActual(null);
-  setDireccionActual('');
-
-  setUbicacionManualSeleccionada(null);
-  setTextoUbicacion('');
-  setResultadosUbicacion([]);
-
-  setModoUbicacion(null);
-
-  setRadioBusquedaKm('10');
-
-  await onFiltrar({});
-
-};
+  // =====================================================
+  // RENDER
+  // =====================================================
 
   return (
+
     <View style={styles.container}>
 
+
+      {/* ================================================= */}
+      {/* HEADER */}
+      {/* ================================================= */}
+
       <View style={styles.header}>
+
         <View>
+
           <Text style={styles.title}>
             Buscar oportunidades
           </Text>
@@ -302,20 +419,34 @@ const limpiarFiltros = async () => {
           <Text style={styles.subtitle}>
             Encontrá actividades de voluntariado disponibles
           </Text>
+
         </View>
 
-        <TouchableOpacity onPress={onLogout}>
+
+        <TouchableOpacity
+          onPress={onLogout}
+        >
+
           <Text style={styles.logoutText}>
             Cerrar sesión
           </Text>
+
         </TouchableOpacity>
+
       </View>
 
+
+      {/* ================================================= */}
+      {/* FILTROS */}
+      {/* ================================================= */}
+
       <View style={styles.filterSection}>
+
 
         <Text style={styles.filterTitle}>
           Buscar por nombre
         </Text>
+
 
         <TextInput
           style={styles.nameInput}
@@ -323,27 +454,43 @@ const limpiarFiltros = async () => {
           value={nombreBusqueda}
           onChangeText={setNombreBusqueda}
           onSubmitEditing={() =>
-            onFiltrar(construirFiltros())
+            onFiltrar(
+              construirFiltros()
+            )
           }
           returnKeyType="search"
         />
 
+
         <TouchableOpacity
           style={styles.searchNameButton}
           onPress={() =>
-            onFiltrar(construirFiltros())
+            onFiltrar(
+              construirFiltros()
+            )
           }
         >
-          <Text style={styles.searchNameButtonText}>
+
+          <Text
+            style={styles.searchNameButtonText}
+          >
             Buscar
           </Text>
+
         </TouchableOpacity>
+
+
+        {/* ================================================= */}
+        {/* TIPO DE ACTIVIDAD */}
+        {/* ================================================= */}
 
         <Text style={styles.filterTitle}>
           Tipo de actividad
         </Text>
 
+
         <View style={styles.typeContainer}>
+
 
           <TouchableOpacity
             style={[
@@ -352,12 +499,18 @@ const limpiarFiltros = async () => {
                 styles.typeButtonActive
             ]}
             onPress={() => {
+
               setTipoSeleccionado(null);
-              onFiltrar(construirFiltros({tipo: null}));
-    
-             }
-            }
+
+              onFiltrar(
+                construirFiltros({
+                  tipo: null
+                })
+              );
+
+            }}
           >
+
             <Text
               style={[
                 styles.typeButtonText,
@@ -367,137 +520,219 @@ const limpiarFiltros = async () => {
             >
               Todas
             </Text>
+
           </TouchableOpacity>
 
-          {tiposActividad.map((tipo) => (
+
+          {tiposActividad.map(
+            (tipo) => (
+
+              <TouchableOpacity
+                key={
+                  tipo.id_tipo_actividad
+                }
+                style={[
+                  styles.typeButton,
+                  tipoSeleccionado ===
+                    tipo.id_tipo_actividad &&
+                    styles.typeButtonActive
+                ]}
+                onPress={() => {
+
+                  setTipoSeleccionado(
+                    tipo.id_tipo_actividad
+                  );
+
+                  onFiltrar(
+                    construirFiltros({
+                      tipo:
+                        tipo.id_tipo_actividad
+                    })
+                  );
+
+                }}
+              >
+
+                <Text
+                  style={[
+                    styles.typeButtonText,
+                    tipoSeleccionado ===
+                      tipo.id_tipo_actividad &&
+                      styles.typeButtonTextActive
+                  ]}
+                >
+                  {tipo.nombre}
+                </Text>
+
+              </TouchableOpacity>
+
+            )
+          )}
+
+        </View>
+
+
+        {/* ================================================= */}
+        {/* URGENCIA */}
+        {/* ================================================= */}
+
+        <Text
+          style={styles.filterTitleSecondary}
+        >
+          Urgencia
+        </Text>
+
+
+        <View style={styles.typeContainer}>
+
+
+          <TouchableOpacity
+            style={[
+              styles.typeButton,
+              urgenciaSeleccionada === null &&
+                styles.typeButtonActive
+            ]}
+            onPress={() => {
+
+              setUrgenciaSeleccionada(null);
+
+              onFiltrar(
+                construirFiltros({
+                  urgencia: null
+                })
+              );
+
+            }}
+          >
+
+            <Text
+              style={[
+                styles.typeButtonText,
+                urgenciaSeleccionada === null &&
+                  styles.typeButtonTextActive
+              ]}
+            >
+              Todas
+            </Text>
+
+          </TouchableOpacity>
+
+
+          {[
+            'BAJA',
+            'MEDIA',
+            'ALTA'
+          ].map((urgencia) => (
 
             <TouchableOpacity
-              key={tipo.id_tipo_actividad}
+              key={urgencia}
               style={[
                 styles.typeButton,
-                tipoSeleccionado === tipo.id_tipo_actividad &&
+                urgenciaSeleccionada ===
+                  urgencia &&
                   styles.typeButtonActive
               ]}
               onPress={() => {
-                setTipoSeleccionado(tipo.id_tipo_actividad);
+
+                setUrgenciaSeleccionada(
+                  urgencia
+                );
 
                 onFiltrar(
-                  construirFiltros({tipo: tipo.id_tipo_actividad})
+                  construirFiltros({
+                    urgencia
+                  })
                 );
+
               }}
             >
+
               <Text
                 style={[
                   styles.typeButtonText,
-                  tipoSeleccionado === tipo.id_tipo_actividad &&
+                  urgenciaSeleccionada ===
+                    urgencia &&
                     styles.typeButtonTextActive
                 ]}
               >
-                {tipo.nombre}
+                {urgencia}
               </Text>
+
             </TouchableOpacity>
 
           ))}
 
         </View>
 
-        <Text style={styles.filterTitleSecondary}>
-        Urgencia
-        </Text>
 
-      <View style={styles.typeContainer}>
+        {/* ================================================= */}
+        {/* FECHA */}
+        {/* ================================================= */}
 
-        <TouchableOpacity
-          style={[
-            styles.typeButton,
-            urgenciaSeleccionada === null &&
-              styles.typeButtonActive
-          ]}
-          onPress={() => {
-            setUrgenciaSeleccionada(null);
-
-            onFiltrar(construirFiltros({urgencia:null})
-            );
-          }}
+        <Text
+          style={styles.filterTitleSecondary}
         >
-          <Text
-            style={[
-              styles.typeButtonText,
-              urgenciaSeleccionada === null &&
-                styles.typeButtonTextActive
-            ]}
-          >
-            Todas
-          </Text>
-        </TouchableOpacity>
-
-        {['BAJA', 'MEDIA', 'ALTA'].map((urgencia) => (
-
-          <TouchableOpacity
-            key={urgencia}
-            style={[
-              styles.typeButton,
-              urgenciaSeleccionada === urgencia &&
-                styles.typeButtonActive
-            ]}
-            onPress={() => {
-
-              setUrgenciaSeleccionada(urgencia);
-
-              onFiltrar(construirFiltros({urgencia:urgencia}));
-            }}
-          >
-            <Text
-              style={[
-                styles.typeButtonText,
-                urgenciaSeleccionada === urgencia &&
-                  styles.typeButtonTextActive
-              ]}
-            >
-              {urgencia}
-            </Text>
-          </TouchableOpacity>
-
-        ))}
-
-      </View>
-
-      <Text style={styles.filterTitleSecondary}>
           Fecha
         </Text>
 
+
         <TouchableOpacity
           style={styles.dateButton}
-          onPress={() => setMostrarFecha(true)}
+          onPress={() =>
+            setMostrarFecha(true)
+          }
         >
+
           <Text style={styles.dateButtonText}>
+
             {fechaSeleccionada
-              ? fechaSeleccionada.toLocaleDateString('es-AR')
+              ? fechaSeleccionada
+                  .toLocaleDateString('es-AR')
               : 'Todas las fechas'}
+
           </Text>
+
         </TouchableOpacity>
 
+
         {fechaSeleccionada && (
+
           <TouchableOpacity
             onPress={() => {
+
               setFechaSeleccionada(null);
 
-              onFiltrar(construirFiltros({fecha:null}));
-              
+              onFiltrar(
+                construirFiltros({
+                  fecha: null
+                })
+              );
+
             }}
           >
+
             <Text style={styles.clearDateText}>
               Quitar fecha
             </Text>
+
           </TouchableOpacity>
+
         )}
 
+
         {mostrarFecha && (
+
           <DateTimePicker
-            value={fechaSeleccionada || new Date()}
+            value={
+              fechaSeleccionada ||
+              new Date()
+            }
             mode="date"
             display="default"
-            onChange={(event, fecha) => {
+            onChange={(
+              event,
+              fecha
+            ) => {
 
               setMostrarFecha(false);
 
@@ -505,19 +740,37 @@ const limpiarFiltros = async () => {
                 return;
               }
 
-              setFechaSeleccionada(fecha);
+              setFechaSeleccionada(
+                fecha
+              );
 
-              onFiltrar(construirFiltros({fecha:fecha}));
+              onFiltrar(
+                construirFiltros({
+                  fecha
+                })
+              );
+
             }}
           />
+
         )}
 
 
-       <Text style={styles.filterTitleSecondary}>
+        {/* ================================================= */}
+        {/* UBICACIÓN */}
+        {/* ================================================= */}
+
+        <Text
+          style={styles.filterTitleSecondary}
+        >
           Ubicación
         </Text>
 
-        <View style={styles.locationModeContainer}>
+
+        <View
+          style={styles.locationModeContainer}
+        >
+
 
           <TouchableOpacity
             style={[
@@ -525,9 +778,14 @@ const limpiarFiltros = async () => {
               modoUbicacion === 'GPS' &&
                 styles.locationModeButtonActive
             ]}
-            onPress={obtenerUbicacionActual}
-            disabled={obteniendoUbicacion}
+            onPress={
+              obtenerUbicacionActual
+            }
+            disabled={
+              obteniendoUbicacion
+            }
           >
+
             <Text
               style={[
                 styles.locationModeButtonText,
@@ -535,11 +793,15 @@ const limpiarFiltros = async () => {
                   styles.locationModeButtonTextActive
               ]}
             >
+
               {obteniendoUbicacion
                 ? 'Obteniendo...'
                 : 'Ubicación actual'}
+
             </Text>
+
           </TouchableOpacity>
+
 
           <TouchableOpacity
             style={[
@@ -549,17 +811,23 @@ const limpiarFiltros = async () => {
             ]}
             onPress={() => {
 
-              setModoUbicacion('MANUAL');
+              setModoUbicacion(
+                'MANUAL'
+              );
 
               setUbicacionActual(null);
               setDireccionActual('');
 
-              setUbicacionManualSeleccionada(null);
+              setUbicacionManualSeleccionada(
+                null
+              );
+
               setTextoUbicacion('');
               setResultadosUbicacion([]);
 
             }}
           >
+
             <Text
               style={[
                 styles.locationModeButtonText,
@@ -569,144 +837,212 @@ const limpiarFiltros = async () => {
             >
               Elegir manualmente
             </Text>
+
           </TouchableOpacity>
 
         </View>
 
 
-        {modoUbicacion === 'MANUAL' && (
+        {modoUbicacion ===
+          'MANUAL' && (
 
           <View>
+
 
             <Text style={styles.filterLabel}>
               Buscar dirección
             </Text>
+
 
             <TextInput
               style={styles.locationInput}
               placeholder="Ej. Güemes 1281, Santa Fe"
               value={textoUbicacion}
               onChangeText={(texto) => {
-                setTextoUbicacion(texto);
-                setUbicacionManualSeleccionada(null);
+
+                setTextoUbicacion(
+                  texto
+                );
+
+                setUbicacionManualSeleccionada(
+                  null
+                );
+
               }}
             />
 
+
             {buscandoUbicacion && (
+
               <ActivityIndicator
                 size="small"
-                style={styles.locationLoading}
+                style={
+                  styles.locationLoading
+                }
               />
+
             )}
 
-            {resultadosUbicacion.length > 0 &&
+
+            {resultadosUbicacion.length >
+              0 &&
               !ubicacionManualSeleccionada && (
 
-                <View style={styles.locationResults}>
+                <View
+                  style={
+                    styles.locationResults
+                  }
+                >
 
-                  {resultadosUbicacion.map((resultado) => (
+                  {resultadosUbicacion.map(
+                    (resultado) => (
 
-                    <TouchableOpacity
-                      key={resultado.placeId}
-                      style={styles.locationResultItem}
-                      onPress={() => {
+                      <TouchableOpacity
+                        key={
+                          resultado.placeId
+                        }
+                        style={
+                          styles.locationResultItem
+                        }
+                        onPress={() => {
 
-                        const ubicacionSeleccionada = {
-                          latitud: resultado.latitud,
-                          longitud: resultado.longitud,
+                          const ubicacionSeleccionada = {
+                            latitud:
+                              resultado.latitud,
+
+                            longitud:
+                              resultado.longitud,
+
                             direccion:
+                              resultado.detalle ||
+                              resultado.nombre,
+                          };
+
+
+                          setUbicacionManualSeleccionada(
+                            ubicacionSeleccionada
+                          );
+
+                          setModoUbicacion(
+                            'MANUAL'
+                          );
+
+                          setTextoUbicacion(
                             resultado.detalle ||
-                            resultado.nombre,
-                        };
+                            resultado.nombre
+                          );
 
-                        
+                          setResultadosUbicacion(
+                            []
+                          );
 
-                        setUbicacionManualSeleccionada(
-                          ubicacionSeleccionada
-                        );
+                          setUbicacionActual(
+                            null
+                          );
 
-                        setModoUbicacion('MANUAL');
+                          setDireccionActual(
+                            ''
+                          );
 
-                        setTextoUbicacion(
-                          resultado.detalle ||
-                          resultado.nombre
-                        );
+                        }}
+                      >
 
-                        setResultadosUbicacion([]);
-
-                        setUbicacionActual(null);
-                        setDireccionActual('');
-
-                      }}
-                    >
-
-                      <Text style={styles.locationResultName}>
-                        {resultado.nombre}
-                      </Text>
-
-                      {!!resultado.detalle && (
-                        <Text style={styles.locationResultDetail}>
-                          {resultado.detalle}
+                        <Text
+                          style={
+                            styles.locationResultName
+                          }
+                        >
+                          {resultado.nombre}
                         </Text>
-                      )}
 
-                    </TouchableOpacity>
 
-                  ))}
+                        {!!resultado.detalle && (
+
+                          <Text
+                            style={
+                              styles.locationResultDetail
+                            }
+                          >
+                            {resultado.detalle}
+                          </Text>
+
+                        )}
+
+                      </TouchableOpacity>
+
+                    )
+                  )}
 
                 </View>
 
-            )}
+              )}
 
           </View>
 
         )}
 
 
-        {modoUbicacion === 'GPS' &&
+        {modoUbicacion ===
+          'GPS' &&
           ubicacionActual &&
           direccionActual !== '' && (
 
-            <Text style={styles.currentAddress}>
+            <Text
+              style={styles.currentAddress}
+            >
               {direccionActual}
             </Text>
 
-        )}
+          )}
 
 
-  
         {(ubicacionActual ||
           ubicacionManualSeleccionada) && (
 
-          <View style={styles.radiusContainer}>
+          <View
+            style={styles.radiusContainer}
+          >
+
 
             <Text style={styles.radiusLabel}>
               Radio de búsqueda (km)
             </Text>
 
+
             <TextInput
               style={styles.radiusInput}
               value={radioBusquedaKm}
-              onChangeText={setRadioBusquedaKm}
+              onChangeText={
+                setRadioBusquedaKm
+              }
               keyboardType="decimal-pad"
               placeholder="Ej: 10"
             />
 
+
             <TouchableOpacity
-              style={styles.searchNearbyButton}
+              style={
+                styles.searchNearbyButton
+              }
               onPress={() => {
 
-                const radio = Number(radioBusquedaKm);
+                const radio =
+                  Number(
+                    radioBusquedaKm
+                  );
 
                 if (
                   !Number.isFinite(radio) ||
                   radio <= 0
                 ) {
+
                   alert(
                     'Ingresá un radio de búsqueda mayor a 0.'
                   );
+
                   return;
                 }
+
 
                 onGuardarEstadoUbicacion?.({
                   modoUbicacion,
@@ -717,22 +1053,31 @@ const limpiarFiltros = async () => {
                   radioBusquedaKm,
                 });
 
+
                 onFiltrar(
                   construirFiltros({
                     ubicacion:
                       ubicacionManualSeleccionada ||
                       ubicacionActual,
-                    radio: radio
+
+                    radio
                   })
                 );
 
               }}
             >
 
-              <Text style={styles.searchNearbyButtonText}>
-                {modoUbicacion === 'MANUAL'
+              <Text
+                style={
+                  styles.searchNearbyButtonText
+                }
+              >
+
+                {modoUbicacion ===
+                  'MANUAL'
                   ? 'Buscar en esta ubicación'
                   : 'Buscar cerca de mí'}
+
               </Text>
 
             </TouchableOpacity>
@@ -740,17 +1085,117 @@ const limpiarFiltros = async () => {
           </View>
 
         )}
-      
-       <TouchableOpacity
-        style={styles.clearFiltersButton}
-        onPress={limpiarFiltros}
-      >
-        <Text style={styles.clearFiltersButtonText}>
-          Limpiar filtros
-        </Text>
-      </TouchableOpacity>
+
+
+        <TouchableOpacity
+          style={
+            styles.clearFiltersButton
+          }
+          onPress={limpiarFiltros}
+        >
+
+          <Text
+            style={
+              styles.clearFiltersButtonText
+            }
+          >
+            Limpiar filtros
+          </Text>
+
+        </TouchableOpacity>
 
       </View>
+
+
+      {/* ================================================= */}
+      {/* MAPA */}
+      {/* ================================================= */}
+
+      <View style={styles.mapSection}>
+
+        <Text style={styles.mapTitle}>
+          Oportunidades en el mapa
+        </Text>
+
+        <Text style={styles.mapSubtitle}>
+          Tocá un marcador para consultar la oportunidad.
+        </Text>
+
+
+        <MapaLeaflet
+          oportunidades={oportunidades}
+          onVerDetalle={onVerDetalle}
+        />
+
+
+        <View style={styles.mapLegend}>
+
+
+          <View style={styles.legendItem}>
+
+            <View
+              style={styles.legendMarker}
+            />
+
+            <Text style={styles.legendText}>
+              Ubicación exacta
+            </Text>
+
+          </View>
+
+
+          <View style={styles.legendItem}>
+
+            <View
+              style={
+                styles.legendApproximate
+              }
+            />
+
+            <Text style={styles.legendText}>
+              Zona aproximada
+            </Text>
+
+          </View>
+
+
+          <View style={styles.legendItem}>
+
+            <View
+              style={
+                styles.legendGrouped
+              }
+            >
+
+              <Text
+                style={
+                  styles.legendGroupedText
+                }
+              >
+                2
+              </Text>
+
+            </View>
+
+            <Text style={styles.legendText}>
+              Varias oportunidades
+            </Text>
+
+          </View>
+
+        </View>
+
+      </View>
+
+
+      {/* ================================================= */}
+      {/* RESULTADOS */}
+      {/* ================================================= */}
+
+      <Text style={styles.resultsTitle}>
+        Oportunidades disponibles
+      </Text>
+
 
       {loading ? (
 
@@ -763,6 +1208,7 @@ const limpiarFiltros = async () => {
       ) : oportunidades.length === 0 ? (
 
         <View style={styles.emptyCard}>
+
           <Text style={styles.emptyTitle}>
             No hay oportunidades disponibles
           </Text>
@@ -770,93 +1216,140 @@ const limpiarFiltros = async () => {
           <Text style={styles.emptyText}>
             Actualmente no hay oportunidades publicadas y vigentes.
           </Text>
+
         </View>
 
       ) : (
 
-        oportunidades.map((oportunidad) => (
+        oportunidades.map(
+          (oportunidad) => (
 
-        <View
-            key={oportunidad.id_oportunidad}
-            style={styles.card}
-          >
+            <View
+              key={
+                oportunidad.id_oportunidad
+              }
+              style={styles.card}
+            >
 
-            <Text style={styles.cardTitle}>
-              {oportunidad.titulo}
-            </Text>
 
-            <Text style={styles.cardOrganization}>
-              {oportunidad.organizacion}
-            </Text>
+              <Text style={styles.cardTitle}>
+                {oportunidad.titulo}
+              </Text>
 
-            <Text style={styles.cardType}>
-              {oportunidad.tipo_actividad}
-            </Text>
 
-            <Text style={styles.cardInfo}>
-              Urgencia: {oportunidad.urgencia}
-            </Text>
+              <Text
+                style={
+                  styles.cardOrganization
+                }
+              >
+                {oportunidad.organizacion}
+              </Text>
 
-            <Text style={styles.cardInfo}>
-              Cupo: {oportunidad.cupo_total}
-            </Text>
 
-            <Text style={styles.cardInfo}>
-              Inicio:{' '}
-              {new Date(
-                oportunidad.fecha_inicio
-              ).toLocaleString('es-AR')}
-            </Text>
+              <Text style={styles.cardType}>
+                {oportunidad.tipo_actividad}
+              </Text>
 
-            <Text style={styles.cardInfo}>
-              Fin previsto:{' '}
-              {new Date(
-                oportunidad.fecha_fin
-              ).toLocaleString('es-AR')}
-            </Text>
-
-            {(oportunidad.direccion ||
-              oportunidad.localidad) && (
 
               <Text style={styles.cardInfo}>
-                Ubicación:{' '}
-                {oportunidad.direccion
-                  ? `${oportunidad.direccion}, `
-                  : ''}
-
-                {oportunidad.localidad}
-
-                {oportunidad.provincia
-                  ? `, ${oportunidad.provincia}`
-                  : ''}
+                Urgencia:{' '}
+                {oportunidad.urgencia}
               </Text>
 
-            )}
 
-            {oportunidad.distancia_km != null && (
-
-              <Text style={styles.distance}>
-                A {oportunidad.distancia_km} km
+              <Text style={styles.cardInfo}>
+                Cupo:{' '}
+                {oportunidad.cupo_total}
               </Text>
 
-            )}
 
-            <TouchableOpacity
-            style={styles.detailButton}
-            onPress={() =>
-              onVerDetalle(oportunidad.id_oportunidad)
-            }
-          >
-            <Text style={styles.detailButtonText}>
-              Ver detalle
-            </Text>
-          </TouchableOpacity>
+              <Text style={styles.cardInfo}>
 
-          </View>
+                Inicio:{' '}
 
-          
+                {new Date(
+                  oportunidad.fecha_inicio
+                ).toLocaleString(
+                  'es-AR'
+                )}
 
-        ))
+              </Text>
+
+
+              <Text style={styles.cardInfo}>
+
+                Fin previsto:{' '}
+
+                {new Date(
+                  oportunidad.fecha_fin
+                ).toLocaleString(
+                  'es-AR'
+                )}
+
+              </Text>
+
+
+              {(oportunidad.direccion ||
+                oportunidad.localidad) && (
+
+                <Text
+                  style={styles.cardInfo}
+                >
+
+                  Ubicación:{' '}
+
+                  {oportunidad.direccion
+                    ? `${oportunidad.direccion}, `
+                    : ''}
+
+                  {oportunidad.localidad}
+
+                  {oportunidad.provincia
+                    ? `, ${oportunidad.provincia}`
+                    : ''}
+
+                </Text>
+
+              )}
+
+
+              {oportunidad.distancia_km !=
+                null && (
+
+                <Text style={styles.distance}>
+
+                  A{' '}
+                  {oportunidad.distancia_km}{' '}
+                  km
+
+                </Text>
+
+              )}
+
+
+              <TouchableOpacity
+                style={styles.detailButton}
+                onPress={() =>
+                  onVerDetalle(
+                    oportunidad.id_oportunidad
+                  )
+                }
+              >
+
+                <Text
+                  style={
+                    styles.detailButtonText
+                  }
+                >
+                  Ver detalle
+                </Text>
+
+              </TouchableOpacity>
+
+            </View>
+
+          )
+        )
 
       )}
 
@@ -865,6 +1358,10 @@ const limpiarFiltros = async () => {
 }
 
 
+// =======================================================
+// ESTILOS
+// =======================================================
+
 const styles = StyleSheet.create({
 
   container: {
@@ -872,9 +1369,11 @@ const styles = StyleSheet.create({
     maxWidth: 500,
   },
 
+
   header: {
     marginBottom: 20,
   },
+
 
   title: {
     fontSize: 24,
@@ -882,11 +1381,13 @@ const styles = StyleSheet.create({
     color: '#164C40',
   },
 
+
   subtitle: {
     fontSize: 13,
     color: '#5F6B76',
     marginTop: 4,
   },
+
 
   logoutText: {
     color: '#C62828',
@@ -894,77 +1395,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 
-  loader: {
-    marginTop: 30,
-  },
 
-  emptyCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 20,
-    alignItems: 'center',
-  },
+  // =====================================================
+  // FILTROS
+  // =====================================================
 
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#164C40',
-  },
-
-  emptyText: {
-    fontSize: 13,
-    color: '#5F6B76',
-    marginTop: 5,
-    textAlign: 'center',
-  },
-
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E6F2EF',
-  },
-
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#164C40',
-  },
-
-  cardOrganization: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1F6F5C',
-    marginTop: 4,
-  },
-
-  cardType: {
-    fontSize: 13,
-    color: '#5F6B76',
-    marginTop: 4,
-  },
-
-  cardInfo: {
-    fontSize: 12,
-    color: '#5F6B76',
-    marginTop: 5,
-  },
-
-  distance: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1F6F5C',
-    marginTop: 8,
-  },
   filterSection: {
     backgroundColor: '#FFFFFF',
-
     borderRadius: 16,
-
     padding: 16,
-
     marginBottom: 18,
 
     borderWidth: 1,
@@ -979,246 +1418,519 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
 
     elevation: 2,
-},
-
-filterTitle: {
-  fontSize: 14,
-  fontWeight: '700',
-  color: '#1F2937',
-  marginBottom: 8,
-},
-
-typeContainer: {
-  flexDirection: 'row',
-  flexWrap: 'wrap',
-  gap: 8,
-  alignItems:'center'
-},
-
-typeButton: {
-  paddingHorizontal: 14,
-  paddingVertical: 9,
-
-  borderRadius: 20,
-
-  backgroundColor: '#FFFFFF',
-
-  borderWidth: 1,
-  borderColor: '#D7DEDA',
-
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-
-typeButtonActive: {
-  backgroundColor: '#1F6F5C',
-  borderColor: '#1F6F5C',
-},
-
-typeButtonText: {
-  fontSize: 12,
-  fontWeight: '600',
-  color: '#5F6B76',
-},
-
-typeButtonTextActive: {
-  color: '#FFFFFF',
-},
-filterTitleSecondary: {
-  fontSize: 14,
-  fontWeight: '700',
-  color: '#1F2937',
-  marginTop: 18,
-  marginBottom: 8,
-},
-dateButton: {
-  backgroundColor: '#FFFFFF',
-  borderWidth: 1,
-  borderColor: '#D7DEDA',
-  borderRadius: 12,
-  paddingHorizontal: 14,
-  paddingVertical: 11,
-  alignSelf: 'flex-start',
-},
-
-dateButtonText: {
-  fontSize: 13,
-  fontWeight: '600',
-  color: '#5F6B76',
-},
-
-clearDateText: {
-  fontSize: 12,
-  fontWeight: '600',
-  color: '#C62828',
-  marginTop: 8,
-},
+  },
 
 
-radiusContainer: {
-  marginTop: 12,
-},
+  filterTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
 
-radiusLabel: {
-  fontSize: 13,
-  fontWeight: '600',
-  color: '#5F6B76',
-  marginBottom: 6,
-},
 
-radiusInput: {
-  backgroundColor: '#FFFFFF',
-  borderWidth: 1,
-  borderColor: '#D7DEDA',
-  borderRadius: 10,
-  paddingHorizontal: 12,
-  paddingVertical: 9,
-  width: 120,
-},
+  filterTitleSecondary: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginTop: 18,
+    marginBottom: 8,
+  },
 
-searchNearbyButton: {
-  backgroundColor: '#1F6F5C',
-  borderRadius: 12,
-  paddingHorizontal: 14,
-  paddingVertical: 11,
-  alignSelf: 'flex-start',
-  marginTop: 10,
-},
 
-searchNearbyButtonText: {
-  color: '#FFFFFF',
-  fontSize: 13,
-  fontWeight: '700',
-},
-currentAddress: {
-  fontSize: 12,
-  color: '#5F6B76',
-  marginTop: 6,
-},
-locationInput: {
-  borderWidth: 1,
-  borderColor: '#ccc',
-  borderRadius: 8,
-  paddingHorizontal: 12,
-  paddingVertical: 10,
-  backgroundColor: '#fff',
-  marginTop: 6,
-},
+  filterLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#5F6B76',
+    marginBottom: 4,
+  },
 
-locationLoading: {
-  marginVertical: 10,
-},
 
-locationResults: {
-  backgroundColor: '#fff',
-  borderWidth: 1,
-  borderColor: '#ddd',
-  borderRadius: 8,
-  marginTop: 4,
-  overflow: 'hidden',
-},
+  nameInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D7DEDA',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
 
-locationResultItem: {
-  paddingHorizontal: 12,
-  paddingVertical: 10,
-  borderBottomWidth: 1,
-  borderBottomColor: '#eee',
-},
 
-locationResultName: {
-  fontSize: 14,
-  fontWeight: '600',
-},
+  searchNameButton: {
+    backgroundColor: '#1F6F5C',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    marginBottom: 18,
+  },
 
-locationResultDetail: {
-  fontSize: 12,
-  marginTop: 2,
-},
-locationModeContainer: {
-  flexDirection: 'row',
-  gap: 8,
-  marginBottom: 12,
-},
 
-locationModeButton: {
-  flex: 1,
-  backgroundColor: '#FFFFFF',
-  borderWidth: 1,
-  borderColor: '#D7DEDA',
-  borderRadius: 12,
-  paddingHorizontal: 10,
-  paddingVertical: 11,
-  alignItems: 'center',
-},
+  searchNameButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
 
-locationModeButtonActive: {
-  backgroundColor: '#1F6F5C',
-  borderColor: '#1F6F5C',
-},
 
-locationModeButtonText: {
-  fontSize: 12,
-  fontWeight: '600',
-  color: '#5F6B76',
-  textAlign: 'center',
-},
+  typeContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    alignItems: 'center',
+  },
 
-locationModeButtonTextActive: {
-  color: '#FFFFFF',
-},
-clearFiltersButton: {
-  marginTop: 18,
-  alignSelf: 'flex-start',
-  paddingHorizontal: 14,
-  paddingVertical: 10,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: '#C62828',
-  backgroundColor: '#FFFFFF',
-},
 
-clearFiltersButtonText: {
-  fontSize: 13,
-  fontWeight: '700',
-  color: '#C62828',
-},
-detailButton: {
-  backgroundColor: '#1F6F5C',
-  borderRadius: 10,
-  paddingVertical: 10,
-  paddingHorizontal: 14,
-  alignItems: 'center',
-  marginTop: 14,
-},
+  typeButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 20,
 
-detailButtonText: {
-  color: '#FFFFFF',
-  fontSize: 13,
-  fontWeight: '700',
-},
-nameInput: {
-  backgroundColor: '#FFFFFF',
-  borderWidth: 1,
-  borderColor: '#D7DEDA',
-  borderRadius: 10,
-  paddingHorizontal: 12,
-  paddingVertical: 10,
-},
+    backgroundColor: '#FFFFFF',
 
-searchNameButton: {
-  backgroundColor: '#1F6F5C',
-  borderRadius: 10,
-  paddingHorizontal: 14,
-  paddingVertical: 10,
-  alignSelf: 'flex-start',
-  marginTop: 8,
-  marginBottom: 18,
-},
+    borderWidth: 1,
+    borderColor: '#D7DEDA',
 
-searchNameButtonText: {
-  color: '#FFFFFF',
-  fontSize: 13,
-  fontWeight: '700',
-},
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+
+  typeButtonActive: {
+    backgroundColor: '#1F6F5C',
+    borderColor: '#1F6F5C',
+  },
+
+
+  typeButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#5F6B76',
+  },
+
+
+  typeButtonTextActive: {
+    color: '#FFFFFF',
+  },
+
+
+  dateButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D7DEDA',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    alignSelf: 'flex-start',
+  },
+
+
+  dateButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#5F6B76',
+  },
+
+
+  clearDateText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#C62828',
+    marginTop: 8,
+  },
+
+
+  // =====================================================
+  // UBICACIÓN
+  // =====================================================
+
+  locationModeContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+
+
+  locationModeButton: {
+    flex: 1,
+
+    backgroundColor: '#FFFFFF',
+
+    borderWidth: 1,
+    borderColor: '#D7DEDA',
+
+    borderRadius: 12,
+
+    paddingHorizontal: 10,
+    paddingVertical: 11,
+
+    alignItems: 'center',
+  },
+
+
+  locationModeButtonActive: {
+    backgroundColor: '#1F6F5C',
+    borderColor: '#1F6F5C',
+  },
+
+
+  locationModeButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#5F6B76',
+    textAlign: 'center',
+  },
+
+
+  locationModeButtonTextActive: {
+    color: '#FFFFFF',
+  },
+
+
+  currentAddress: {
+    fontSize: 12,
+    color: '#5F6B76',
+    marginTop: 6,
+  },
+
+
+  locationInput: {
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    borderRadius: 8,
+
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+
+    backgroundColor: '#FFFFFF',
+    marginTop: 6,
+  },
+
+
+  locationLoading: {
+    marginVertical: 10,
+  },
+
+
+  locationResults: {
+    backgroundColor: '#FFFFFF',
+
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+
+    borderRadius: 8,
+
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+
+
+  locationResultItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+  },
+
+
+  locationResultName: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+
+  locationResultDetail: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+
+
+  radiusContainer: {
+    marginTop: 12,
+  },
+
+
+  radiusLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#5F6B76',
+    marginBottom: 6,
+  },
+
+
+  radiusInput: {
+    backgroundColor: '#FFFFFF',
+
+    borderWidth: 1,
+    borderColor: '#D7DEDA',
+
+    borderRadius: 10,
+
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+
+    width: 120,
+  },
+
+
+  searchNearbyButton: {
+    backgroundColor: '#1F6F5C',
+
+    borderRadius: 12,
+
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+
+    alignSelf: 'flex-start',
+
+    marginTop: 10,
+  },
+
+
+  searchNearbyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+
+  clearFiltersButton: {
+    marginTop: 18,
+
+    alignSelf: 'flex-start',
+
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+
+    borderRadius: 12,
+
+    borderWidth: 1,
+    borderColor: '#C62828',
+
+    backgroundColor: '#FFFFFF',
+  },
+
+
+  clearFiltersButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#C62828',
+  },
+
+
+  // =====================================================
+  // MAPA
+  // =====================================================
+
+  mapSection: {
+    backgroundColor: '#FFFFFF',
+
+    borderRadius: 16,
+
+    padding: 16,
+
+    marginBottom: 20,
+
+    borderWidth: 1,
+    borderColor: '#DDE5E2',
+  },
+
+
+  mapTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#164C40',
+    marginBottom: 4,
+  },
+
+
+  mapSubtitle: {
+    fontSize: 12,
+    color: '#5F6B76',
+    marginBottom: 12,
+  },
+
+
+  mapLegend: {
+    marginTop: 12,
+
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+
+    gap: 12,
+  },
+
+
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+
+
+  legendMarker: {
+    width: 14,
+    height: 14,
+
+    borderRadius: 7,
+
+    backgroundColor: '#1F6F5C',
+  },
+
+
+  legendApproximate: {
+    width: 16,
+    height: 16,
+
+    borderRadius: 8,
+
+    borderWidth: 2,
+    borderColor: '#D97706',
+
+    backgroundColor: '#FDE7B2',
+  },
+
+
+  legendGrouped: {
+    width: 20,
+    height: 20,
+
+    borderRadius: 10,
+
+    backgroundColor: '#1F6F5C',
+
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+
+  legendGroupedText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+
+  legendText: {
+    fontSize: 11,
+    color: '#5F6B76',
+  },
+
+
+  // =====================================================
+  // RESULTADOS
+  // =====================================================
+
+  resultsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#164C40',
+    marginBottom: 12,
+  },
+
+
+  loader: {
+    marginTop: 30,
+  },
+
+
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+
+    borderRadius: 14,
+
+    padding: 20,
+
+    alignItems: 'center',
+  },
+
+
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#164C40',
+  },
+
+
+  emptyText: {
+    fontSize: 13,
+    color: '#5F6B76',
+    marginTop: 5,
+    textAlign: 'center',
+  },
+
+
+  card: {
+    backgroundColor: '#FFFFFF',
+
+    borderRadius: 14,
+
+    padding: 16,
+
+    marginBottom: 12,
+
+    borderWidth: 1,
+    borderColor: '#E6F2EF',
+  },
+
+
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#164C40',
+  },
+
+
+  cardOrganization: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1F6F5C',
+    marginTop: 4,
+  },
+
+
+  cardType: {
+    fontSize: 13,
+    color: '#5F6B76',
+    marginTop: 4,
+  },
+
+
+  cardInfo: {
+    fontSize: 12,
+    color: '#5F6B76',
+    marginTop: 5,
+  },
+
+
+  distance: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F6F5C',
+    marginTop: 8,
+  },
+
+
+  detailButton: {
+    backgroundColor: '#1F6F5C',
+
+    borderRadius: 10,
+
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+
+    alignItems: 'center',
+
+    marginTop: 14,
+  },
+
+
+  detailButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
 
 });
