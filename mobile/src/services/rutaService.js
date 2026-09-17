@@ -114,18 +114,33 @@ export const obtenerRuta = async (
 
     }
 
+    if (
+        !feature ||
+        !feature.geometry ||
+        !Array.isArray(feature.geometry.coordinates) ||
+        feature.geometry.coordinates.length < 2 ||
+        !resumen ||
+        !Number.isFinite(Number(resumen.distance)) ||
+        !Number.isFinite(Number(resumen.duration))
+      ) {
+
+        throw new Error(
+          'El servicio de rutas devolvió una respuesta incompleta.'
+        );
+
+      }
+
 
     return {
 
       distanciaKm:
-        resumen.distance / 1000,
+        Number(resumen.distance) / 1000,
 
       duracionMin:
-        resumen.duration / 60,
+        Number(resumen.duration) / 60,
 
       coordenadas:
-        feature.geometry?.coordinates ??
-        [],
+        feature.geometry.coordinates,
 
     };
 

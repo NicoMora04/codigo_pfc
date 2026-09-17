@@ -1,4 +1,5 @@
 import React from 'react';
+
 import MapaLeaflet from '../components/MapaLeaflet';
 
 import {
@@ -25,24 +26,138 @@ export default function DetalleOportunidadScreen({
   // ESTADOS DE RUTEO
   // =====================================================
 
-  const [ruta, setRuta] =
-    React.useState(null);
+  const [
+    ruta,
+    setRuta
+  ] =
+    React.useState(
+      null
+    );
 
-  const [calculandoRuta, setCalculandoRuta] =
-    React.useState(false);
 
-  const [errorRuta, setErrorRuta] =
-    React.useState('');
+  const [
+    calculandoRuta,
+    setCalculandoRuta
+  ] =
+    React.useState(
+      false
+    );
 
-  const [perfilRuta, setPerfilRuta] =
-    React.useState('driving-car');
+
+  const [
+    errorRuta,
+    setErrorRuta
+  ] =
+    React.useState(
+      ''
+    );
+
+
+  const [
+    perfilRuta,
+    setPerfilRuta
+  ] =
+    React.useState(
+      'driving-car'
+    );
+
+
+  // =====================================================
+  // BLOQUEOS DE RUTEO
+  // =====================================================
+
+  const calculoRutaEnCurso =
+    React.useRef(
+      false
+    );
+
+
+  const ultimaRutaCalculada =
+    React.useRef(
+      null
+    );
+
+
+  // =====================================================
+  // UBICACIÓN DE REFERENCIA
+  // =====================================================
+
+  const modoUbicacion =
+    estadoUbicacion
+      ?.modoUbicacion ??
+    null;
+
+
+  let ubicacionUsuario =
+    null;
+
+
+  if (
+    modoUbicacion ===
+      'GPS' &&
+    estadoUbicacion
+      ?.ubicacionActual
+  ) {
+
+    ubicacionUsuario =
+      estadoUbicacion
+        .ubicacionActual;
+
+  }
+
+
+  if (
+    modoUbicacion ===
+      'MANUAL' &&
+    estadoUbicacion
+      ?.ubicacionManualSeleccionada
+  ) {
+
+    ubicacionUsuario =
+      estadoUbicacion
+        .ubicacionManualSeleccionada;
+
+  }
+
+
+  // =====================================================
+  // INVALIDAR RUTA SI CAMBIA LA UBICACIÓN
+  // =====================================================
+
+  React.useEffect(() => {
+
+    setRuta(
+      null
+    );
+
+    setErrorRuta(
+      ''
+    );
+
+
+    ultimaRutaCalculada.current =
+      null;
+
+  }, [
+
+    modoUbicacion,
+
+    ubicacionUsuario
+      ?.latitud,
+
+    ubicacionUsuario
+      ?.longitud,
+
+  ]);
 
 
   // =====================================================
   // CARGANDO
   // =====================================================
 
-  if (loading) {
+  if (
+    loading
+  ) {
 
     return (
 
@@ -61,10 +176,12 @@ export default function DetalleOportunidadScreen({
 
 
   // =====================================================
-  // OPORTUNIDAD NO DISPONIBLE
+  // SIN OPORTUNIDAD
   // =====================================================
 
-  if (!oportunidad) {
+  if (
+    !oportunidad
+  ) {
 
     return (
 
@@ -74,9 +191,12 @@ export default function DetalleOportunidadScreen({
           No se pudo cargar la oportunidad
         </Text>
 
+
         <TouchableOpacity
           style={styles.backButton}
-          onPress={onVolver}
+          onPress={
+            onVolver
+          }
         >
 
           <Text style={styles.backButtonText}>
@@ -93,13 +213,15 @@ export default function DetalleOportunidadScreen({
 
 
   // =====================================================
-  // UBICACIÓN DE LA OPORTUNIDAD
+  // UBICACIÓN OPORTUNIDAD
   // =====================================================
 
   const ubicacion = [
 
     oportunidad.direccion,
+
     oportunidad.localidad,
+
     oportunidad.provincia,
 
   ]
@@ -108,42 +230,7 @@ export default function DetalleOportunidadScreen({
 
 
   // =====================================================
-  // UBICACIÓN DE REFERENCIA DEL USUARIO
-  // =====================================================
-
-  const modoUbicacion =
-    estadoUbicacion?.modoUbicacion ??
-    null;
-
-
-  let ubicacionUsuario = null;
-
-
-  if (
-    modoUbicacion === 'GPS' &&
-    estadoUbicacion?.ubicacionActual
-  ) {
-
-    ubicacionUsuario =
-      estadoUbicacion.ubicacionActual;
-
-  }
-
-
-  if (
-    modoUbicacion === 'MANUAL' &&
-    estadoUbicacion?.ubicacionManualSeleccionada
-  ) {
-
-    ubicacionUsuario =
-      estadoUbicacion
-        .ubicacionManualSeleccionada;
-
-  }
-
-
-  // =====================================================
-  // CALCULAR DISTANCIA EN LÍNEA RECTA
+  // DISTANCIA HAVERSINE
   // =====================================================
 
   const calcularDistanciaKm = (
@@ -153,22 +240,28 @@ export default function DetalleOportunidadScreen({
     longitud2
   ) => {
 
-    const radioTierraKm = 6371;
+    const radioTierraKm =
+      6371;
+
 
     const convertirARadianes =
       (grados) =>
-        grados * Math.PI / 180;
+        grados *
+        Math.PI /
+        180;
 
 
     const diferenciaLatitud =
       convertirARadianes(
-        latitud2 - latitud1
+        latitud2 -
+        latitud1
       );
 
 
     const diferenciaLongitud =
       convertirARadianes(
-        longitud2 - longitud1
+        longitud2 -
+        longitud1
       );
 
 
@@ -185,8 +278,10 @@ export default function DetalleOportunidadScreen({
 
 
     const a =
+
       Math.sin(
-        diferenciaLatitud / 2
+        diferenciaLatitud /
+        2
       ) ** 2 +
 
       Math.cos(
@@ -198,177 +293,339 @@ export default function DetalleOportunidadScreen({
       ) *
 
       Math.sin(
-        diferenciaLongitud / 2
+        diferenciaLongitud /
+        2
       ) ** 2;
 
 
     const c =
+
       2 *
+
       Math.atan2(
-        Math.sqrt(a),
-        Math.sqrt(1 - a)
+
+        Math.sqrt(
+          a
+        ),
+
+        Math.sqrt(
+          1 - a
+        )
+
       );
 
 
-    return radioTierraKm * c;
+    return (
+      radioTierraKm *
+      c
+    );
+
   };
 
 
   // =====================================================
-  // DISTANCIA A LA OPORTUNIDAD
+  // DISTANCIA
   // =====================================================
 
-  let distanciaKm = null;
+  let distanciaKm =
+    null;
 
 
   if (
     ubicacionUsuario &&
-    oportunidad.latitud != null &&
-    oportunidad.longitud != null
+    oportunidad.latitud !=
+      null &&
+    oportunidad.longitud !=
+      null
   ) {
 
     distanciaKm =
       calcularDistanciaKm(
+
         Number(
-          ubicacionUsuario.latitud
+          ubicacionUsuario
+            .latitud
         ),
+
         Number(
-          ubicacionUsuario.longitud
+          ubicacionUsuario
+            .longitud
         ),
+
         Number(
-          oportunidad.latitud
+          oportunidad
+            .latitud
         ),
+
         Number(
-          oportunidad.longitud
+          oportunidad
+            .longitud
         )
+
       );
 
   }
 
 
   // =====================================================
-  // CAMBIAR PERFIL DE RUTA
+  // CAMBIAR PERFIL
   // =====================================================
 
   const cambiarPerfilRuta = (
     nuevoPerfil
   ) => {
 
+    if (
+      calculoRutaEnCurso
+        .current
+    ) {
+
+      return;
+
+    }
+
+
+    if (
+      nuevoPerfil ===
+      perfilRuta
+    ) {
+
+      return;
+
+    }
+
+
     setPerfilRuta(
       nuevoPerfil
     );
 
-    // Si cambia el medio de transporte,
-    // descartamos la ruta anterior.
-    setRuta(null);
-    setErrorRuta('');
+
+    setRuta(
+      null
+    );
+
+
+    setErrorRuta(
+      ''
+    );
+
+
+    ultimaRutaCalculada.current =
+      null;
 
   };
 
 
   // =====================================================
-  // NOMBRE DEL MEDIO DE TRANSPORTE
+  // NOMBRE PERFIL
   // =====================================================
 
-  const obtenerNombrePerfil = () => {
+  const obtenerNombrePerfil =
+    () => {
 
-    if (
-      perfilRuta === 'foot-walking'
-    ) {
-      return 'Caminando';
-    }
+      if (
+        perfilRuta ===
+        'foot-walking'
+      ) {
 
-    if (
-      perfilRuta === 'cycling-regular'
-    ) {
-      return 'Bicicleta';
-    }
+        return 'Caminando';
 
-    return 'Auto';
+      }
 
-  };
+
+      if (
+        perfilRuta ===
+        'cycling-regular'
+      ) {
+
+        return 'Bicicleta';
+
+      }
+
+
+      return 'Auto';
+
+    };
 
 
   // =====================================================
-  // CALCULAR RUTA CON OPENROUTESERVICE
+  // CALCULAR RUTA
   // =====================================================
 
-  const calcularRuta = async () => {
+  const calcularRuta =
+    async () => {
 
-    if (!ubicacionUsuario) {
+      if (
+        !ubicacionUsuario ||
+        oportunidad?.latitud ==
+          null ||
+        oportunidad?.longitud ==
+          null
+      ) {
 
-      setErrorRuta(
-        'Seleccioná primero una ubicación de referencia.'
-      );
+        setErrorRuta(
+          'No hay una ubicación válida para calcular la ruta.'
+        );
 
-      return;
-    }
+        return;
 
-
-    if (
-      oportunidad.latitud == null ||
-      oportunidad.longitud == null
-    ) {
-
-      setErrorRuta(
-        'La oportunidad no posee una ubicación válida.'
-      );
-
-      return;
-    }
+      }
 
 
-    try {
+      const claveRuta = [
 
-      setCalculandoRuta(true);
-      setErrorRuta('');
-      setRuta(null);
+        Number(
+          ubicacionUsuario
+            .latitud
+        ),
+
+        Number(
+          ubicacionUsuario
+            .longitud
+        ),
+
+        Number(
+          oportunidad
+            .latitud
+        ),
+
+        Number(
+          oportunidad
+            .longitud
+        ),
+
+        perfilRuta,
+
+      ].join('|');
 
 
-      const resultado =
-        await obtenerRuta(
-          ubicacionUsuario,
-          {
-            latitud:
-              oportunidad.latitud,
+      // =================================================
+      // EVITAR RECALCULAR LA MISMA RUTA
+      // =================================================
 
-            longitud:
-              oportunidad.longitud,
-          },
-          perfilRuta
+      if (
+        ruta &&
+        ultimaRutaCalculada
+          .current ===
+          claveRuta
+      ) {
+
+        console.log(
+          'CALCULO IGNORADO: LA RUTA YA FUE CALCULADA'
+        );
+
+        return;
+
+      }
+
+
+      // =================================================
+      // EVITAR SOLICITUDES SIMULTÁNEAS
+      // =================================================
+
+      if (
+        calculoRutaEnCurso
+          .current
+      ) {
+
+        console.log(
+          'CALCULO IGNORADO: YA HAY UNO EN CURSO'
+        );
+
+        return;
+
+      }
+
+
+      try {
+
+        calculoRutaEnCurso.current =
+          true;
+
+
+        setCalculandoRuta(
+          true
         );
 
 
-      console.log(
-        'RUTA ORS:',
-        resultado
-      );
+        setErrorRuta(
+          ''
+        );
 
 
-      setRuta(
-        resultado
-      );
-
-    } catch (error) {
-
-      console.log(
-        'ERROR ORS:',
-        error.message
-      );
+        setRuta(
+          null
+        );
 
 
-      setErrorRuta(
-        error.message ||
-        'No se pudo calcular la ruta.'
-      );
+        console.log(
+          'INICIANDO CALCULO DE RUTA'
+        );
 
-    } finally {
 
-      setCalculandoRuta(false);
+        const resultado =
+          await obtenerRuta(
 
-    }
+            ubicacionUsuario,
 
-  };
+            {
+
+              latitud:
+                oportunidad
+                  .latitud,
+
+              longitud:
+                oportunidad
+                  .longitud,
+
+            },
+
+            perfilRuta
+
+          );
+
+
+        setRuta(
+          resultado
+        );
+
+
+        ultimaRutaCalculada.current =
+          claveRuta;
+
+      }
+      catch (
+        error
+      ) {
+
+        console.log(
+          'ERROR ORS:',
+          error
+        );
+
+
+        setErrorRuta(
+
+          error?.message ||
+
+          'No se pudo calcular la ruta.'
+
+        );
+
+      }
+      finally {
+
+        calculoRutaEnCurso.current =
+          false;
+
+
+        setCalculandoRuta(
+          false
+        );
+
+      }
+
+    };
 
 
   // =====================================================
@@ -382,7 +639,9 @@ export default function DetalleOportunidadScreen({
 
       <TouchableOpacity
         style={styles.backButton}
-        onPress={onVolver}
+        onPress={
+          onVolver
+        }
       >
 
         <Text style={styles.backButtonText}>
@@ -410,13 +669,10 @@ export default function DetalleOportunidadScreen({
         </Text>
 
 
-        {/* ================================================= */}
-        {/* DESCRIPCIÓN */}
-        {/* ================================================= */}
-
         <Text style={styles.sectionTitle}>
           Descripción
         </Text>
+
 
         <Text style={styles.text}>
           {oportunidad.descripcion ||
@@ -424,26 +680,20 @@ export default function DetalleOportunidadScreen({
         </Text>
 
 
-        {/* ================================================= */}
-        {/* URGENCIA */}
-        {/* ================================================= */}
-
         <Text style={styles.sectionTitle}>
           Urgencia
         </Text>
+
 
         <Text style={styles.text}>
           {oportunidad.urgencia}
         </Text>
 
 
-        {/* ================================================= */}
-        {/* REQUISITOS */}
-        {/* ================================================= */}
-
         <Text style={styles.sectionTitle}>
           Requisitos
         </Text>
+
 
         <Text style={styles.text}>
           {oportunidad.requisitos ||
@@ -451,32 +701,28 @@ export default function DetalleOportunidadScreen({
         </Text>
 
 
-        {/* ================================================= */}
-        {/* CUPO */}
-        {/* ================================================= */}
-
         <Text style={styles.sectionTitle}>
           Cupo
         </Text>
+
 
         <Text style={styles.text}>
           {oportunidad.cupo_total}
         </Text>
 
 
-        {/* ================================================= */}
-        {/* FECHAS */}
-        {/* ================================================= */}
-
         <Text style={styles.sectionTitle}>
           Inicio
         </Text>
+
 
         <Text style={styles.text}>
 
           {new Date(
             oportunidad.fecha_inicio
-          ).toLocaleString('es-AR')}
+          ).toLocaleString(
+            'es-AR'
+          )}
 
         </Text>
 
@@ -485,36 +731,35 @@ export default function DetalleOportunidadScreen({
           Fin previsto
         </Text>
 
+
         <Text style={styles.text}>
 
           {new Date(
             oportunidad.fecha_fin
-          ).toLocaleString('es-AR')}
+          ).toLocaleString(
+            'es-AR'
+          )}
 
         </Text>
 
-
-        {/* ================================================= */}
-        {/* UBICACIÓN */}
-        {/* ================================================= */}
 
         <Text style={styles.sectionTitle}>
           Ubicación
         </Text>
 
-        <Text style={styles.text}>
 
+        <Text style={styles.text}>
           {ubicacion ||
             'Ubicación no especificada.'}
-
         </Text>
 
 
         {/* ================================================= */}
-        {/* DISTANCIA EN LÍNEA RECTA */}
+        {/* DISTANCIA */}
         {/* ================================================= */}
 
-        {distanciaKm != null && (
+        {distanciaKm !=
+          null && (
 
           <View style={styles.distanceCard}>
 
@@ -525,17 +770,24 @@ export default function DetalleOportunidadScreen({
 
             <Text style={styles.distanceValue}>
 
-              {distanciaKm < 1
+              {distanciaKm <
+                1
+
                 ? `${Math.round(
-                    distanciaKm * 1000
+                    distanciaKm *
+                    1000
                   )} m`
-                : `${distanciaKm.toFixed(1)} km`}
+
+                : `${distanciaKm.toFixed(
+                    1
+                  )} km`}
 
             </Text>
 
 
             {Number(
-              oportunidad.radio_km
+              oportunidad
+                .radio_km
             ) > 0 && (
 
               <Text style={styles.distanceNote}>
@@ -557,7 +809,6 @@ export default function DetalleOportunidadScreen({
 
           <View style={styles.routeCard}>
 
-
             <Text style={styles.routeTitle}>
               Ruta hasta la oportunidad
             </Text>
@@ -568,29 +819,30 @@ export default function DetalleOportunidadScreen({
             </Text>
 
 
-            {/* ============================================= */}
-            {/* MEDIO DE TRANSPORTE */}
-            {/* ============================================= */}
-
             <View style={styles.routeModes}>
 
 
-              {/* AUTO */}
-
               <TouchableOpacity
                 style={[
+
                   styles.routeModeButton,
 
                   perfilRuta ===
                     'driving-car' &&
-                    styles.routeModeButtonActive
+                    styles.routeModeButtonActive,
+
+                  calculandoRuta &&
+                    styles.routeModeButtonDisabled,
+
                 ]}
                 onPress={() =>
                   cambiarPerfilRuta(
                     'driving-car'
                   )
                 }
-                disabled={calculandoRuta}
+                disabled={
+                  calculandoRuta
+                }
               >
 
                 <Text
@@ -608,22 +860,27 @@ export default function DetalleOportunidadScreen({
               </TouchableOpacity>
 
 
-              {/* CAMINANDO */}
-
               <TouchableOpacity
                 style={[
+
                   styles.routeModeButton,
 
                   perfilRuta ===
                     'foot-walking' &&
-                    styles.routeModeButtonActive
+                    styles.routeModeButtonActive,
+
+                  calculandoRuta &&
+                    styles.routeModeButtonDisabled,
+
                 ]}
                 onPress={() =>
                   cambiarPerfilRuta(
                     'foot-walking'
                   )
                 }
-                disabled={calculandoRuta}
+                disabled={
+                  calculandoRuta
+                }
               >
 
                 <Text
@@ -641,22 +898,27 @@ export default function DetalleOportunidadScreen({
               </TouchableOpacity>
 
 
-              {/* BICICLETA */}
-
               <TouchableOpacity
                 style={[
+
                   styles.routeModeButton,
 
                   perfilRuta ===
                     'cycling-regular' &&
-                    styles.routeModeButtonActive
+                    styles.routeModeButtonActive,
+
+                  calculandoRuta &&
+                    styles.routeModeButtonDisabled,
+
                 ]}
                 onPress={() =>
                   cambiarPerfilRuta(
                     'cycling-regular'
                   )
                 }
-                disabled={calculandoRuta}
+                disabled={
+                  calculandoRuta
+                }
               >
 
                 <Text
@@ -673,36 +935,29 @@ export default function DetalleOportunidadScreen({
 
               </TouchableOpacity>
 
-
             </View>
 
 
-            {/* ============================================= */}
-            {/* CALCULAR */}
-            {/* ============================================= */}
-
             <TouchableOpacity
-              style={[
-                styles.routeButton,
-
-                calculandoRuta &&
-                  styles.routeButtonDisabled
-              ]}
               onPress={
                 calcularRuta
               }
               disabled={
                 calculandoRuta
               }
+              style={[
+                styles.routeButton,
+
+                calculandoRuta &&
+                  styles.routeButtonDisabled
+              ]}
             >
 
-              <Text
-                style={styles.routeButtonText}
-              >
+              <Text style={styles.routeButtonText}>
 
                 {calculandoRuta
                   ? 'Calculando ruta...'
-                  : 'Calcular mejor camino'}
+                  : 'Calcular ruta'}
 
               </Text>
 
@@ -714,43 +969,27 @@ export default function DetalleOportunidadScreen({
               <ActivityIndicator
                 size="small"
                 color="#1F6F5C"
-                style={
-                  styles.routeLoading
-                }
+                style={styles.routeLoading}
               />
 
             )}
 
 
-            {/* ============================================= */}
-            {/* ERROR */}
-            {/* ============================================= */}
+            {errorRuta !==
+              '' && (
 
-            {errorRuta !== '' && (
-
-              <Text
-                style={styles.routeError}
-              >
+              <Text style={styles.routeError}>
                 {errorRuta}
               </Text>
 
             )}
 
 
-            {/* ============================================= */}
-            {/* RESULTADO */}
-            {/* ============================================= */}
-
             {ruta && (
 
               <View style={styles.routeResult}>
 
-
-                <Text
-                  style={
-                    styles.routeResultTitle
-                  }
-                >
+                <Text style={styles.routeResultTitle}>
                   Ruta encontrada
                 </Text>
 
@@ -759,11 +998,7 @@ export default function DetalleOportunidadScreen({
 
                   Medio:{' '}
 
-                  <Text
-                    style={
-                      styles.routeInfoStrong
-                    }
-                  >
+                  <Text style={styles.routeInfoStrong}>
                     {obtenerNombrePerfil()}
                   </Text>
 
@@ -774,12 +1009,11 @@ export default function DetalleOportunidadScreen({
 
                   Distancia por ruta:{' '}
 
-                  <Text
-                    style={
-                      styles.routeInfoStrong
-                    }
-                  >
-                    {ruta.distanciaKm.toFixed(1)} km
+                  <Text style={styles.routeInfoStrong}>
+                    {ruta.distanciaKm
+                      .toFixed(
+                        1
+                      )} km
                   </Text>
 
                 </Text>
@@ -789,21 +1023,21 @@ export default function DetalleOportunidadScreen({
 
                   Tiempo estimado:{' '}
 
-                  <Text
-                    style={
-                      styles.routeInfoStrong
-                    }
-                  >
+                  <Text style={styles.routeInfoStrong}>
 
-                    {ruta.duracionMin < 60
+                    {ruta.duracionMin <
+                      60
+
                       ? `${Math.round(
                           ruta.duracionMin
                         )} min`
 
                       : `${Math.floor(
-                          ruta.duracionMin / 60
+                          ruta.duracionMin /
+                          60
                         )} h ${Math.round(
-                          ruta.duracionMin % 60
+                          ruta.duracionMin %
+                          60
                         )} min`}
 
                   </Text>
@@ -811,10 +1045,20 @@ export default function DetalleOportunidadScreen({
                 </Text>
 
 
+                {Number(
+                  oportunidad
+                    .radio_km
+                ) > 0 && (
+
+                  <Text style={styles.routeApproximateNote}>
+                    La ruta finaliza en el centro de la zona aproximada de la oportunidad.
+                  </Text>
+
+                )}
+
               </View>
 
             )}
-
 
           </View>
 
@@ -825,13 +1069,12 @@ export default function DetalleOportunidadScreen({
         {/* MAPA */}
         {/* ================================================= */}
 
-        {(
-          oportunidad.latitud != null &&
-          oportunidad.longitud != null
-        ) && (
+        {oportunidad.latitud !=
+          null &&
+          oportunidad.longitud !=
+          null && (
 
           <View style={styles.mapSection}>
-
 
             <Text style={styles.mapTitle}>
               Ubicación de la oportunidad
@@ -848,46 +1091,45 @@ export default function DetalleOportunidadScreen({
 
 
             <MapaLeaflet
-
               oportunidades={[
                 oportunidad
               ]}
-
-              mostrarBotonDetalle={false}
-
-              zoom={15}
-
+              mostrarBotonDetalle={
+                false
+              }
+              zoom={
+                15
+              }
               ubicacionUsuario={
                 ubicacionUsuario
               }
-
               tipoUbicacionUsuario={
                 modoUbicacion
               }
-
               rutaCoordenadas={
-                ruta?.coordenadas || []
+                ruta?.coordenadas ||
+                []
               }
-
             />
 
 
-            {ubicacionUsuario && (
+            {/* ================================================= */}
+            {/* LEYENDA DEL MAPA */}
+            {/* ================================================= */}
 
-              <View style={styles.mapLegend}>
+            <View style={styles.mapLegend}>
 
+
+              {ubicacionUsuario && (
 
                 <View style={styles.legendItem}>
 
-                  <View
-                    style={styles.userMarker}
-                  />
+                  <View style={styles.userMarker} />
 
-                  <Text
-                    style={styles.legendText}
-                  >
+                  <Text style={styles.legendText}>
 
-                    {modoUbicacion === 'MANUAL'
+                    {modoUbicacion ===
+                      'MANUAL'
                       ? 'Ubicación seleccionada'
                       : 'Tu ubicación actual'}
 
@@ -895,32 +1137,56 @@ export default function DetalleOportunidadScreen({
 
                 </View>
 
+              )}
+
+
+              <View style={styles.legendItem}>
+
+                <View style={styles.opportunityMarker} />
+
+                <Text style={styles.legendText}>
+                  Oportunidad
+                </Text>
+
+              </View>
+
+
+              {Number(
+                oportunidad.radio_km
+              ) > 0 && (
 
                 <View style={styles.legendItem}>
 
-                  <View
-                    style={
-                      styles.opportunityMarker
-                    }
-                  />
+                  <View style={styles.approximateMarker} />
 
-                  <Text
-                    style={styles.legendText}
-                  >
-                    Oportunidad
+                  <Text style={styles.legendText}>
+                    Zona aproximada
                   </Text>
 
                 </View>
 
-              </View>
+              )}
 
-            )}
 
+              {ruta && (
+
+                <View style={styles.legendItem}>
+
+                  <View style={styles.routeLine} />
+
+                  <Text style={styles.legendText}>
+                    Ruta calculada
+                  </Text>
+
+                </View>
+
+              )}
+
+            </View>
 
           </View>
 
         )}
-
 
       </View>
 
@@ -935,463 +1201,504 @@ export default function DetalleOportunidadScreen({
 // ESTILOS
 // =======================================================
 
-const styles = StyleSheet.create({
+const styles =
+  StyleSheet.create({
 
-  container: {
+    container: {
 
-    width: '100%',
-    maxWidth: 500,
+      width: '100%',
+      maxWidth: 500,
 
-  },
+    },
 
 
-  backButton: {
+    backButton: {
 
-    alignSelf: 'flex-start',
+      alignSelf: 'flex-start',
 
-    backgroundColor: '#1F6F5C',
+      backgroundColor: '#1F6F5C',
 
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
 
-    borderRadius: 10,
+      borderRadius: 10,
 
-    marginBottom: 14,
+      marginBottom: 14,
 
-  },
+    },
 
 
-  backButtonText: {
+    backButtonText: {
 
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#FFFFFF',
 
-  },
+    },
 
 
-  card: {
+    card: {
 
-    backgroundColor: '#FFFFFF',
+      backgroundColor: '#FFFFFF',
 
-    borderRadius: 16,
+      borderRadius: 16,
 
-    padding: 20,
+      padding: 20,
 
-    borderWidth: 1,
-    borderColor: '#DDE5E2',
+      borderWidth: 1,
+      borderColor: '#DDE5E2',
 
-  },
+    },
 
 
-  title: {
+    title: {
 
-    fontSize: 23,
-    fontWeight: 'bold',
-    color: '#164C40',
+      fontSize: 23,
+      fontWeight: 'bold',
+      color: '#164C40',
 
-  },
+    },
 
 
-  organization: {
+    organization: {
 
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1F6F5C',
+      fontSize: 15,
+      fontWeight: '600',
+      color: '#1F6F5C',
 
-    marginTop: 6,
+      marginTop: 6,
 
-  },
+    },
 
 
-  type: {
+    type: {
 
-    fontSize: 13,
-    color: '#5F6B76',
+      fontSize: 13,
+      color: '#5F6B76',
 
-    marginTop: 4,
-    marginBottom: 18,
+      marginTop: 4,
+      marginBottom: 18,
 
-  },
+    },
 
 
-  sectionTitle: {
+    sectionTitle: {
 
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1F2937',
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#1F2937',
 
-    marginTop: 14,
-    marginBottom: 4,
+      marginTop: 14,
+      marginBottom: 4,
 
-  },
+    },
 
 
-  text: {
+    text: {
 
-    fontSize: 13,
-    color: '#5F6B76',
+      fontSize: 13,
+      color: '#5F6B76',
 
-    lineHeight: 19,
+      lineHeight: 19,
 
-  },
+    },
 
 
-  emptyTitle: {
+    emptyTitle: {
 
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#164C40',
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#164C40',
 
-    marginBottom: 14,
+      marginBottom: 14,
 
-  },
+    },
 
 
-  // =====================================================
-  // DISTANCIA EN LÍNEA RECTA
-  // =====================================================
+    // =====================================================
+    // DISTANCIA
+    // =====================================================
 
-  distanceCard: {
+    distanceCard: {
 
-    backgroundColor: '#F2F8F6',
+      backgroundColor: '#F2F8F6',
 
-    borderRadius: 12,
+      borderRadius: 12,
 
-    padding: 14,
+      padding: 14,
 
-    marginTop: 14,
+      marginTop: 14,
 
-    borderWidth: 1,
-    borderColor: '#D7E8E3',
+      borderWidth: 1,
+      borderColor: '#D7E8E3',
 
-  },
+    },
 
 
-  distanceLabel: {
+    distanceLabel: {
 
-    fontSize: 12,
-    color: '#5F6B76',
+      fontSize: 12,
+      color: '#5F6B76',
 
-  },
+    },
 
 
-  distanceValue: {
+    distanceValue: {
 
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1F6F5C',
+      fontSize: 20,
+      fontWeight: '700',
+      color: '#1F6F5C',
 
-    marginTop: 3,
+      marginTop: 3,
 
-  },
+    },
 
 
-  distanceNote: {
+    distanceNote: {
 
-    fontSize: 11,
-    color: '#D97706',
+      fontSize: 11,
+      color: '#D97706',
 
-    marginTop: 5,
+      marginTop: 5,
 
-    lineHeight: 16,
+      lineHeight: 16,
 
-  },
+    },
 
 
-  // =====================================================
-  // RUTA
-  // =====================================================
+    // =====================================================
+    // RUTA
+    // =====================================================
 
-  routeCard: {
+    routeCard: {
 
-    backgroundColor: '#F8FAF9',
+      backgroundColor: '#F8FAF9',
 
-    borderRadius: 12,
+      borderRadius: 12,
 
-    padding: 14,
+      padding: 14,
 
-    marginTop: 14,
+      marginTop: 14,
 
-    borderWidth: 1,
-    borderColor: '#DDE5E2',
+      borderWidth: 1,
+      borderColor: '#DDE5E2',
 
-  },
+    },
 
 
-  routeTitle: {
+    routeTitle: {
 
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#164C40',
+      fontSize: 15,
+      fontWeight: '700',
+      color: '#164C40',
 
-  },
+    },
 
 
-  routeDescription: {
+    routeDescription: {
 
-    fontSize: 12,
-    color: '#5F6B76',
+      fontSize: 12,
+      color: '#5F6B76',
 
-    marginTop: 4,
-    marginBottom: 12,
+      marginTop: 4,
+      marginBottom: 12,
 
-    lineHeight: 17,
+      lineHeight: 17,
 
-  },
+    },
 
 
-  // =====================================================
-  // MODOS DE TRANSPORTE
-  // =====================================================
+    routeModes: {
 
-  routeModes: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
 
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+      gap: 8,
 
-    gap: 8,
+      marginBottom: 12,
 
-    marginBottom: 12,
+    },
 
-  },
 
+    routeModeButton: {
 
-  routeModeButton: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
 
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+      borderRadius: 10,
 
-    borderRadius: 10,
+      borderWidth: 1,
+      borderColor: '#D7DEDA',
 
-    borderWidth: 1,
-    borderColor: '#D7DEDA',
+      backgroundColor: '#FFFFFF',
 
-    backgroundColor: '#FFFFFF',
+    },
 
-  },
 
+    routeModeButtonActive: {
 
-  routeModeButtonActive: {
+      backgroundColor: '#1F6F5C',
+      borderColor: '#1F6F5C',
 
-    backgroundColor: '#1F6F5C',
-    borderColor: '#1F6F5C',
+    },
 
-  },
 
+    routeModeButtonDisabled: {
 
-  routeModeText: {
+      opacity: 0.6,
 
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#5F6B76',
+    },
 
-  },
 
+    routeModeText: {
 
-  routeModeTextActive: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: '#5F6B76',
 
-    color: '#FFFFFF',
+    },
 
-  },
 
+    routeModeTextActive: {
 
-  routeButton: {
+      color: '#FFFFFF',
 
-    backgroundColor: '#1F6F5C',
+    },
 
-    borderRadius: 10,
 
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    routeButton: {
 
-    alignItems: 'center',
+      backgroundColor: '#1F6F5C',
 
-  },
+      borderRadius: 10,
 
+      paddingVertical: 10,
+      paddingHorizontal: 14,
 
-  routeButtonDisabled: {
+      alignItems: 'center',
 
-    opacity: 0.6,
+    },
 
-  },
 
+    routeButtonDisabled: {
 
-  routeButtonText: {
+      opacity: 0.6,
 
-    color: '#FFFFFF',
+    },
 
-    fontSize: 13,
-    fontWeight: '700',
 
-  },
+    routeButtonText: {
 
+      color: '#FFFFFF',
 
-  routeLoading: {
+      fontSize: 13,
+      fontWeight: '700',
 
-    marginTop: 10,
+    },
 
-  },
 
+    routeLoading: {
 
-  routeError: {
+      marginTop: 10,
 
-    fontSize: 12,
+    },
 
-    color: '#C62828',
 
-    marginTop: 10,
+    routeError: {
 
-    lineHeight: 17,
+      fontSize: 12,
 
-  },
+      color: '#C62828',
 
+      marginTop: 10,
 
-  routeResult: {
+      lineHeight: 17,
 
-    backgroundColor: '#F2F8F6',
+    },
 
-    borderRadius: 10,
 
-    padding: 12,
+    routeResult: {
 
-    marginTop: 12,
+      backgroundColor: '#F2F8F6',
 
-  },
+      borderRadius: 10,
 
+      padding: 12,
 
-  routeResultTitle: {
+      marginTop: 12,
 
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#164C40',
+    },
 
-    marginBottom: 6,
 
-  },
+    routeResultTitle: {
 
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#164C40',
 
-  routeInfo: {
+      marginBottom: 6,
 
-    fontSize: 13,
-    color: '#5F6B76',
+    },
 
-    marginTop: 3,
 
-  },
+    routeInfo: {
 
+      fontSize: 13,
+      color: '#5F6B76',
 
-  routeInfoStrong: {
+      marginTop: 3,
 
-    fontWeight: '700',
-    color: '#164C40',
+    },
 
-  },
 
+    routeInfoStrong: {
 
-  // =====================================================
-  // MAPA
-  // =====================================================
+      fontWeight: '700',
+      color: '#164C40',
 
-  mapSection: {
+    },
 
-    backgroundColor: '#FFFFFF',
 
-    borderRadius: 16,
+    routeApproximateNote: {
 
-    padding: 16,
+      fontSize: 11,
 
-    marginTop: 18,
-    marginBottom: 18,
+      color: '#D97706',
 
-    borderWidth: 1,
-    borderColor: '#DDE5E2',
+      marginTop: 8,
 
-  },
+      lineHeight: 16,
 
+    },
 
-  mapTitle: {
 
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#164C40',
+    // =====================================================
+    // MAPA
+    // =====================================================
 
-    marginBottom: 4,
+    mapSection: {
 
-  },
+      backgroundColor: '#FFFFFF',
 
+      borderRadius: 16,
 
-  mapSubtitle: {
+      padding: 16,
 
-    fontSize: 12,
-    color: '#5F6B76',
+      marginTop: 18,
+      marginBottom: 18,
 
-    marginBottom: 12,
+      borderWidth: 1,
+      borderColor: '#DDE5E2',
 
-    lineHeight: 17,
+    },
 
-  },
 
+    mapTitle: {
 
-  // =====================================================
-  // LEYENDA
-  // =====================================================
+      fontSize: 18,
+      fontWeight: '700',
+      color: '#164C40',
 
-  mapLegend: {
+      marginBottom: 4,
 
-    marginTop: 12,
+    },
 
-    flexDirection: 'row',
-    flexWrap: 'wrap',
 
-    gap: 16,
+    mapSubtitle: {
 
-  },
+      fontSize: 12,
+      color: '#5F6B76',
 
+      marginBottom: 12,
 
-  legendItem: {
+      lineHeight: 17,
 
-    flexDirection: 'row',
+    },
 
-    alignItems: 'center',
 
-    gap: 6,
+    // =====================================================
+    // LEYENDA
+    // =====================================================
 
-  },
+    mapLegend: {
 
+      marginTop: 12,
 
-  userMarker: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
 
-    width: 12,
-    height: 12,
+      gap: 16,
 
-    borderRadius: 6,
+    },
 
-    backgroundColor: '#2563EB',
 
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+    legendItem: {
 
-  },
+      flexDirection: 'row',
 
+      alignItems: 'center',
 
-  opportunityMarker: {
+      gap: 6,
 
-    width: 12,
-    height: 12,
+    },
 
-    borderRadius: 6,
 
-    backgroundColor: '#1F6F5C',
+    userMarker: {
 
-  },
+      width: 12,
+      height: 12,
 
+      borderRadius: 6,
 
-  legendText: {
+      backgroundColor: '#2563EB',
 
-    fontSize: 11,
-    color: '#5F6B76',
+      borderWidth: 2,
+      borderColor: '#FFFFFF',
 
-  },
+    },
 
-});
+
+    opportunityMarker: {
+
+      width: 12,
+      height: 12,
+
+      borderRadius: 6,
+
+      backgroundColor: '#1F6F5C',
+
+    },
+
+
+    approximateMarker: {
+
+      width: 12,
+      height: 12,
+
+      borderRadius: 6,
+
+      backgroundColor: '#F59E0B',
+
+    },
+
+
+    routeLine: {
+
+      width: 20,
+      height: 4,
+
+      borderRadius: 2,
+
+      backgroundColor: '#3388FF',
+
+    },
+
+
+    legendText: {
+
+      fontSize: 11,
+      color: '#5F6B76',
+
+    },
+
+  });

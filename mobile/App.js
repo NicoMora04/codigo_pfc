@@ -1,4 +1,8 @@
-import React, { useState, useEffect} from 'react';
+import React, {
+  useState,
+  useEffect
+} from 'react';
+
 import {
   StyleSheet,
   View,
@@ -10,16 +14,33 @@ import {
 } from 'react-native';
 
 
+import LoginScreen
+  from './src/screens/LoginScreen';
 
-import LoginScreen from './src/screens/LoginScreen';
-import RoleSelectionScreen from './src/screens/RoleSelectionScreen';
-import RegisterVoluntario from './src/screens/RegisterVoluntario';
-import RegisterOrganizacion from './src/screens/RegisterOrganizacion';
-import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
-import MisOportunidadesScreen from './src/screens/MisOportunidadesScreen';
-import OportunidadFormScreen from './src/screens/OportunidadFormScreen';
-import BuscarOportunidadesScreen from './src/screens/BuscarOportunidadesScreen';
-import DetalleOportunidadScreen from './src/screens/DetalleOportunidadScreen';
+import RoleSelectionScreen
+  from './src/screens/RoleSelectionScreen';
+
+import RegisterVoluntario
+  from './src/screens/RegisterVoluntario';
+
+import RegisterOrganizacion
+  from './src/screens/RegisterOrganizacion';
+
+import ForgotPasswordScreen
+  from './src/screens/ForgotPasswordScreen';
+
+import MisOportunidadesScreen
+  from './src/screens/MisOportunidadesScreen';
+
+import OportunidadFormScreen
+  from './src/screens/OportunidadFormScreen';
+
+import BuscarOportunidadesScreen
+  from './src/screens/BuscarOportunidadesScreen';
+
+import DetalleOportunidadScreen
+  from './src/screens/DetalleOportunidadScreen';
+
 
 import {
   guardarToken,
@@ -27,12 +48,14 @@ import {
   eliminarToken
 } from './src/services/authStorage';
 
+
 import {
   login,
   registrarUsuario,
   recuperarPassword,
   obtenerPerfilProtegido
 } from './src/services/authService';
+
 
 import {
   obtenerMisOportunidades,
@@ -46,6 +69,7 @@ import {
   finalizarOportunidad
 } from './src/services/oportunidadService';
 
+
 import {
   buscarUbicacionesPorTexto
 } from './src/services/ubicacionService';
@@ -53,35 +77,112 @@ import {
 
 export default function App() {
 
-  const [currentScreen, setCurrentScreen] = useState('A01');
-  const [loading, setLoading] = useState(false);
-  const [oportunidades, setOportunidades] = useState([]);
-  const [oportunidadesVoluntario, setOportunidadesVoluntario] = useState([]);
-  const [tiposActividad, setTiposActividad] = useState([]);
-  const [oportunidadEditando, setOportunidadEditando] = useState(null);
-  const [oportunidadSeleccionada,setOportunidadSeleccionada] = useState(null);
-  const [loadingDetalle, setLoadingDetalle] = useState(false);
-  const [scrollYVoluntario, setScrollYVoluntario] = useState(0);
-  const scrollRef = React.useRef(null);
-  const [filtrosVoluntario, setFiltrosVoluntario] = useState({});
-  const [filtroEstadoOrganizacion, setFiltroEstadoOrganizacion] =
-  useState('TODAS');
-  const [busquedaOrganizacion, setBusquedaOrganizacion] =
-  useState('');
-  const [estadoUbicacionVoluntario, setEstadoUbicacionVoluntario] = useState({
-  modoUbicacion: null,
-  ubicacionActual: null,
-  ubicacionManualSeleccionada: null,
-  direccionActual: '',
-  textoUbicacion: '',
-  radioBusquedaKm: '10',
-});
- 
+  const [
+    currentScreen,
+    setCurrentScreen
+  ] = useState('A01');
 
-  // Modal de cierre de sesión
-  const [logoutVisible, setLogoutVisible] = useState(false);
 
- 
+  const [
+    loading,
+    setLoading
+  ] = useState(false);
+
+
+  const [
+    oportunidades,
+    setOportunidades
+  ] = useState([]);
+
+
+  const [
+    oportunidadesVoluntario,
+    setOportunidadesVoluntario
+  ] = useState([]);
+
+
+  const [
+    tiposActividad,
+    setTiposActividad
+  ] = useState([]);
+
+
+  const [
+    oportunidadEditando,
+    setOportunidadEditando
+  ] = useState(null);
+
+
+  const [
+    oportunidadSeleccionada,
+    setOportunidadSeleccionada
+  ] = useState(null);
+
+
+  const [
+    loadingDetalle,
+    setLoadingDetalle
+  ] = useState(false);
+
+
+  const [
+    scrollYVoluntario,
+    setScrollYVoluntario
+  ] = useState(0);
+
+
+  const scrollRef =
+    React.useRef(null);
+
+
+  const [
+    filtrosVoluntario,
+    setFiltrosVoluntario
+  ] = useState({});
+
+
+  const [
+    filtroEstadoOrganizacion,
+    setFiltroEstadoOrganizacion
+  ] =
+    useState('TODAS');
+
+
+  const [
+    busquedaOrganizacion,
+    setBusquedaOrganizacion
+  ] =
+    useState('');
+
+
+  const [
+    estadoUbicacionVoluntario,
+    setEstadoUbicacionVoluntario
+  ] = useState({
+
+    modoUbicacion: null,
+
+    ubicacionActual: null,
+
+    ubicacionManualSeleccionada: null,
+
+    direccionActual: '',
+
+    textoUbicacion: '',
+
+    radioBusquedaKm: '10',
+
+  });
+
+
+  // ======================================================
+  // MODAL DE CIERRE DE SESIÓN
+  // ======================================================
+
+  const [
+    logoutVisible,
+    setLogoutVisible
+  ] = useState(false);
 
 
   // ======================================================
@@ -90,800 +191,1456 @@ export default function App() {
 
   useEffect(() => {
 
-  const verificarSesionGuardada = async () => {
+    const verificarSesionGuardada =
+      async () => {
 
-    const token = await obtenerToken();
+        const token =
+          await obtenerToken();
 
-    if (!token) {
-      return;
-    }
 
-    try {
+        if (!token) {
 
-      const data = await obtenerPerfilProtegido(token);
-      const rol = data.usuario.rol;
+          return;
 
-      if (rol === 'VOLUNTARIO') {
+        }
 
-        setCurrentScreen('VOLUNTARIO_HOME');
-        await cargarTiposActividad();
-        await cargarOportunidadesVoluntario();
 
-      }
-      else if (rol === 'ORGANIZACION') {
+        try {
 
-        setCurrentScreen('ORGANIZACION_HOME');
-        await cargarOportunidades();
+          const data =
+            await obtenerPerfilProtegido(
+              token
+            );
 
-      }
-      else if (rol === 'ADMIN') {
 
-        setCurrentScreen('ADMIN_HOME');
+          const rol =
+            data.usuario.rol;
 
-      }
-      else {
 
-        await eliminarToken();
+          if (
+            rol === 'VOLUNTARIO'
+          ) {
 
-        setCurrentScreen('A01');
+            setCurrentScreen(
+              'VOLUNTARIO_HOME'
+            );
 
-      }
 
-    } catch (error) {
+            await cargarTiposActividad();
 
-      if (error.response?.status === 401) {
+            await cargarOportunidadesVoluntario();
 
-        await eliminarToken();
+          }
+          else if (
+            rol === 'ORGANIZACION'
+          ) {
 
-        setCurrentScreen('A01');
+            setCurrentScreen(
+              'ORGANIZACION_HOME'
+            );
 
-      
 
-      }
+            await cargarOportunidades();
 
-    }
+          }
+          else if (
+            rol === 'ADMIN'
+          ) {
 
-  };
+            setCurrentScreen(
+              'ADMIN_HOME'
+            );
 
-  verificarSesionGuardada();
+          }
+          else {
 
-}, []);
+            await eliminarToken();
+
+            setCurrentScreen(
+              'A01'
+            );
+
+          }
+
+        }
+        catch (error) {
+
+          if (
+            error.response
+              ?.status === 401
+          ) {
+
+            await eliminarToken();
+
+            setCurrentScreen(
+              'A01'
+            );
+
+          }
+
+        }
+
+      };
+
+
+    verificarSesionGuardada();
+
+  }, []);
 
 
   // ======================================================
   // MODAL DE ALERTA FLOTANTE
   // ======================================================
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState('success');
-  const [modalTitle, setModalTitle] = useState('');
-  const [modalMessage, setModalMessage] = useState('');
+  const [
+    modalVisible,
+    setModalVisible
+  ] = useState(false);
 
 
-  const showAlert = (type, title, message) => {
+  const [
+    modalType,
+    setModalType
+  ] = useState('success');
 
-    setModalType(type);
-    setModalTitle(title);
-    setModalMessage(message);
-    setModalVisible(true);
+
+  const [
+    modalTitle,
+    setModalTitle
+  ] = useState('');
+
+
+  const [
+    modalMessage,
+    setModalMessage
+  ] = useState('');
+
+
+  const showAlert = (
+    type,
+    title,
+    message
+  ) => {
+
+    setModalType(
+      type
+    );
+
+    setModalTitle(
+      title
+    );
+
+    setModalMessage(
+      message
+    );
+
+    setModalVisible(
+      true
+    );
 
   };
 
 
-
   // ======================================================
-  // 1. INICIAR SESIÓN (A01)
+  // 1. INICIAR SESIÓN
   // ======================================================
 
-  const handleLogin = async (email, password) => {
+  const handleLogin =
+    async (
+      email,
+      password
+    ) => {
 
-    if (!email || !password) {
-
-      showAlert(
-        'error',
-        'Campos Incompletos',
-        'Por favor ingresa tu correo electrónico y contraseña.'
-      );
-
-      return;
-    }
-
-
-    const emailRegex =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-
-    if (!emailRegex.test(email)) {
-
-      showAlert(
-        'error',
-        'Correo Inválido',
-        'Ingresá un correo electrónico válido.'
-      );
-
-      return;
-    }
-
-
-    setLoading(true);
-
-
-    try {
-
-    const data = await login(email, password);
-    await guardarToken(data.token);
-    const rol = data.user.rol;
-
-
-      if (rol === 'VOLUNTARIO') {
-        setCurrentScreen('VOLUNTARIO_HOME');
-        await cargarTiposActividad();
-        await cargarOportunidadesVoluntario();
-      }
-      else if (rol === 'ORGANIZACION') {
-        setCurrentScreen('ORGANIZACION_HOME');
-        await cargarOportunidades();
-      }
-      else if (rol === 'ADMIN') {
-        setCurrentScreen('ADMIN_HOME');
-      }
-      else {
-        await eliminarToken();
+      if (
+        !email ||
+        !password
+      ) {
 
         showAlert(
+
           'error',
-          'Rol inválido',
-          'El usuario no posee un rol válido dentro del sistema.'
+
+          'Campos Incompletos',
+
+          'Por favor ingresa tu correo electrónico y contraseña.'
+
         );
 
+
         return;
+
       }
 
-      showAlert(
-        'success',
-        '¡Bienvenido/a!',
-        `Inicio de sesión exitoso.\nRol: ${data.user.rol}`
+
+      const emailRegex =
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+
+      if (
+        !emailRegex.test(
+          email
+        )
+      ) {
+
+        showAlert(
+
+          'error',
+
+          'Correo Inválido',
+
+          'Ingresá un correo electrónico válido.'
+
+        );
+
+
+        return;
+
+      }
+
+
+      setLoading(
+        true
       );
 
 
-    } catch (error) {
+      try {
 
-      const errorMsg =
-        error.response?.data?.error ||
-        'No se pudo conectar con el servidor backend';
-
-
-      showAlert(
-        'error',
-        'Error de Acceso',
-        errorMsg
-      );
+        const data =
+          await login(
+            email,
+            password
+          );
 
 
-    } finally {
+        await guardarToken(
+          data.token
+        );
 
-      setLoading(false);
 
-    }
+        const rol =
+          data.user.rol;
 
-  };
 
+        if (
+          rol === 'VOLUNTARIO'
+        ) {
+
+          setCurrentScreen(
+            'VOLUNTARIO_HOME'
+          );
+
+
+          await cargarTiposActividad();
+
+          await cargarOportunidadesVoluntario();
+
+        }
+        else if (
+          rol === 'ORGANIZACION'
+        ) {
+
+          setCurrentScreen(
+            'ORGANIZACION_HOME'
+          );
+
+
+          await cargarOportunidades();
+
+        }
+        else if (
+          rol === 'ADMIN'
+        ) {
+
+          setCurrentScreen(
+            'ADMIN_HOME'
+          );
+
+        }
+        else {
+
+          await eliminarToken();
+
+
+          showAlert(
+
+            'error',
+
+            'Rol inválido',
+
+            'El usuario no posee un rol válido dentro del sistema.'
+
+          );
+
+
+          return;
+
+        }
+
+
+        showAlert(
+
+          'success',
+
+          '¡Bienvenido/a!',
+
+          `Inicio de sesión exitoso.\nRol: ${data.user.rol}`
+
+        );
+
+      }
+      catch (error) {
+
+        const errorMsg =
+
+          error.response
+            ?.data
+            ?.error ||
+
+          'No se pudo conectar con el servidor backend';
+
+
+        showAlert(
+
+          'error',
+
+          'Error de Acceso',
+
+          errorMsg
+
+        );
+
+      }
+      finally {
+
+        setLoading(
+          false
+        );
+
+      }
+
+    };
 
 
   // ======================================================
-  // 2. REGISTRO VOLUNTARIO (A05)
+  // 2. REGISTRO VOLUNTARIO
   // ======================================================
 
-  const handleRegisterVoluntario = async (data) => {
+  const handleRegisterVoluntario =
+    async (
+      data
+    ) => {
 
-    if (
-      !data.nombre ||
-      !data.apellido ||
-      !data.email ||
-      !data.password
-    ) {
+      if (
+        !data.nombre ||
+        !data.apellido ||
+        !data.email ||
+        !data.password
+      ) {
 
-      showAlert(
-        'error',
-        'Campos Incompletos',
-        'Nombre, Apellido, Correo y Contraseña son obligatorios.'
-      );
+        showAlert(
 
-      return;
-    }
+          'error',
 
+          'Campos Incompletos',
 
-    setLoading(true);
+          'Nombre, Apellido, Correo y Contraseña son obligatorios.'
 
-
-    try {
-
-    await registrarUsuario(data);
+        );
 
 
-    setLoading(false);
+        return;
+
+      }
 
 
-      showAlert(
-        'success',
-        '¡Cuenta Creada!',
-        'Tu registro como voluntario se completó con éxito. Ya podés iniciar sesión.'
+      setLoading(
+        true
       );
 
 
-      setCurrentScreen(
-        'A01'
-      );
+      try {
+
+        await registrarUsuario(
+          data
+        );
 
 
-    } catch (error) {
-
-      setLoading(false);
-
-
-      const errorMsg =
-        error.response?.data?.error ||
-        'No se pudo crear la cuenta de voluntario';
+        setLoading(
+          false
+        );
 
 
-      showAlert(
-        'error',
-        'Error de Registro',
-        errorMsg
-      );
+        showAlert(
 
-    }
+          'success',
 
-  };
+          '¡Cuenta Creada!',
 
+          'Tu registro como voluntario se completó con éxito. Ya podés iniciar sesión.'
 
-
-  // ======================================================
-  // 3. REGISTRO ORGANIZACIÓN (A06)
-  // ======================================================
-
-  const handleRegisterOrganizacion = async (data) => {
+        );
 
 
-    const camposFaltantes = [];
+        setCurrentScreen(
+          'A01'
+        );
+
+      }
+      catch (error) {
+
+        setLoading(
+          false
+        );
 
 
-    if (!data.razon_social) {
-      camposFaltantes.push(
-        'Razón Social'
-      );
-    }
+        const errorMsg =
+
+          error.response
+            ?.data
+            ?.error ||
+
+          'No se pudo crear la cuenta de voluntario';
 
 
-    if (!data.cuit) {
-      camposFaltantes.push(
-        'CUIT'
-      );
-    }
+        showAlert(
 
+          'error',
 
-    if (!data.email) {
-      camposFaltantes.push(
-        'Correo'
-      );
-    }
+          'Error de Registro',
 
+          errorMsg
 
-    if (!data.password) {
-      camposFaltantes.push(
-        'Contraseña'
-      );
-    }
+        );
 
+      }
 
-    if (camposFaltantes.length > 0) {
-
-      showAlert(
-        'error',
-        'Campos Incompletos',
-        `Faltan los siguientes campos: ${camposFaltantes.join(', ')}.`
-      );
-
-      return;
-    }
-
-
-    if (data.cuit.length !== 11) {
-
-      showAlert(
-        'error',
-        'CUIT Inválido',
-        'El CUIT debe contener exactamente 11 dígitos numéricos.'
-      );
-
-      return;
-    }
-
-
-    setLoading(true);
-
-
-    try {
-
-    await registrarUsuario(data);
-
-
-
-      setLoading(false);
-
-
-      showAlert(
-        'success',
-        '¡Organización Registrada!',
-        'Tu cuenta fue creada con éxito. Su estado de verificación es PENDIENTE hasta ser revisada.'
-      );
-
-
-      setCurrentScreen(
-        'A01'
-      );
-
-
-    } catch (error) {
-
-      setLoading(false);
-
-
-
-
-      const errorMsg =
-        error.response?.data?.details ||
-        error.response?.data?.error ||
-        'No se pudo registrar la organización';
-
-
-      showAlert(
-        'error',
-        'Error de Registro',
-        errorMsg
-      );
-
-    }
-
-  };
-
+    };
 
 
   // ======================================================
-  // 4. RECUPERAR CONTRASEÑA (A02)
+  // 3. REGISTRO ORGANIZACIÓN
   // ======================================================
 
-  const handleForgotPassword = async (email) => {
+  const handleRegisterOrganizacion =
+    async (
+      data
+    ) => {
 
-    setLoading(true);
-
-
-    try {
-
-      const data = await recuperarPassword(email);
-      
+      const camposFaltantes =
+        [];
 
 
-      setLoading(false);
+      if (
+        !data.razon_social
+      ) {
+
+        camposFaltantes.push(
+          'Razón Social'
+        );
+
+      }
 
 
-      showAlert(
-        'success',
-        'Solicitud Enviada',
-        data.message
+      if (
+        !data.cuit
+      ) {
+
+        camposFaltantes.push(
+          'CUIT'
+        );
+
+      }
+
+
+      if (
+        !data.email
+      ) {
+
+        camposFaltantes.push(
+          'Correo'
+        );
+
+      }
+
+
+      if (
+        !data.password
+      ) {
+
+        camposFaltantes.push(
+          'Contraseña'
+        );
+
+      }
+
+
+      if (
+        camposFaltantes.length >
+        0
+      ) {
+
+        showAlert(
+
+          'error',
+
+          'Campos Incompletos',
+
+          `Faltan los siguientes campos: ${camposFaltantes.join(', ')}.`
+
+        );
+
+
+        return;
+
+      }
+
+
+      if (
+        data.cuit.length !==
+        11
+      ) {
+
+        showAlert(
+
+          'error',
+
+          'CUIT Inválido',
+
+          'El CUIT debe contener exactamente 11 dígitos numéricos.'
+
+        );
+
+
+        return;
+
+      }
+
+
+      setLoading(
+        true
       );
 
 
-      setCurrentScreen(
-        'A01'
+      try {
+
+        await registrarUsuario(
+          data
+        );
+
+
+        setLoading(
+          false
+        );
+
+
+        showAlert(
+
+          'success',
+
+          '¡Organización Registrada!',
+
+          'Tu cuenta fue creada con éxito. Su estado de verificación es PENDIENTE hasta ser revisada.'
+
+        );
+
+
+        setCurrentScreen(
+          'A01'
+        );
+
+      }
+      catch (error) {
+
+        setLoading(
+          false
+        );
+
+
+        const errorMsg =
+
+          error.response
+            ?.data
+            ?.details ||
+
+          error.response
+            ?.data
+            ?.error ||
+
+          'No se pudo registrar la organización';
+
+
+        showAlert(
+
+          'error',
+
+          'Error de Registro',
+
+          errorMsg
+
+        );
+
+      }
+
+    };
+
+
+  // ======================================================
+  // 4. RECUPERAR CONTRASEÑA
+  // ======================================================
+
+  const handleForgotPassword =
+    async (
+      email
+    ) => {
+
+      setLoading(
+        true
       );
 
 
-    } catch (error) {
+      try {
 
-      setLoading(false);
-
-
-      const errorMsg =
-        error.response?.data?.error ||
-        'No se pudo procesar la solicitud.';
+        const data =
+          await recuperarPassword(
+            email
+          );
 
 
-      showAlert(
-        'error',
-        'Error',
-        errorMsg
+        setLoading(
+          false
+        );
+
+
+        showAlert(
+
+          'success',
+
+          'Solicitud Enviada',
+
+          data.message
+
+        );
+
+
+        setCurrentScreen(
+          'A01'
+        );
+
+      }
+      catch (error) {
+
+        setLoading(
+          false
+        );
+
+
+        const errorMsg =
+
+          error.response
+            ?.data
+            ?.error ||
+
+          'No se pudo procesar la solicitud.';
+
+
+        showAlert(
+
+          'error',
+
+          'Error',
+
+          errorMsg
+
+        );
+
+      }
+
+    };
+
+
+  // ======================================================
+  // OPORTUNIDADES ORGANIZACIÓN
+  // ======================================================
+
+  const cargarOportunidades =
+    async () => {
+
+      setLoading(
+        true
       );
 
-    }
 
-  };
+      try {
 
-  ///CARGAR OPORTUNIDADES ORGANIZACION
-const cargarOportunidades = async () => {
+        const token =
+          await obtenerToken();
 
-  setLoading(true);
 
-  try {
+        if (!token) {
 
-    const token = await obtenerToken();
+          await eliminarToken();
 
-    if (!token) {
-      await eliminarToken();
-      setOportunidades([]);
-      setCurrentScreen('A01');
 
-      showAlert(
-        'error',
-        'Sesión finalizada',
-        'Tu sesión no es válida. Iniciá sesión nuevamente.'
-      );
+          setOportunidades(
+            []
+          );
 
-      return;
-    }
 
-   const data = await obtenerMisOportunidades(token);
-  setOportunidades(data.oportunidades);
+          setCurrentScreen(
+            'A01'
+          );
 
-  } catch (error) {
 
-  if (error.response?.status === 401) {
+          showAlert(
 
-    await eliminarToken();
+            'error',
 
-    setOportunidades([]);
-    setTiposActividad([]);
-    setOportunidadEditando(null);
+            'Sesión finalizada',
 
-    setCurrentScreen('A01');
+            'Tu sesión no es válida. Iniciá sesión nuevamente.'
 
-    showAlert(
-      'error',
-      'Sesión finalizada',
-      'Tu sesión venció. Iniciá sesión nuevamente.'
-    );
+          );
 
-    return;
-  }
 
-    const errorMsg =
-      error.response?.data?.error ||
-      'No se pudieron cargar las oportunidades';
+          return;
 
-    showAlert(
-      'error',
-      'Error',
-      errorMsg
-    );
+        }
 
-  } finally {
 
-    setLoading(false);
+        const data =
+          await obtenerMisOportunidades(
+            token
+          );
 
-  }
 
-};
+        setOportunidades(
+          data.oportunidades
+        );
+
+      }
+      catch (error) {
+
+        if (
+          error.response
+            ?.status === 401
+        ) {
+
+          await eliminarToken();
+
+
+          setOportunidades(
+            []
+          );
+
+
+          setTiposActividad(
+            []
+          );
+
+
+          setOportunidadEditando(
+            null
+          );
+
+
+          setCurrentScreen(
+            'A01'
+          );
+
+
+          showAlert(
+
+            'error',
+
+            'Sesión finalizada',
+
+            'Tu sesión venció. Iniciá sesión nuevamente.'
+
+          );
+
+
+          return;
+
+        }
+
+
+        const errorMsg =
+
+          error.response
+            ?.data
+            ?.error ||
+
+          'No se pudieron cargar las oportunidades';
+
+
+        showAlert(
+
+          'error',
+
+          'Error',
+
+          errorMsg
+
+        );
+
+      }
+      finally {
+
+        setLoading(
+          false
+        );
+
+      }
+
+    };
 
 
   // ======================================================
   // 5. CERRAR SESIÓN
   // ======================================================
 
-  const handleLogout = () => {
+  const handleLogout =
+    () => {
 
-    setLogoutVisible(true);
-
-  };
-
-
-  const confirmarLogout = async () => {
-
-      await eliminarToken();
-
-      setOportunidades([]);
-      setOportunidadesVoluntario([]);
-      setTiposActividad([]);
-
-      setOportunidadEditando(null);
-      setOportunidadSeleccionada(null);
-
-      setLoadingDetalle(false);
-
-      setFiltrosVoluntario({});
-
-      setEstadoUbicacionVoluntario({
-        modoUbicacion: null,
-        ubicacionActual: null,
-        ubicacionManualSeleccionada: null,
-        direccionActual: '',
-        textoUbicacion: '',
-        radioBusquedaKm: '10',
-      });
-
-      setScrollYVoluntario(0);
-
-      setLogoutVisible(false);
-      setCurrentScreen('A01');
+      setLogoutVisible(
+        true
+      );
 
     };
-///TIPOOS DE ACTIVIDAD ORGANIZACION 
-  const cargarTiposActividad = async () => {
-  try {
-    const token = await obtenerToken();
-
-    if (!token) {
-
-        await eliminarToken();
-
-        setOportunidades([]);
-        setTiposActividad([]);
-        setOportunidadEditando(null);
-
-        setCurrentScreen('A01');
 
 
-        showAlert(
-          'error',
-          'Sesión finalizada',
-          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+  const confirmarLogout =
+    async () => {
+
+      await eliminarToken();
+
+
+      setOportunidades(
+        []
+      );
+
+
+      setOportunidadesVoluntario(
+        []
+      );
+
+
+      setTiposActividad(
+        []
+      );
+
+
+      setOportunidadEditando(
+        null
+      );
+
+
+      setOportunidadSeleccionada(
+        null
+      );
+
+
+      setLoadingDetalle(
+        false
+      );
+
+
+      setFiltrosVoluntario(
+        {}
+      );
+
+
+      setEstadoUbicacionVoluntario({
+
+        modoUbicacion:
+          null,
+
+        ubicacionActual:
+          null,
+
+        ubicacionManualSeleccionada:
+          null,
+
+        direccionActual:
+          '',
+
+        textoUbicacion:
+          '',
+
+        radioBusquedaKm:
+          '10',
+
+      });
+
+
+      setScrollYVoluntario(
+        0
+      );
+
+
+      setLogoutVisible(
+        false
+      );
+
+
+      setCurrentScreen(
+        'A01'
+      );
+
+    };
+
+
+  // ======================================================
+  // TIPOS DE ACTIVIDAD
+  // ======================================================
+
+  const cargarTiposActividad =
+    async () => {
+
+      try {
+
+        const token =
+          await obtenerToken();
+
+
+        if (!token) {
+
+          await eliminarToken();
+
+
+          setOportunidades(
+            []
+          );
+
+
+          setTiposActividad(
+            []
+          );
+
+
+          setOportunidadEditando(
+            null
+          );
+
+
+          setCurrentScreen(
+            'A01'
+          );
+
+
+          showAlert(
+
+            'error',
+
+            'Sesión finalizada',
+
+            'Tu sesión no es válida. Iniciá sesión nuevamente.'
+
+          );
+
+
+          return false;
+
+        }
+
+
+        const data =
+          await obtenerTiposActividad(
+            token
+          );
+
+
+        const tipos =
+          data?.tiposActividad;
+
+
+        if (
+          !Array.isArray(
+            tipos
+          )
+        ) {
+
+          showAlert(
+
+            'error',
+
+            'Error',
+
+            'La respuesta de tipos de actividad no es válida.'
+
+          );
+
+
+          return false;
+
+        }
+
+
+        setTiposActividad(
+          tipos
         );
 
-        return false;
+
+        return true;
+
       }
+      catch (error) {
 
-    const data = await obtenerTiposActividad(token);
-    const tipos = data?.tiposActividad;
+        if (
+          error.response
+            ?.status === 401
+        ) {
 
-      if (!Array.isArray(tipos)) {
+          await eliminarToken();
+
+
+          setOportunidades(
+            []
+          );
+
+
+          setTiposActividad(
+            []
+          );
+
+
+          setOportunidadEditando(
+            null
+          );
+
+
+          setCurrentScreen(
+            'A01'
+          );
+
+
+          showAlert(
+
+            'error',
+
+            'Sesión finalizada',
+
+            'Tu sesión venció. Iniciá sesión nuevamente.'
+
+          );
+
+
+          return false;
+
+        }
+
 
         showAlert(
+
           'error',
+
           'Error',
-          'La respuesta de tipos de actividad no es válida.'
+
+          error.response
+            ?.data
+            ?.error ||
+
+          'No se pudieron cargar los tipos de actividad.'
+
         );
 
+
         return false;
+
       }
 
-      setTiposActividad(tipos);
+    };
 
-      return true;
-  } catch (error) {
 
-    if (error.response?.status === 401) {
+  // ======================================================
+  // OPORTUNIDADES VOLUNTARIO
+  // ======================================================
 
-      await eliminarToken();
+  const cargarOportunidadesVoluntario =
+    async (
+      filtros = {}
+    ) => {
 
-      setOportunidades([]);
-      setTiposActividad([]);
-      setOportunidadEditando(null);
-
-      setCurrentScreen('A01');
-
-      showAlert(
-        'error',
-        'Sesión finalizada',
-        'Tu sesión venció. Iniciá sesión nuevamente.'
+      setLoading(
+        true
       );
 
-      return false;
-    }
 
-    showAlert(
-    'error',
-    'Error',
-    error.response?.data?.error ||
-      'No se pudieron cargar los tipos de actividad.'
-    );
-    return false;
-  }
-};
+      try {
+
+        const token =
+          await obtenerToken();
 
 
-//Oportunidades voluntario
-const cargarOportunidadesVoluntario = async (filtros={}) => {
+        if (!token) {
 
-  setLoading(true);
+          await eliminarToken();
 
-  try {
 
-    const token = await obtenerToken();
+          setOportunidadesVoluntario(
+            []
+          );
 
-    if (!token) {
 
-      await eliminarToken();
+          setCurrentScreen(
+            'A01'
+          );
 
-      setOportunidadesVoluntario([]);
-      setCurrentScreen('A01');
 
-      showAlert(
-        'error',
-        'Sesión finalizada',
-        'Tu sesión no es válida. Iniciá sesión nuevamente.'
+          showAlert(
+
+            'error',
+
+            'Sesión finalizada',
+
+            'Tu sesión no es válida. Iniciá sesión nuevamente.'
+
+          );
+
+
+          return;
+
+        }
+
+
+        const data =
+          await obtenerOportunidadesVoluntario(
+            token,
+            filtros
+          );
+
+
+        setOportunidadesVoluntario(
+          data.oportunidades
+        );
+
+      }
+      catch (error) {
+
+        if (
+          error.response
+            ?.status === 401
+        ) {
+
+          await eliminarToken();
+
+
+          setOportunidadesVoluntario(
+            []
+          );
+
+
+          setCurrentScreen(
+            'A01'
+          );
+
+
+          showAlert(
+
+            'error',
+
+            'Sesión finalizada',
+
+            'Tu sesión venció. Iniciá sesión nuevamente.'
+
+          );
+
+
+          return;
+
+        }
+
+
+        showAlert(
+
+          'error',
+
+          'Error',
+
+          error.response
+            ?.data
+            ?.error ||
+
+          'No se pudieron cargar las oportunidades.'
+
+        );
+
+      }
+      finally {
+
+        setLoading(
+          false
+        );
+
+      }
+
+    };
+
+
+  // ======================================================
+  // DETALLE VOLUNTARIO
+  // ======================================================
+
+  const cargarDetalleOportunidadVoluntario =
+    async (
+      idOportunidad
+    ) => {
+
+      setLoadingDetalle(
+        true
       );
 
-      return;
-    }
 
-  const data = await obtenerOportunidadesVoluntario(token,filtros);
-  setOportunidadesVoluntario(data.oportunidades);
+      try {
 
-  } catch (error) {
+        const token =
+          await obtenerToken();
 
 
-    if (error.response?.status === 401) {
+        if (!token) {
 
-      await eliminarToken();
-
-      setOportunidadesVoluntario([]);
-      setCurrentScreen('A01');
-
-      showAlert(
-        'error',
-        'Sesión finalizada',
-        'Tu sesión venció. Iniciá sesión nuevamente.'
-      );
-
-      return;
-    }
+          await eliminarToken();
 
 
-    showAlert(
-      'error',
-      'Error',
-      error.response?.data?.error ||
-        'No se pudieron cargar las oportunidades.'
-    );
-
-  } finally {
-
-    setLoading(false);
-
-  }
-
-};
-
-const cargarDetalleOportunidadVoluntario = async (
-  idOportunidad
-) => {
-
-  setLoadingDetalle(true);
-
-  try {
-
-    const token = await obtenerToken();
-
-    if (!token) {
-
-      await eliminarToken();
-
-      setOportunidadSeleccionada(null);
-      setCurrentScreen('A01');
-
-      showAlert(
-        'error',
-        'Sesión finalizada',
-        'Tu sesión no es válida. Iniciá sesión nuevamente.'
-      );
-
-      return false;
-    }
-
-    const data =await obtenerDetalleOportunidadVoluntario(token,
-    idOportunidad);
-    setOportunidadSeleccionada(data.oportunidad);
-
-    setCurrentScreen(
-      'OPORTUNIDAD_DETALLE'
-    );
-
-    return true;
-
-  } catch (error) {
-
-    if (error.response?.status === 401) {
-
-      await eliminarToken();
-
-      setOportunidadSeleccionada(null);
-      setCurrentScreen('A01');
-
-      showAlert(
-        'error',
-        'Sesión finalizada',
-        'Tu sesión venció. Iniciá sesión nuevamente.'
-      );
-
-      return false;
-    }
-
-  
-
-    showAlert(
-      'error',
-      'Error',
-      error.response?.data?.error ||
-        'No se pudo cargar la oportunidad.'
-    );
-
-    return false;
-
-  } finally {
-
-    setLoadingDetalle(false);
-
-  }
-
-};
-
-const buscarUbicaciones = async (texto) => {
-
-  try {
-
-    const token = await obtenerToken();
-
-    if (!token) {
-
-      await eliminarToken();
-
-      setCurrentScreen('A01');
-
-      showAlert(
-        'error',
-        'Sesión finalizada',
-        'Tu sesión no es válida. Iniciá sesión nuevamente.'
-      );
-
-      return [];
-    }
-
- const data = await buscarUbicacionesPorTexto(token,texto);
- const resultados = data?.resultados;
-
-    if (!Array.isArray(resultados)) {
-
-      showAlert(
-        'error',
-        'Error',
-        'La respuesta de búsqueda de ubicaciones no es válida.'
-      );
-
-      return [];
-    }
-
-    return resultados;
-
-  } catch (error) {
-
-    if (error.response?.status === 401) {
-
-      await eliminarToken();
-
-      setCurrentScreen('A01');
-
-      showAlert(
-        'error',
-        'Sesión finalizada',
-        'Tu sesión venció. Iniciá sesión nuevamente.'
-      );
-
-      return [];
-    }
-
-    
-    showAlert(
-      'error',
-      'Error',
-      error.response?.data?.error ||
-        'No se pudieron buscar ubicaciones.'
-    );
-
-    return [];
-  }
-
-};
+          setOportunidadSeleccionada(
+            null
+          );
 
 
+          setCurrentScreen(
+            'A01'
+          );
+
+
+          showAlert(
+
+            'error',
+
+            'Sesión finalizada',
+
+            'Tu sesión no es válida. Iniciá sesión nuevamente.'
+
+          );
+
+
+          return false;
+
+        }
+
+
+        const data =
+          await obtenerDetalleOportunidadVoluntario(
+            token,
+            idOportunidad
+          );
+
+
+        setOportunidadSeleccionada(
+          data.oportunidad
+        );
+
+
+        setCurrentScreen(
+          'OPORTUNIDAD_DETALLE'
+        );
+
+
+        return true;
+
+      }
+      catch (error) {
+
+        if (
+          error.response
+            ?.status === 401
+        ) {
+
+          await eliminarToken();
+
+
+          setOportunidadSeleccionada(
+            null
+          );
+
+
+          setCurrentScreen(
+            'A01'
+          );
+
+
+          showAlert(
+
+            'error',
+
+            'Sesión finalizada',
+
+            'Tu sesión venció. Iniciá sesión nuevamente.'
+
+          );
+
+
+          return false;
+
+        }
+
+
+        showAlert(
+
+          'error',
+
+          'Error',
+
+          error.response
+            ?.data
+            ?.error ||
+
+          'No se pudo cargar la oportunidad.'
+
+        );
+
+
+        return false;
+
+      }
+      finally {
+
+        setLoadingDetalle(
+          false
+        );
+
+      }
+
+    };
+
+
+  // ======================================================
+  // BUSCAR UBICACIONES
+  // ======================================================
+
+  const buscarUbicaciones =
+    async (
+      texto
+    ) => {
+
+      try {
+
+        const token =
+          await obtenerToken();
+
+
+        if (!token) {
+
+          await eliminarToken();
+
+
+          setCurrentScreen(
+            'A01'
+          );
+
+
+          showAlert(
+
+            'error',
+
+            'Sesión finalizada',
+
+            'Tu sesión no es válida. Iniciá sesión nuevamente.'
+
+          );
+
+
+          return [];
+
+        }
+
+
+        const data =
+          await buscarUbicacionesPorTexto(
+            token,
+            texto
+          );
+
+
+        const resultados =
+          data?.resultados;
+
+
+        if (
+          !Array.isArray(
+            resultados
+          )
+        ) {
+
+          showAlert(
+
+            'error',
+
+            'Error',
+
+            'La respuesta de búsqueda de ubicaciones no es válida.'
+
+          );
+
+
+          return [];
+
+        }
+
+
+        return resultados;
+
+      }
+      catch (error) {
+
+        if (
+          error.response
+            ?.status === 401
+        ) {
+
+          await eliminarToken();
+
+
+          setCurrentScreen(
+            'A01'
+          );
+
+
+          showAlert(
+
+            'error',
+
+            'Sesión finalizada',
+
+            'Tu sesión venció. Iniciá sesión nuevamente.'
+
+          );
+
+
+          return [];
+
+        }
+
+
+        showAlert(
+
+          'error',
+
+          'Error',
+
+          error.response
+            ?.data
+            ?.error ||
+
+          'No se pudieron buscar ubicaciones.'
+
+        );
+
+
+        return [];
+
+      }
+
+    };
 
 
   // ======================================================
@@ -892,64 +1649,121 @@ const buscarUbicaciones = async (texto) => {
 
   return (
 
-    <View style={styles.mainContainer}>
+    <View
+      style={
+        styles.mainContainer
+      }
+    >
 
       <ImageBackground
-        source={require('./assets/fondo.png')}
-        style={styles.backgroundImage}
+
+        source={
+          require(
+            './assets/fondo.png'
+          )
+        }
+
+        style={
+          styles.backgroundImage
+        }
+
         imageStyle={{
           opacity: 0.22
         }}
-      >
-      <ScrollView
-          ref={scrollRef}
-          contentContainerStyle={[
-            styles.scrollContainer,
-            currentScreen === 'ORGANIZACION_HOME' &&
-            styles.scrollContainerOrganizacion
-            ]}
-          onScroll={(event) => {
-            const y = event.nativeEvent.contentOffset.y;
 
-            if (currentScreen === 'VOLUNTARIO_HOME') {
-              setScrollYVoluntario(y);
+      >
+
+        <ScrollView
+
+          ref={
+            scrollRef
+          }
+
+          nestedScrollEnabled={
+            true
+          }
+
+          contentContainerStyle={[
+
+            styles.scrollContainer,
+
+            currentScreen ===
+              'ORGANIZACION_HOME' &&
+              styles.scrollContainerOrganizacion
+
+          ]}
+
+          onScroll={(
+            event
+          ) => {
+
+            const y =
+              event
+                .nativeEvent
+                .contentOffset
+                .y;
+
+
+            if (
+              currentScreen ===
+              'VOLUNTARIO_HOME'
+            ) {
+
+              setScrollYVoluntario(
+                y
+              );
+
             }
+
           }}
-          scrollEventThrottle={16}
+
+          scrollEventThrottle={
+            16
+          }
+
         >
 
 
           {/* ==================================================
-              A01 - INICIO DE SESIÓN
+              A01
           ================================================== */}
 
-          {currentScreen === 'A01' && (
+          {currentScreen ===
+            'A01' && (
 
             <LoginScreen
 
-              onLogin={handleLogin}
+              onLogin={
+                handleLogin
+              }
 
               onNavigateRegister={() =>
-                setCurrentScreen('A04')
+                setCurrentScreen(
+                  'A04'
+                )
               }
 
               onNavigateForgotPassword={() =>
-                setCurrentScreen('A02')
+                setCurrentScreen(
+                  'A02'
+                )
               }
 
-              loading={loading}
+              loading={
+                loading
+              }
 
             />
 
           )}
 
 
-
           {/* ==================================================
-              A02 - RECUPERAR CONTRASEÑA
+              A02
           ================================================== */}
 
-          {currentScreen === 'A02' && (
+          {currentScreen ===
+            'A02' && (
 
             <ForgotPasswordScreen
 
@@ -958,33 +1772,45 @@ const buscarUbicaciones = async (texto) => {
               }
 
               onBack={() =>
-                setCurrentScreen('A01')
+                setCurrentScreen(
+                  'A01'
+                )
               }
 
-              loading={loading}
+              loading={
+                loading
+              }
 
-              showAlert={showAlert}
+              showAlert={
+                showAlert
+              }
 
             />
 
           )}
 
 
-
           {/* ==================================================
-              A04 - SELECCIÓN DE ROL
+              A04
           ================================================== */}
 
-          {currentScreen === 'A04' && (
+          {currentScreen ===
+            'A04' && (
 
             <RoleSelectionScreen
 
-              onSelectRole={(screen) =>
-                setCurrentScreen(screen)
+              onSelectRole={(
+                screen
+              ) =>
+                setCurrentScreen(
+                  screen
+                )
               }
 
               onBack={() =>
-                setCurrentScreen('A01')
+                setCurrentScreen(
+                  'A01'
+                )
               }
 
             />
@@ -992,12 +1818,12 @@ const buscarUbicaciones = async (texto) => {
           )}
 
 
-
           {/* ==================================================
-              A05 - REGISTRO VOLUNTARIO
+              A05
           ================================================== */}
 
-          {currentScreen === 'A05' && (
+          {currentScreen ===
+            'A05' && (
 
             <RegisterVoluntario
 
@@ -1006,24 +1832,30 @@ const buscarUbicaciones = async (texto) => {
               }
 
               onBack={() =>
-                setCurrentScreen('A04')
+                setCurrentScreen(
+                  'A04'
+                )
               }
 
-              loading={loading}
+              loading={
+                loading
+              }
 
-              showAlert={showAlert}
+              showAlert={
+                showAlert
+              }
 
             />
 
           )}
 
 
-
           {/* ==================================================
-              A06 - REGISTRO ORGANIZACIÓN
+              A06
           ================================================== */}
 
-          {currentScreen === 'A06' && (
+          {currentScreen ===
+            'A06' && (
 
             <RegisterOrganizacion
 
@@ -1032,559 +1864,1174 @@ const buscarUbicaciones = async (texto) => {
               }
 
               onBack={() =>
-                setCurrentScreen('A04')
+                setCurrentScreen(
+                  'A04'
+                )
               }
 
-              loading={loading}
+              loading={
+                loading
+              }
 
-              showAlert={showAlert}
+              showAlert={
+                showAlert
+              }
 
             />
 
           )}
 
 
-
           {/* ==================================================
-              HOME TEMPORAL
+              VOLUNTARIO
           ================================================== */}
 
-        {/* ==================================================
-    HOME TEMPORAL - VOLUNTARIO
-================================================== */}
+          {currentScreen ===
+            'VOLUNTARIO_HOME' && (
 
-    {currentScreen === 'VOLUNTARIO_HOME' && (
+            <BuscarOportunidadesScreen
 
-      <BuscarOportunidadesScreen
+              oportunidades={
+                oportunidadesVoluntario
+              }
 
-        oportunidades={oportunidadesVoluntario}
-        tiposActividad={tiposActividad}
-        loading={loading}
-          onFiltrar={async (filtros) => {
-          setFiltrosVoluntario(filtros); 
-          await cargarOportunidadesVoluntario(filtros);
-          } }
-        onBuscarUbicacion={buscarUbicaciones}  
-        onLogout={handleLogout}
-        onVerDetalle={async (idOportunidad) => {
-           await cargarDetalleOportunidadVoluntario(idOportunidad );
-        }}
-        filtrosGuardados={filtrosVoluntario}
-        estadoUbicacionGuardado={estadoUbicacionVoluntario}
-        onGuardarEstadoUbicacion={setEstadoUbicacionVoluntario}
-        showAlert={showAlert}
-          
+              tiposActividad={
+                tiposActividad
+              }
 
-      />)}
+              loading={
+                loading
+              }
 
-        
-    {currentScreen === 'OPORTUNIDAD_DETALLE' && (
+              onFiltrar={async (
+                filtros
+              ) => {
 
-        <DetalleOportunidadScreen
+                setFiltrosVoluntario(
+                  filtros
+                );
 
-          oportunidad={oportunidadSeleccionada}
 
-          loading={loadingDetalle}
+                await cargarOportunidadesVoluntario(
+                  filtros
+                );
 
-          estadoUbicacion={estadoUbicacionVoluntario}
+              }}
 
-          onVolver={async () => {
+              onBuscarUbicacion={
+                buscarUbicaciones
+              }
 
-            setOportunidadSeleccionada(null);
+              onLogout={
+                handleLogout
+              }
 
-            setCurrentScreen('VOLUNTARIO_HOME');
+              onVerDetalle={async (
+                idOportunidad
+              ) => {
 
-            await cargarOportunidadesVoluntario(
-              filtrosVoluntario
-            );
+                await cargarDetalleOportunidadVoluntario(
+                  idOportunidad
+                );
 
-            setTimeout(() => {
+              }}
 
-              scrollRef.current?.scrollTo({
-                y: scrollYVoluntario,
-                animated: true
-              });
+              filtrosGuardados={
+                filtrosVoluntario
+              }
 
-            }, 0.1);
+              estadoUbicacionGuardado={
+                estadoUbicacionVoluntario
+              }
 
-          }}
+              onGuardarEstadoUbicacion={
+                setEstadoUbicacionVoluntario
+              }
 
-        />
+              showAlert={
+                showAlert
+              }
 
-      )}
-  
+            />
 
+          )}
 
-    {/* ==================================================
-    HOME TEMPORAL - ORGANIZACIÓN
-================================================== */}
 
-    {currentScreen === 'ORGANIZACION_HOME' && (
+          {/* ==================================================
+              DETALLE VOLUNTARIO
+          ================================================== */}
 
-  <MisOportunidadesScreen
+          {currentScreen ===
+            'OPORTUNIDAD_DETALLE' && (
 
-    oportunidades={oportunidades}
+            <DetalleOportunidadScreen
 
-    loading={loading}
-    filtroEstado={filtroEstadoOrganizacion}
-    onCambiarFiltroEstado={setFiltroEstadoOrganizacion}
-    busqueda={busquedaOrganizacion}
-    onCambiarBusqueda={setBusquedaOrganizacion}
+              oportunidad={
+                oportunidadSeleccionada
+              }
 
-    onNuevaOportunidad={async () => {
-      setOportunidadEditando(null)
-      const tiposCargados= await cargarTiposActividad();
-      if (!tiposCargados) {
-    return;
-    }
-      setCurrentScreen('OPORTUNIDAD_FORM');
-    }}
+              loading={
+                loadingDetalle
+              }
 
+              estadoUbicacion={
+                estadoUbicacionVoluntario
+              }
 
-    onEditar={async (idOportunidad) => {
-    try {
-      setLoading(true);
+              onVolver={async () => {
 
-      const token = await obtenerToken();
+                setOportunidadSeleccionada(
+                  null
+                );
 
-      if (!token) {
 
-        await eliminarToken();
+                setCurrentScreen(
+                  'VOLUNTARIO_HOME'
+                );
 
-        setOportunidades([]);
-        setTiposActividad([]);
-        setOportunidadEditando(null);
 
-        setCurrentScreen('A01');
+                await cargarOportunidadesVoluntario(
+                  filtrosVoluntario
+                );
 
-        showAlert(
-          'error',
-          'Sesión finalizada',
-          'Tu sesión no es válida. Iniciá sesión nuevamente.'
-        );
 
-        return;
-      }
+                setTimeout(
+                  () => {
 
-    const data = await obtenerOportunidadPorId(token,idOportunidad);
-    const tiposCargados =await cargarTiposActividad();
-      if (!tiposCargados) {
-        return;
-      }
-      setOportunidadEditando(
-        data.oportunidad
-      );
-      
-    
+                    scrollRef.current
+                      ?.scrollTo({
 
+                        y:
+                          scrollYVoluntario,
 
-      setCurrentScreen('OPORTUNIDAD_FORM');
+                        animated:
+                          true
 
-      setTimeout(() => {
-        scrollRef.current?.scrollTo({
-          y: 0,
-          animated: true
-        });
-      }, 0.1);
+                      });
 
-    } catch (error) {
+                  },
+                  0.1
+                );
 
-      if (error.response?.status === 401) {
+              }}
 
-        await eliminarToken();
+            />
 
-        setOportunidades([]);
-        setTiposActividad([]);
-        setOportunidadEditando(null);
+          )}
 
-        setCurrentScreen('A01');
 
-        showAlert(
-          'error',
-          'Sesión finalizada',
-          'Tu sesión venció. Iniciá sesión nuevamente.'
-        );
+          {/* ==================================================
+              ORGANIZACIÓN
+          ================================================== */}
 
-        return;
-      }
+          {currentScreen ===
+            'ORGANIZACION_HOME' && (
 
-   
+            <MisOportunidadesScreen
 
-      showAlert(
-        'error',
-        'Error',
-        'No se pudo cargar la oportunidad.'
-      );
+              oportunidades={
+                oportunidades
+              }
 
-    } finally {
-      setLoading(false);
-    }
-  }}
+              loading={
+                loading
+              }
 
-    onPublicar={async (idOportunidad) => {
-          try {
-        setLoading(true);
+              filtroEstado={
+                filtroEstadoOrganizacion
+              }
 
-        const token = await obtenerToken();
+              onCambiarFiltroEstado={
+                setFiltroEstadoOrganizacion
+              }
 
-        if (!token) {
+              busqueda={
+                busquedaOrganizacion
+              }
 
-          await eliminarToken();
+              onCambiarBusqueda={
+                setBusquedaOrganizacion
+              }
 
-          setOportunidades([]);
-          setTiposActividad([]);
-          setOportunidadEditando(null);
 
-          setCurrentScreen('A01');
+              onNuevaOportunidad={
+                async () => {
 
-          showAlert(
-            'error',
-            'Sesión finalizada',
-            'Tu sesión no es válida. Iniciá sesión nuevamente.'
-          );
+                  setOportunidadEditando(
+                    null
+                  );
 
-          return;
-        }
 
-        await publicarOportunidad(token,idOportunidad);
+                  const tiposCargados =
+                    await cargarTiposActividad();
 
-        showAlert(
-          'success',
-          'Oportunidad publicada',
-          'La oportunidad se publicó correctamente.'
-        );
 
-        await cargarOportunidades();
+                  if (
+                    !tiposCargados
+                  ) {
 
-      } catch (error) {
+                    return;
 
-        if (error.response?.status === 401) {
+                  }
 
-          await eliminarToken();
 
-          setOportunidades([]);
-          setTiposActividad([]);
-          setOportunidadEditando(null);
+                  setCurrentScreen(
+                    'OPORTUNIDAD_FORM'
+                  );
 
-          setCurrentScreen('A01');
+                }
+              }
 
-          showAlert(
-            'error',
-            'Sesión finalizada',
-            'Tu sesión venció. Iniciá sesión nuevamente.'
-          );
 
-          return;
-        }
+              onEditar={
+                async (
+                  idOportunidad
+                ) => {
 
-      
+                  try {
 
-        showAlert(
-          'error',
-          'No se pudo publicar',
-          error.response?.data?.error ||
-            'Ocurrió un error al publicar la oportunidad.'
-        );
+                    setLoading(
+                      true
+                    );
 
-      } finally {
-        setLoading(false);
-      }
-    }}
 
-    onCancelar={async (idOportunidad) => {
-    try {
-      setLoading(true);
+                    const token =
+                      await obtenerToken();
 
-      const token = await obtenerToken();
 
-      if (!token) {
+                    if (!token) {
 
-        await eliminarToken();
+                      await eliminarToken();
 
-        setOportunidades([]);
-        setTiposActividad([]);
-        setOportunidadEditando(null);
 
-        setCurrentScreen('A01');
+                      setOportunidades(
+                        []
+                      );
 
-        showAlert(
-          'error',
-          'Sesión finalizada',
-          'Tu sesión no es válida. Iniciá sesión nuevamente.'
-        );
 
-        return;
-      }
+                      setTiposActividad(
+                        []
+                      );
 
-      await cancelarOportunidad(token,idOportunidad);
 
-      showAlert(
-        'success',
-        'Oportunidad cancelada',
-        'La oportunidad se canceló correctamente.'
-      );
+                      setOportunidadEditando(
+                        null
+                      );
 
-      await cargarOportunidades();
 
-    } catch (error) {
+                      setCurrentScreen(
+                        'A01'
+                      );
 
-      if (error.response?.status === 401) {
 
-        await eliminarToken();
+                      showAlert(
 
-        setOportunidades([]);
-        setTiposActividad([]);
-        setOportunidadEditando(null);
+                        'error',
 
-        setCurrentScreen('A01');
+                        'Sesión finalizada',
 
-        showAlert(
-          'error',
-          'Sesión finalizada',
-          'Tu sesión venció. Iniciá sesión nuevamente.'
-        );
+                        'Tu sesión no es válida. Iniciá sesión nuevamente.'
 
-        return;
-      }
+                      );
 
-      
-      showAlert(
-        'error',
-        'No se pudo cancelar',
-        error.response?.data?.error ||
-          'Ocurrió un error al cancelar la oportunidad.'
-      );
 
-    } finally {
-      setLoading(false);
-    }
-  }}
+                      return;
 
+                    }
 
-  onCerrar={async (idOportunidad) => {
-  try {
-    setLoading(true);
 
-    const token = await obtenerToken();
+                    const data =
+                      await obtenerOportunidadPorId(
+                        token,
+                        idOportunidad
+                      );
 
-    if (!token) {
 
-        await eliminarToken();
+                    const tiposCargados =
+                      await cargarTiposActividad();
 
-        setOportunidades([]);
-        setTiposActividad([]);
-        setOportunidadEditando(null);
 
-        setCurrentScreen('A01');
+                    if (
+                      !tiposCargados
+                    ) {
 
-        showAlert(
-          'error',
-          'Sesión finalizada',
-          'Tu sesión no es válida. Iniciá sesión nuevamente.'
-        );
+                      return;
 
-        return;
-    }
+                    }
 
-    await cerrarOportunidad(token,idOportunidad);
 
-    showAlert(
-      'success',
-      'Oportunidad cerrada',
-      'La oportunidad se cerró correctamente.'
-    );
+                    setOportunidadEditando(
+                      data.oportunidad
+                    );
 
-    await cargarOportunidades();
 
-  } catch (error) {
+                    setCurrentScreen(
+                      'OPORTUNIDAD_FORM'
+                    );
 
-    if (error.response?.status === 401) {
 
-      await eliminarToken();
+                    setTimeout(
+                      () => {
 
-      setOportunidades([]);
-      setTiposActividad([]);
-      setOportunidadEditando(null);
+                        scrollRef.current
+                          ?.scrollTo({
 
-      setCurrentScreen('A01');
+                            y: 0,
 
-      showAlert(
-        'error',
-        'Sesión finalizada',
-        'Tu sesión venció. Iniciá sesión nuevamente.'
-      );
+                            animated:
+                              true
 
-      return;
-    }
+                          });
 
+                      },
+                      0.1
+                    );
 
-    showAlert(
-      'error',
-      'No se pudo cerrar',
-      error.response?.data?.error ||
-        'Ocurrió un error al cerrar la oportunidad.'
-    );
+                  }
+                  catch (error) {
 
-  } finally {
-    setLoading(false);
-  }
-}}
+                    if (
+                      error.response
+                        ?.status === 401
+                    ) {
 
-onFinalizar={async (idOportunidad) => {
-  try {
-    setLoading(true);
+                      await eliminarToken();
 
-    const token = await obtenerToken();
 
-    if (!token) {
+                      setOportunidades(
+                        []
+                      );
 
-        await eliminarToken();
 
-        setOportunidades([]);
-        setTiposActividad([]);
-        setOportunidadEditando(null);
+                      setTiposActividad(
+                        []
+                      );
 
-        setCurrentScreen('A01');
 
-        showAlert(
-          'error',
-          'Sesión finalizada',
-          'Tu sesión no es válida. Iniciá sesión nuevamente.'
-        );
+                      setOportunidadEditando(
+                        null
+                      );
 
-        return;
-    }
 
-    await finalizarOportunidad(token,idOportunidad);
+                      setCurrentScreen(
+                        'A01'
+                      );
 
-    showAlert(
-      'success',
-      'Oportunidad finalizada',
-      'La oportunidad se finalizó correctamente.'
-    );
 
-    await cargarOportunidades();
+                      showAlert(
 
-  } catch (error) {
+                        'error',
 
-    if (error.response?.status === 401) {
+                        'Sesión finalizada',
 
-      await eliminarToken();
+                        'Tu sesión venció. Iniciá sesión nuevamente.'
 
-      setOportunidades([]);
-      setTiposActividad([]);
-      setOportunidadEditando(null);
+                      );
 
-      setCurrentScreen('A01');
 
-      showAlert(
-        'error',
-        'Sesión finalizada',
-        'Tu sesión venció. Iniciá sesión nuevamente.'
-      );
+                      return;
 
-      return;
-    }
+                    }
 
-    
-    showAlert(
-      'error',
-      'No se pudo finalizar',
-      error.response?.data?.error ||
-        'Ocurrió un error al finalizar la oportunidad.'
-    );
 
-  } finally {
-    setLoading(false);
-  }
-}}
+                    showAlert(
 
-    onLogout={handleLogout}
+                      'error',
 
-  />
+                      'Error',
 
-)}
+                      'No se pudo cargar la oportunidad.'
 
+                    );
 
-{currentScreen === 'OPORTUNIDAD_FORM' && (
-  <OportunidadFormScreen  tiposActividad={tiposActividad} oportunidadEditando={oportunidadEditando}
-    onVolver={() => {
-        setOportunidadEditando(null);
-        setCurrentScreen('ORGANIZACION_HOME');
+                  }
+                  finally {
 
-        setTimeout(() => {
-          scrollRef.current?.scrollTo({
-            y: 0,
-            animated: true
-          });
-        }, 0.1);
-      }}
+                    setLoading(
+                      false
+                    );
 
-    onGuardado={async () => {
-        await cargarOportunidades();
+                  }
 
-        setOportunidadEditando(null);
-        setCurrentScreen('ORGANIZACION_HOME');
+                }
+              }
 
-        setTimeout(() => {
-          scrollRef.current?.scrollTo({
-            y: 0,
-            animated: true
-          });
-        }, 0.1);
-      }}
 
-  showAlert={showAlert}
-  />
-)}
+              onPublicar={
+                async (
+                  idOportunidad
+                ) => {
 
+                  try {
 
+                    setLoading(
+                      true
+                    );
 
-    {
-    
-    /* ==================================================
-    HOME TEMPORAL - ADMIN
-================================================== */}
 
-      {currentScreen === 'ADMIN_HOME' && (
+                    const token =
+                      await obtenerToken();
 
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}
-        >
 
-          <Text
-            style={{
-              fontSize: 22,
-              marginBottom: 10
-            }}
-          >
-            Inicio Administrador
-          </Text>
+                    if (!token) {
 
-          <Text
-            style={{
-              fontSize: 15,
-              marginBottom: 20
-            }}
-          >
-            Rol: ADMIN
-          </Text>
+                      await eliminarToken();
 
-          <TouchableOpacity
-            onPress={handleLogout}
-          >
-            <Text style={{ fontSize: 18 }}>
-              Cerrar sesión
-            </Text>
-          </TouchableOpacity>
 
-        </View>
+                      setOportunidades(
+                        []
+                      );
 
-      )}
+
+                      setTiposActividad(
+                        []
+                      );
+
+
+                      setOportunidadEditando(
+                        null
+                      );
+
+
+                      setCurrentScreen(
+                        'A01'
+                      );
+
+
+                      showAlert(
+
+                        'error',
+
+                        'Sesión finalizada',
+
+                        'Tu sesión no es válida. Iniciá sesión nuevamente.'
+
+                      );
+
+
+                      return;
+
+                    }
+
+
+                    await publicarOportunidad(
+                      token,
+                      idOportunidad
+                    );
+
+
+                    showAlert(
+
+                      'success',
+
+                      'Oportunidad publicada',
+
+                      'La oportunidad se publicó correctamente.'
+
+                    );
+
+
+                    await cargarOportunidades();
+
+                  }
+                  catch (error) {
+
+                    if (
+                      error.response
+                        ?.status === 401
+                    ) {
+
+                      await eliminarToken();
+
+
+                      setOportunidades(
+                        []
+                      );
+
+
+                      setTiposActividad(
+                        []
+                      );
+
+
+                      setOportunidadEditando(
+                        null
+                      );
+
+
+                      setCurrentScreen(
+                        'A01'
+                      );
+
+
+                      showAlert(
+
+                        'error',
+
+                        'Sesión finalizada',
+
+                        'Tu sesión venció. Iniciá sesión nuevamente.'
+
+                      );
+
+
+                      return;
+
+                    }
+
+
+                    showAlert(
+
+                      'error',
+
+                      'No se pudo publicar',
+
+                      error.response
+                        ?.data
+                        ?.error ||
+
+                      'Ocurrió un error al publicar la oportunidad.'
+
+                    );
+
+                  }
+                  finally {
+
+                    setLoading(
+                      false
+                    );
+
+                  }
+
+                }
+              }
+
+
+              onCancelar={
+                async (
+                  idOportunidad
+                ) => {
+
+                  try {
+
+                    setLoading(
+                      true
+                    );
+
+
+                    const token =
+                      await obtenerToken();
+
+
+                    if (!token) {
+
+                      await eliminarToken();
+
+
+                      setOportunidades(
+                        []
+                      );
+
+
+                      setTiposActividad(
+                        []
+                      );
+
+
+                      setOportunidadEditando(
+                        null
+                      );
+
+
+                      setCurrentScreen(
+                        'A01'
+                      );
+
+
+                      showAlert(
+
+                        'error',
+
+                        'Sesión finalizada',
+
+                        'Tu sesión no es válida. Iniciá sesión nuevamente.'
+
+                      );
+
+
+                      return;
+
+                    }
+
+
+                    await cancelarOportunidad(
+                      token,
+                      idOportunidad
+                    );
+
+
+                    showAlert(
+
+                      'success',
+
+                      'Oportunidad cancelada',
+
+                      'La oportunidad se canceló correctamente.'
+
+                    );
+
+
+                    await cargarOportunidades();
+
+                  }
+                  catch (error) {
+
+                    if (
+                      error.response
+                        ?.status === 401
+                    ) {
+
+                      await eliminarToken();
+
+
+                      setOportunidades(
+                        []
+                      );
+
+
+                      setTiposActividad(
+                        []
+                      );
+
+
+                      setOportunidadEditando(
+                        null
+                      );
+
+
+                      setCurrentScreen(
+                        'A01'
+                      );
+
+
+                      showAlert(
+
+                        'error',
+
+                        'Sesión finalizada',
+
+                        'Tu sesión venció. Iniciá sesión nuevamente.'
+
+                      );
+
+
+                      return;
+
+                    }
+
+
+                    showAlert(
+
+                      'error',
+
+                      'No se pudo cancelar',
+
+                      error.response
+                        ?.data
+                        ?.error ||
+
+                      'Ocurrió un error al cancelar la oportunidad.'
+
+                    );
+
+                  }
+                  finally {
+
+                    setLoading(
+                      false
+                    );
+
+                  }
+
+                }
+              }
+
+
+              onCerrar={
+                async (
+                  idOportunidad
+                ) => {
+
+                  try {
+
+                    setLoading(
+                      true
+                    );
+
+
+                    const token =
+                      await obtenerToken();
+
+
+                    if (!token) {
+
+                      await eliminarToken();
+
+
+                      setOportunidades(
+                        []
+                      );
+
+
+                      setTiposActividad(
+                        []
+                      );
+
+
+                      setOportunidadEditando(
+                        null
+                      );
+
+
+                      setCurrentScreen(
+                        'A01'
+                      );
+
+
+                      showAlert(
+
+                        'error',
+
+                        'Sesión finalizada',
+
+                        'Tu sesión no es válida. Iniciá sesión nuevamente.'
+
+                      );
+
+
+                      return;
+
+                    }
+
+
+                    await cerrarOportunidad(
+                      token,
+                      idOportunidad
+                    );
+
+
+                    showAlert(
+
+                      'success',
+
+                      'Oportunidad cerrada',
+
+                      'La oportunidad se cerró correctamente.'
+
+                    );
+
+
+                    await cargarOportunidades();
+
+                  }
+                  catch (error) {
+
+                    if (
+                      error.response
+                        ?.status === 401
+                    ) {
+
+                      await eliminarToken();
+
+
+                      setOportunidades(
+                        []
+                      );
+
+
+                      setTiposActividad(
+                        []
+                      );
+
+
+                      setOportunidadEditando(
+                        null
+                      );
+
+
+                      setCurrentScreen(
+                        'A01'
+                      );
+
+
+                      showAlert(
+
+                        'error',
+
+                        'Sesión finalizada',
+
+                        'Tu sesión venció. Iniciá sesión nuevamente.'
+
+                      );
+
+
+                      return;
+
+                    }
+
+
+                    showAlert(
+
+                      'error',
+
+                      'No se pudo cerrar',
+
+                      error.response
+                        ?.data
+                        ?.error ||
+
+                      'Ocurrió un error al cerrar la oportunidad.'
+
+                    );
+
+                  }
+                  finally {
+
+                    setLoading(
+                      false
+                    );
+
+                  }
+
+                }
+              }
+
+
+              onFinalizar={
+                async (
+                  idOportunidad
+                ) => {
+
+                  try {
+
+                    setLoading(
+                      true
+                    );
+
+
+                    const token =
+                      await obtenerToken();
+
+
+                    if (!token) {
+
+                      await eliminarToken();
+
+
+                      setOportunidades(
+                        []
+                      );
+
+
+                      setTiposActividad(
+                        []
+                      );
+
+
+                      setOportunidadEditando(
+                        null
+                      );
+
+
+                      setCurrentScreen(
+                        'A01'
+                      );
+
+
+                      showAlert(
+
+                        'error',
+
+                        'Sesión finalizada',
+
+                        'Tu sesión no es válida. Iniciá sesión nuevamente.'
+
+                      );
+
+
+                      return;
+
+                    }
+
+
+                    await finalizarOportunidad(
+                      token,
+                      idOportunidad
+                    );
+
+
+                    showAlert(
+
+                      'success',
+
+                      'Oportunidad finalizada',
+
+                      'La oportunidad se finalizó correctamente.'
+
+                    );
+
+
+                    await cargarOportunidades();
+
+                  }
+                  catch (error) {
+
+                    if (
+                      error.response
+                        ?.status === 401
+                    ) {
+
+                      await eliminarToken();
+
+
+                      setOportunidades(
+                        []
+                      );
+
+
+                      setTiposActividad(
+                        []
+                      );
+
+
+                      setOportunidadEditando(
+                        null
+                      );
+
+
+                      setCurrentScreen(
+                        'A01'
+                      );
+
+
+                      showAlert(
+
+                        'error',
+
+                        'Sesión finalizada',
+
+                        'Tu sesión venció. Iniciá sesión nuevamente.'
+
+                      );
+
+
+                      return;
+
+                    }
+
+
+                    showAlert(
+
+                      'error',
+
+                      'No se pudo finalizar',
+
+                      error.response
+                        ?.data
+                        ?.error ||
+
+                      'Ocurrió un error al finalizar la oportunidad.'
+
+                    );
+
+                  }
+                  finally {
+
+                    setLoading(
+                      false
+                    );
+
+                  }
+
+                }
+              }
+
+
+              onLogout={
+                handleLogout
+              }
+
+            />
+
+          )}
+
+
+          {/* ==================================================
+              FORMULARIO
+          ================================================== */}
+
+          {currentScreen ===
+            'OPORTUNIDAD_FORM' && (
+
+            <OportunidadFormScreen
+
+              tiposActividad={
+                tiposActividad
+              }
+
+              oportunidadEditando={
+                oportunidadEditando
+              }
+
+
+              onVolver={() => {
+
+                setOportunidadEditando(
+                  null
+                );
+
+
+                setCurrentScreen(
+                  'ORGANIZACION_HOME'
+                );
+
+
+                setTimeout(
+                  () => {
+
+                    scrollRef.current
+                      ?.scrollTo({
+
+                        y: 0,
+
+                        animated:
+                          true
+
+                      });
+
+                  },
+                  0.1
+                );
+
+              }}
+
+
+              onGuardado={
+                async () => {
+
+                  await cargarOportunidades();
+
+
+                  setOportunidadEditando(
+                    null
+                  );
+
+
+                  setCurrentScreen(
+                    'ORGANIZACION_HOME'
+                  );
+
+
+                  setTimeout(
+                    () => {
+
+                      scrollRef.current
+                        ?.scrollTo({
+
+                          y: 0,
+
+                          animated:
+                            true
+
+                        });
+
+                    },
+                    0.1
+                  );
+
+                }
+              }
+
+
+              showAlert={
+                showAlert
+              }
+
+            />
+
+          )}
+
+
+          {/* ==================================================
+              ADMIN
+          ================================================== */}
+
+          {currentScreen ===
+            'ADMIN_HOME' && (
+
+            <View
+              style={{
+
+                flex: 1,
+
+                justifyContent:
+                  'center',
+
+                alignItems:
+                  'center'
+
+              }}
+            >
+
+              <Text
+                style={{
+
+                  fontSize:
+                    22,
+
+                  marginBottom:
+                    10
+
+                }}
+              >
+                Inicio Administrador
+              </Text>
+
+
+              <Text
+                style={{
+
+                  fontSize:
+                    15,
+
+                  marginBottom:
+                    20
+
+                }}
+              >
+                Rol: ADMIN
+              </Text>
+
+
+              <TouchableOpacity
+                onPress={
+                  handleLogout
+                }
+              >
+
+                <Text
+                  style={{
+                    fontSize: 18
+                  }}
+                >
+                  Cerrar sesión
+                </Text>
+
+              </TouchableOpacity>
+
+            </View>
+
+          )}
 
 
         </ScrollView>
@@ -1592,21 +3039,26 @@ onFinalizar={async (idOportunidad) => {
       </ImageBackground>
 
 
-
       {/* ======================================================
-          MODAL PERSONALIZADO GENERAL
+          MODAL GENERAL
       ====================================================== */}
 
       <Modal
 
         animationType="fade"
 
-        transparent={true}
+        transparent={
+          true
+        }
 
-        visible={modalVisible}
+        visible={
+          modalVisible
+        }
 
         onRequestClose={() =>
-          setModalVisible(false)
+          setModalVisible(
+            false
+          )
         }
 
       >
@@ -1623,14 +3075,18 @@ onFinalizar={async (idOportunidad) => {
             }
           >
 
-
             <View
               style={[
+
                 styles.modalHeader,
 
-                modalType === 'success'
+                modalType ===
+                  'success'
+
                   ? styles.headerSuccess
+
                   : styles.headerError
+
               ]}
             >
 
@@ -1640,7 +3096,8 @@ onFinalizar={async (idOportunidad) => {
                 }
               >
 
-                {modalType === 'success'
+                {modalType ===
+                  'success'
                   ? '✓'
                   : '✕'}
 
@@ -1660,9 +3117,7 @@ onFinalizar={async (idOportunidad) => {
                   styles.modalTitleText
                 }
               >
-
                 {modalTitle}
-
               </Text>
 
 
@@ -1671,24 +3126,29 @@ onFinalizar={async (idOportunidad) => {
                   styles.modalMessageText
                 }
               >
-
                 {modalMessage}
-
               </Text>
 
 
               <TouchableOpacity
 
                 style={[
+
                   styles.modalButton,
 
-                  modalType === 'success'
+                  modalType ===
+                    'success'
+
                     ? styles.btnSuccess
+
                     : styles.btnError
+
                 ]}
 
                 onPress={() =>
-                  setModalVisible(false)
+                  setModalVisible(
+                    false
+                  )
                 }
 
               >
@@ -1698,13 +3158,10 @@ onFinalizar={async (idOportunidad) => {
                     styles.modalButtonText
                   }
                 >
-
                   Entendido
-
                 </Text>
 
               </TouchableOpacity>
-
 
             </View>
 
@@ -1715,21 +3172,26 @@ onFinalizar={async (idOportunidad) => {
       </Modal>
 
 
-
       {/* ======================================================
-          MODAL CIERRE DE SESIÓN
+          MODAL LOGOUT
       ====================================================== */}
 
       <Modal
 
-        visible={logoutVisible}
+        visible={
+          logoutVisible
+        }
 
-        transparent={true}
+        transparent={
+          true
+        }
 
         animationType="fade"
 
         onRequestClose={() =>
-          setLogoutVisible(false)
+          setLogoutVisible(
+            false
+          )
         }
 
       >
@@ -1745,7 +3207,6 @@ onFinalizar={async (idOportunidad) => {
               styles.logoutModal
             }
           >
-
 
             <Text
               style={
@@ -1771,7 +3232,6 @@ onFinalizar={async (idOportunidad) => {
               }
             >
 
-
               <TouchableOpacity
 
                 style={
@@ -1779,10 +3239,14 @@ onFinalizar={async (idOportunidad) => {
                 }
 
                 onPress={() =>
-                  setLogoutVisible(false)
+                  setLogoutVisible(
+                    false
+                  )
                 }
 
-                activeOpacity={0.8}
+                activeOpacity={
+                  0.8
+                }
 
               >
 
@@ -1797,7 +3261,6 @@ onFinalizar={async (idOportunidad) => {
               </TouchableOpacity>
 
 
-
               <TouchableOpacity
 
                 style={
@@ -1808,7 +3271,9 @@ onFinalizar={async (idOportunidad) => {
                   confirmarLogout
                 }
 
-                activeOpacity={0.8}
+                activeOpacity={
+                  0.8
+                }
 
               >
 
@@ -1822,7 +3287,6 @@ onFinalizar={async (idOportunidad) => {
 
               </TouchableOpacity>
 
-
             </View>
 
           </View>
@@ -1831,7 +3295,6 @@ onFinalizar={async (idOportunidad) => {
 
       </Modal>
 
-
     </View>
 
   );
@@ -1839,228 +3302,430 @@ onFinalizar={async (idOportunidad) => {
 }
 
 
-
 // ======================================================
 // ESTILOS
 // ======================================================
 
-const styles = StyleSheet.create({
+const styles =
+  StyleSheet.create({
 
 
-  mainContainer: {
-    flex: 1,
-    backgroundColor: '#F6F8F7'
-  },
+    mainContainer: {
 
+      flex: 1,
 
-  backgroundImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%'
-  },
+      backgroundColor:
+        '#F6F8F7'
 
-
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20
-  },
-  
-  scrollContainerOrganizacion: {
-  justifyContent: 'flex-start'
-},
-
-
-
-  // ======================================================
-  // MODAL GENERAL
-  // ======================================================
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 30
-  },
-
-
-  modalCard: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    overflow: 'hidden',
-    elevation: 10
-  },
-
-
-  modalHeader: {
-    height: 60,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-
-
-  headerSuccess: {
-    backgroundColor: '#1F6F5C'
-  },
-
-
-  headerError: {
-    backgroundColor: '#C62828'
-  },
-
-
-  modalHeaderIcon: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: 'bold'
-  },
-
-
-  modalBody: {
-    padding: 20,
-    alignItems: 'center'
-  },
-
-
-  modalTitleText: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 6
-  },
-
-
-  modalMessageText: {
-    fontSize: 13,
-    color: '#5F6B76',
-    textAlign: 'center',
-    marginBottom: 18,
-    lineHeight: 18
-  },
-
-
-  modalButton: {
-    width: '100%',
-    height: 44,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-
-
-  btnSuccess: {
-    backgroundColor: '#1F6F5C'
-  },
-
-
-  btnError: {
-    backgroundColor: '#C62828'
-  },
-
-
-  modalButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold'
-  },
-
-
-
-  // ======================================================
-  // MODAL CIERRE DE SESIÓN
-  // ======================================================
-
-  logoutOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 30
-  },
-
-
-  logoutModal: {
-    width: '100%',
-    maxWidth: 360,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 22,
-
-    elevation: 10,
-
-    shadowColor: '#000000',
-
-    shadowOffset: {
-      width: 0,
-      height: 4
     },
 
-    shadowOpacity: 0.18,
-    shadowRadius: 10
-  },
+
+    backgroundImage: {
+
+      flex: 1,
+
+      width: '100%',
+
+      height: '100%'
+
+    },
 
 
-  logoutModalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#164C40',
-    textAlign: 'center',
-    marginBottom: 10
-  },
+    scrollContainer: {
+
+      flexGrow: 1,
+
+      justifyContent:
+        'center',
+
+      alignItems:
+        'center',
+
+      paddingVertical:
+        40,
+
+      paddingHorizontal:
+        20
+
+    },
 
 
-  logoutModalText: {
-    fontSize: 14,
-    color: '#5F6B76',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 22
-  },
+    scrollContainerOrganizacion: {
+
+      justifyContent:
+        'flex-start'
+
+    },
 
 
-  logoutModalButtons: {
-    flexDirection: 'row',
-    gap: 10
-  },
+    modalOverlay: {
+
+      flex: 1,
+
+      backgroundColor:
+        'rgba(0,0,0,0.5)',
+
+      justifyContent:
+        'center',
+
+      alignItems:
+        'center',
+
+      paddingHorizontal:
+        30
+
+    },
 
 
-  cancelButton: {
-    flex: 1,
-    height: 46,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#1F6F5C',
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
+    modalCard: {
+
+      width:
+        '100%',
+
+      backgroundColor:
+        '#FFFFFF',
+
+      borderRadius:
+        18,
+
+      overflow:
+        'hidden',
+
+      elevation:
+        10
+
+    },
 
 
-  cancelButtonText: {
-    color: '#1F6F5C',
-    fontSize: 14,
-    fontWeight: 'bold'
-  },
+    modalHeader: {
+
+      height:
+        60,
+
+      justifyContent:
+        'center',
+
+      alignItems:
+        'center'
+
+    },
 
 
-  confirmLogoutButton: {
-    flex: 1,
-    height: 46,
-    borderRadius: 10,
-    backgroundColor: '#C62828',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
+    headerSuccess: {
+
+      backgroundColor:
+        '#1F6F5C'
+
+    },
 
 
-  confirmLogoutButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold'
-  }
+    headerError: {
 
-});
+      backgroundColor:
+        '#C62828'
+
+    },
+
+
+    modalHeaderIcon: {
+
+      color:
+        '#FFFFFF',
+
+      fontSize:
+        28,
+
+      fontWeight:
+        'bold'
+
+    },
+
+
+    modalBody: {
+
+      padding:
+        20,
+
+      alignItems:
+        'center'
+
+    },
+
+
+    modalTitleText: {
+
+      fontSize:
+        17,
+
+      fontWeight:
+        'bold',
+
+      color:
+        '#1F2937',
+
+      marginBottom:
+        6
+
+    },
+
+
+    modalMessageText: {
+
+      fontSize:
+        13,
+
+      color:
+        '#5F6B76',
+
+      textAlign:
+        'center',
+
+      marginBottom:
+        18,
+
+      lineHeight:
+        18
+
+    },
+
+
+    modalButton: {
+
+      width:
+        '100%',
+
+      height:
+        44,
+
+      borderRadius:
+        8,
+
+      justifyContent:
+        'center',
+
+      alignItems:
+        'center'
+
+    },
+
+
+    btnSuccess: {
+
+      backgroundColor:
+        '#1F6F5C'
+
+    },
+
+
+    btnError: {
+
+      backgroundColor:
+        '#C62828'
+
+    },
+
+
+    modalButtonText: {
+
+      color:
+        '#FFFFFF',
+
+      fontSize:
+        14,
+
+      fontWeight:
+        'bold'
+
+    },
+
+
+    logoutOverlay: {
+
+      flex: 1,
+
+      backgroundColor:
+        'rgba(0,0,0,0.5)',
+
+      justifyContent:
+        'center',
+
+      alignItems:
+        'center',
+
+      paddingHorizontal:
+        30
+
+    },
+
+
+    logoutModal: {
+
+      width:
+        '100%',
+
+      maxWidth:
+        360,
+
+      backgroundColor:
+        '#FFFFFF',
+
+      borderRadius:
+        18,
+
+      padding:
+        22,
+
+      elevation:
+        10,
+
+      shadowColor:
+        '#000000',
+
+      shadowOffset: {
+
+        width: 0,
+
+        height: 4
+
+      },
+
+      shadowOpacity:
+        0.18,
+
+      shadowRadius:
+        10
+
+    },
+
+
+    logoutModalTitle: {
+
+      fontSize:
+        20,
+
+      fontWeight:
+        'bold',
+
+      color:
+        '#164C40',
+
+      textAlign:
+        'center',
+
+      marginBottom:
+        10
+
+    },
+
+
+    logoutModalText: {
+
+      fontSize:
+        14,
+
+      color:
+        '#5F6B76',
+
+      textAlign:
+        'center',
+
+      lineHeight:
+        20,
+
+      marginBottom:
+        22
+
+    },
+
+
+    logoutModalButtons: {
+
+      flexDirection:
+        'row',
+
+      gap:
+        10
+
+    },
+
+
+    cancelButton: {
+
+      flex:
+        1,
+
+      height:
+        46,
+
+      borderRadius:
+        10,
+
+      borderWidth:
+        1,
+
+      borderColor:
+        '#1F6F5C',
+
+      backgroundColor:
+        '#FFFFFF',
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center'
+
+    },
+
+
+    cancelButtonText: {
+
+      color:
+        '#1F6F5C',
+
+      fontSize:
+        14,
+
+      fontWeight:
+        'bold'
+
+    },
+
+
+    confirmLogoutButton: {
+
+      flex:
+        1,
+
+      height:
+        46,
+
+      borderRadius:
+        10,
+
+      backgroundColor:
+        '#C62828',
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center'
+
+    },
+
+
+    confirmLogoutButtonText: {
+
+      color:
+        '#FFFFFF',
+
+      fontSize:
+        14,
+
+      fontWeight:
+        'bold'
+
+    }
+
+  });

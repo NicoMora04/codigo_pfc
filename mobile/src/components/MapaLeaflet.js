@@ -1,4 +1,5 @@
 import React from 'react';
+
 import {
   View,
   StyleSheet
@@ -27,13 +28,17 @@ export default function MapaLeaflet({
   const oportunidadesValidas =
     oportunidades.filter(
       (oportunidad) =>
+
         oportunidad.latitud != null &&
+
         oportunidad.longitud != null &&
+
         Number.isFinite(
           Number(
             oportunidad.latitud
           )
         ) &&
+
         Number.isFinite(
           Number(
             oportunidad.longitud
@@ -47,14 +52,19 @@ export default function MapaLeaflet({
   // =====================================================
 
   const ubicacionUsuarioValida =
+
     ubicacionUsuario &&
+
     ubicacionUsuario.latitud != null &&
+
     ubicacionUsuario.longitud != null &&
+
     Number.isFinite(
       Number(
         ubicacionUsuario.latitud
       )
     ) &&
+
     Number.isFinite(
       Number(
         ubicacionUsuario.longitud
@@ -63,33 +73,119 @@ export default function MapaLeaflet({
 
 
   // =====================================================
-  // CENTRO INICIAL
+  // CENTRO INICIAL DE RESPALDO
   // =====================================================
 
   const centroLatitud =
+
     oportunidadesValidas.length > 0
+
       ? Number(
           oportunidadesValidas[0]
             .latitud
         )
+
       : ubicacionUsuarioValida
+
         ? Number(
             ubicacionUsuario.latitud
           )
+
         : -31.6333;
 
 
   const centroLongitud =
+
     oportunidadesValidas.length > 0
+
       ? Number(
           oportunidadesValidas[0]
             .longitud
         )
+
       : ubicacionUsuarioValida
+
         ? Number(
             ubicacionUsuario.longitud
           )
+
         : -60.7000;
+
+
+  // =====================================================
+  // CLAVE DINÁMICA DEL MAPA
+  // =====================================================
+
+  /*
+    Esta clave hace que React Native reconstruya el WebView
+    cuando realmente cambia el contenido que debe mostrarse.
+
+    De esta manera evitamos que Leaflet conserve el encuadre
+    anterior después de:
+
+    - aplicar filtros;
+    - quitar filtros;
+    - cambiar ubicación;
+    - limpiar ubicación;
+    - calcular una ruta.
+  */
+
+  const claveMapa =
+    JSON.stringify({
+
+      oportunidades:
+        oportunidadesValidas.map(
+          (oportunidad) => ({
+
+            id:
+              oportunidad.id_oportunidad,
+
+            latitud:
+              Number(
+                oportunidad.latitud
+              ),
+
+            longitud:
+              Number(
+                oportunidad.longitud
+              ),
+
+            radioKm:
+              Number(
+                oportunidad.radio_km
+              ) || 0,
+
+          })
+        ),
+
+      ubicacionUsuario:
+        ubicacionUsuarioValida
+          ? {
+
+              latitud:
+                Number(
+                  ubicacionUsuario.latitud
+                ),
+
+              longitud:
+                Number(
+                  ubicacionUsuario.longitud
+                ),
+
+              tipo:
+                tipoUbicacionUsuario,
+
+            }
+          : null,
+
+      ruta:
+        Array.isArray(
+          rutaCoordenadas
+        )
+          ? rutaCoordenadas
+          : [],
+
+    });
 
 
   // =====================================================
@@ -104,7 +200,9 @@ export default function MapaLeaflet({
       !mostrarBotonDetalle ||
       !idOportunidad
     ) {
+
       return '';
+
     }
 
 
@@ -143,7 +241,9 @@ export default function MapaLeaflet({
   // =====================================================
 
   const zonasAproximadas =
+
     oportunidadesValidas
+
       .filter(
         (oportunidad) => {
 
@@ -154,31 +254,41 @@ export default function MapaLeaflet({
 
 
           return (
+
             Number.isFinite(
               radioKm
             ) &&
+
             radioKm > 0
+
           );
 
         }
       )
+
       .map(
-        (oportunidad) => {
+        (
+          oportunidad,
+          indice
+        ) => {
 
           const latitud =
             Number(
               oportunidad.latitud
             );
 
+
           const longitud =
             Number(
               oportunidad.longitud
             );
 
+
           const radioKm =
             Number(
               oportunidad.radio_km
             );
+
 
           const radioMetros =
             radioKm * 1000;
@@ -234,38 +344,45 @@ export default function MapaLeaflet({
 
 
           return `
-            L.circle(
-              [
-                ${latitud},
-                ${longitud}
-              ],
-              {
-                radius:
-                  ${radioMetros},
+            const zonaAproximada${indice} =
+              L.circle(
+                [
+                  ${latitud},
+                  ${longitud}
+                ],
+                {
+                  radius:
+                    ${radioMetros},
 
-                color:
-                  '#D97706',
+                  color:
+                    '#D97706',
 
-                fillColor:
-                  '#F59E0B',
+                  fillColor:
+                    '#F59E0B',
 
-                fillOpacity:
-                  0.18,
+                  fillOpacity:
+                    0.18,
 
-                weight:
-                  2
-              }
-            )
-            .addTo(map)
-            .bindPopup(
-              ${JSON.stringify(
-                contenidoPopup
-              )}
+                  weight:
+                    2
+                }
+              )
+              .addTo(map)
+              .bindPopup(
+                ${JSON.stringify(
+                  contenidoPopup
+                )}
+              );
+
+
+            limitesMapa.extend(
+              zonaAproximada${indice}.getBounds()
             );
           `;
 
         }
       )
+
       .join('\n');
 
 
@@ -285,6 +402,7 @@ export default function MapaLeaflet({
             oportunidad.latitud
           );
 
+
         const longitud =
           Number(
             oportunidad.longitud
@@ -295,9 +413,12 @@ export default function MapaLeaflet({
           `${latitud},${longitud}`;
 
 
-        if (!grupos[clave]) {
+        if (
+          !grupos[clave]
+        ) {
 
-          grupos[clave] = [];
+          grupos[clave] =
+            [];
 
         }
 
@@ -319,11 +440,16 @@ export default function MapaLeaflet({
   // =====================================================
 
   const marcadores =
+
     Object.values(
       oportunidadesAgrupadas
     )
+
       .map(
-        (grupo) => {
+        (
+          grupo,
+          indice
+        ) => {
 
           const primera =
             grupo[0];
@@ -334,6 +460,7 @@ export default function MapaLeaflet({
               primera.latitud
             );
 
+
           const longitud =
             Number(
               primera.longitud
@@ -341,7 +468,7 @@ export default function MapaLeaflet({
 
 
           // ===============================================
-          // VARIAS OPORTUNIDADES
+          // VARIAS OPORTUNIDADES EN EL MISMO PUNTO
           // ===============================================
 
           if (
@@ -349,7 +476,9 @@ export default function MapaLeaflet({
           ) {
 
             const listaOportunidades =
+
               grupo
+
                 .map(
                   (oportunidad) => {
 
@@ -370,9 +499,11 @@ export default function MapaLeaflet({
 
 
                     const esAproximada =
+
                       Number.isFinite(
                         radioKm
                       ) &&
+
                       radioKm > 0;
 
 
@@ -385,8 +516,7 @@ export default function MapaLeaflet({
                     return `
                       <div
                         style="
-                          margin-bottom:
-                            14px;
+                          margin-bottom: 14px;
                         "
                       >
 
@@ -404,25 +534,23 @@ export default function MapaLeaflet({
 
                         ${
                           esAproximada
+
                             ? `
                               <span
                                 style="
-                                  color:
-                                    #D97706;
-
-                                  font-size:
-                                    12px;
+                                  color: #D97706;
+                                  font-size: 12px;
                                 "
                               >
                                 Ubicación aproximada
                                 (${radioKm} km)
                               </span>
                             `
+
                             : `
                               <span
                                 style="
-                                  font-size:
-                                    12px;
+                                  font-size: 12px;
                                 "
                               >
                                 Ubicación exacta
@@ -439,6 +567,7 @@ export default function MapaLeaflet({
 
                   }
                 )
+
                 .join('');
 
 
@@ -461,38 +590,26 @@ export default function MapaLeaflet({
             const iconoAgrupado = `
               <div
                 style="
-                  width:
-                    38px;
+                  width: 38px;
+                  height: 38px;
 
-                  height:
-                    38px;
+                  border-radius: 50%;
 
-                  border-radius:
-                    50%;
+                  background-color: #1F6F5C;
 
-                  background-color:
-                    #1F6F5C;
+                  color: white;
 
-                  color:
-                    white;
+                  display: flex;
 
-                  display:
-                    flex;
+                  align-items: center;
 
-                  align-items:
-                    center;
+                  justify-content: center;
 
-                  justify-content:
-                    center;
+                  font-weight: bold;
 
-                  font-weight:
-                    bold;
+                  font-size: 16px;
 
-                  font-size:
-                    16px;
-
-                  border:
-                    3px solid white;
+                  border: 3px solid white;
 
                   box-shadow:
                     0 2px 6px
@@ -505,39 +622,50 @@ export default function MapaLeaflet({
 
 
             return `
-              L.marker(
+              const marcadorGrupo${indice} =
+                L.marker(
+                  [
+                    ${latitud},
+                    ${longitud}
+                  ],
+                  {
+                    icon:
+                      L.divIcon({
+
+                        className:
+                          '',
+
+                        html:
+                          ${JSON.stringify(
+                            iconoAgrupado
+                          )},
+
+                        iconSize:
+                          [38, 38],
+
+                        iconAnchor:
+                          [19, 19]
+
+                      })
+                  }
+                )
+                .addTo(map)
+                .bindPopup(
+                  ${JSON.stringify(
+                    contenidoPopup
+                  )},
+                  {
+                    maxWidth:
+                      300
+                  }
+                );
+
+
+              limitesMapa.extend(
                 [
                   ${latitud},
                   ${longitud}
-                ],
-                {
-                  icon:
-                    L.divIcon({
-                      className:
-                        '',
-
-                      html:
-                        ${JSON.stringify(
-                          iconoAgrupado
-                        )},
-
-                      iconSize:
-                        [38, 38],
-
-                      iconAnchor:
-                        [19, 19]
-                    })
-                }
-              )
-              .addTo(map)
-              .bindPopup(
-                ${JSON.stringify(
-                  contenidoPopup
-                )},
-                {
-                  maxWidth:
-                    300
-                }
+                ]
               );
             `;
 
@@ -569,9 +697,11 @@ export default function MapaLeaflet({
 
 
           const tieneRadio =
+
             Number.isFinite(
               radioKm
             ) &&
+
             radioKm > 0;
 
 
@@ -580,72 +710,6 @@ export default function MapaLeaflet({
               oportunidad.id_oportunidad
             );
 
-
-          // ===============================================
-          // UBICACIÓN APROXIMADA
-          // ===============================================
-
-          if (
-            tieneRadio
-          ) {
-
-            const contenidoPopup = `
-              <div>
-
-                <strong>
-                  ${titulo}
-                </strong>
-
-                <br/>
-
-                <span>
-                  ${organizacion}
-                </span>
-
-                <br/>
-
-                <span
-                  style="
-                    color:
-                      #D97706;
-
-                    font-size:
-                      12px;
-                  "
-                >
-                  Ubicación aproximada
-                  (${radioKm} km de radio)
-                </span>
-
-                <br/>
-
-                ${botonDetalle}
-
-              </div>
-            `;
-
-
-            return `
-              L.marker(
-                [
-                  ${latitud},
-                  ${longitud}
-                ]
-              )
-              .addTo(map)
-              .bindPopup(
-                ${JSON.stringify(
-                  contenidoPopup
-                )}
-              );
-            `;
-
-          }
-
-
-          // ===============================================
-          // UBICACIÓN EXACTA
-          // ===============================================
 
           const contenidoPopup = `
             <div>
@@ -662,14 +726,31 @@ export default function MapaLeaflet({
 
               <br/>
 
-              <span
-                style="
-                  font-size:
-                    12px;
-                "
-              >
-                Ubicación exacta
-              </span>
+              ${
+                tieneRadio
+
+                  ? `
+                    <span
+                      style="
+                        color: #D97706;
+                        font-size: 12px;
+                      "
+                    >
+                      Ubicación aproximada
+                      (${radioKm} km de radio)
+                    </span>
+                  `
+
+                  : `
+                    <span
+                      style="
+                        font-size: 12px;
+                      "
+                    >
+                      Ubicación exacta
+                    </span>
+                  `
+              }
 
               <br/>
 
@@ -680,22 +761,32 @@ export default function MapaLeaflet({
 
 
           return `
-            L.marker(
+            const marcadorOportunidad${indice} =
+              L.marker(
+                [
+                  ${latitud},
+                  ${longitud}
+                ]
+              )
+              .addTo(map)
+              .bindPopup(
+                ${JSON.stringify(
+                  contenidoPopup
+                )}
+              );
+
+
+            limitesMapa.extend(
               [
                 ${latitud},
                 ${longitud}
               ]
-            )
-            .addTo(map)
-            .bindPopup(
-              ${JSON.stringify(
-                contenidoPopup
-              )}
             );
           `;
 
         }
       )
+
       .join('\n');
 
 
@@ -704,14 +795,19 @@ export default function MapaLeaflet({
   // =====================================================
 
   const textoUbicacionUsuario =
+
     tipoUbicacionUsuario ===
       'MANUAL'
+
       ? 'Ubicación seleccionada'
+
       : 'Tu ubicación actual';
 
 
   const marcadorUsuario =
+
     ubicacionUsuarioValida
+
       ? `
         const iconoUsuario =
           L.divIcon({
@@ -723,20 +819,14 @@ export default function MapaLeaflet({
               \`
                 <div
                   style="
-                    width:
-                      14px;
+                    width: 14px;
+                    height: 14px;
 
-                    height:
-                      14px;
+                    border-radius: 50%;
 
-                    border-radius:
-                      50%;
+                    background-color: #2563EB;
 
-                    background-color:
-                      #2563EB;
-
-                    border:
-                      3px solid white;
+                    border: 3px solid white;
 
                     box-shadow:
                       0 2px 7px
@@ -755,7 +845,34 @@ export default function MapaLeaflet({
           });
 
 
-        L.marker(
+        const marcadorUsuario =
+          L.marker(
+            [
+              ${Number(
+                ubicacionUsuario.latitud
+              )},
+
+              ${Number(
+                ubicacionUsuario.longitud
+              )}
+            ],
+            {
+              icon:
+                iconoUsuario,
+
+              zIndexOffset:
+                1000
+            }
+          )
+          .addTo(map)
+          .bindPopup(
+            ${JSON.stringify(
+              `<strong>${textoUbicacionUsuario}</strong>`
+            )}
+          );
+
+
+        limitesMapa.extend(
           [
             ${Number(
               ubicacionUsuario.latitud
@@ -764,56 +881,53 @@ export default function MapaLeaflet({
             ${Number(
               ubicacionUsuario.longitud
             )}
-          ],
-          {
-            icon:
-              iconoUsuario,
-
-            zIndexOffset:
-              1000
-          }
-        )
-        .addTo(map)
-        .bindPopup(
-          ${JSON.stringify(
-            `<strong>${textoUbicacionUsuario}</strong>`
-          )}
+          ]
         );
       `
+
       : '';
 
 
   // =====================================================
-  // RUTA DEVUELTA POR OPENROUTESERVICE
+  // RUTA OPENROUTESERVICE
   // =====================================================
 
   const rutaValida =
+
     Array.isArray(
       rutaCoordenadas
     ) &&
+
     rutaCoordenadas.length > 1;
 
 
   /*
-    ORS / GeoJSON devuelve:
+    ORS devuelve:
 
     [longitud, latitud]
 
-    Leaflet utiliza:
+    Leaflet necesita:
 
     [latitud, longitud]
   */
 
   const rutaLeaflet =
+
     rutaValida
+
       ? rutaCoordenadas
+
           .filter(
             (coordenada) =>
+
               Array.isArray(
                 coordenada
               ) &&
-              coordenada.length >= 2
+
+              coordenada.length >=
+                2
           )
+
           .map(
             (coordenada) => {
 
@@ -822,6 +936,7 @@ export default function MapaLeaflet({
                   coordenada[0]
                 );
 
+
               const latitud =
                 Number(
                   coordenada[1]
@@ -829,178 +944,70 @@ export default function MapaLeaflet({
 
 
               return [
+
                 latitud,
+
                 longitud
+
               ];
 
             }
           )
+
           .filter(
-            (coordenada) => {
+            (
+              [
+                latitud,
+                longitud
+              ]
+            ) =>
 
-              const latitud =
-                coordenada[0];
+              Number.isFinite(
+                latitud
+              ) &&
 
-              const longitud =
-                coordenada[1];
-
-
-              return (
-                Number.isFinite(
-                  latitud
-                ) &&
-                Number.isFinite(
-                  longitud
-                )
-              );
-
-            }
+              Number.isFinite(
+                longitud
+              )
           )
+
       : [];
 
 
   // =====================================================
-  // CÓDIGO LEAFLET PARA DIBUJAR LA RUTA
+  // POLYLINE DE LA RUTA
   // =====================================================
 
   const rutaHtml =
+
     rutaLeaflet.length > 1
+
       ? `
-        L.polyline(
-          ${JSON.stringify(
-            rutaLeaflet
-          )},
-          {
-            weight:
-              5,
+        const lineaRuta =
+          L.polyline(
+            ${JSON.stringify(
+              rutaLeaflet
+            )},
+            {
+              color:
+                '#3388FF',
 
-            opacity:
-              0.85
-          }
-        )
-        .addTo(map);
-      `
-      : '';
+              weight:
+                5,
 
-
-  // =====================================================
-  // PUNTOS PARA EL ENCUADRE AUTOMÁTICO
-  // =====================================================
-
-  const puntosMapa = [
-
-    ...oportunidadesValidas.map(
-      (oportunidad) => [
-
-        Number(
-          oportunidad.latitud
-        ),
-
-        Number(
-          oportunidad.longitud
-        ),
-
-      ]
-    ),
-
-
-    ...(ubicacionUsuarioValida
-      ? [[
-
-          Number(
-            ubicacionUsuario.latitud
-          ),
-
-          Number(
-            ubicacionUsuario.longitud
-          ),
-
-        ]]
-      : []),
-
-
-    ...(Array.isArray(
-      rutaLeaflet
-    )
-      ? rutaLeaflet
-      : []),
-
-  ];
-
-
-  // =====================================================
-  // VALIDAR PUNTOS DEL MAPA
-  // =====================================================
-
-  const puntosMapaValidos =
-    puntosMapa.filter(
-      (coordenada) => {
-
-        if (
-          !Array.isArray(
-            coordenada
-          ) ||
-          coordenada.length < 2
-        ) {
-          return false;
-        }
-
-
-        const latitud =
-          Number(
-            coordenada[0]
-          );
-
-
-        const longitud =
-          Number(
-            coordenada[1]
-          );
-
-
-        return (
-          Number.isFinite(
-            latitud
-          ) &&
-          Number.isFinite(
-            longitud
+              opacity:
+                0.85
+            }
           )
+          .addTo(map);
+
+
+        limitesMapa.extend(
+          lineaRuta.getBounds()
         );
+      `
 
-      }
-    );
-
-
-  // =====================================================
-  // CONVERTIR LOS PUNTOS A JAVASCRIPT DEL HTML
-  // =====================================================
-
-  const puntosMapaHtml =
-    puntosMapaValidos
-      .map(
-        (coordenada) => {
-
-          const latitud =
-            Number(
-              coordenada[0]
-            );
-
-          const longitud =
-            Number(
-              coordenada[1]
-            );
-
-
-          return `
-            [
-              ${latitud},
-              ${longitud}
-            ]
-          `;
-
-        }
-      )
-      .join(',');
+      : '';
 
 
   // =====================================================
@@ -1039,17 +1046,11 @@ export default function MapaLeaflet({
           body,
           #map {
 
-            height:
-              100%;
+            height: 100%;
+            width: 100%;
 
-            width:
-              100%;
-
-            margin:
-              0;
-
-            padding:
-              0;
+            margin: 0;
+            padding: 0;
 
           }
 
@@ -1062,7 +1063,7 @@ export default function MapaLeaflet({
           }
 
 
-          .btn-ver-detalle {
+          button {
 
             cursor:
               pointer;
@@ -1076,7 +1077,10 @@ export default function MapaLeaflet({
 
       <body>
 
-        <div id="map"></div>
+        <div
+          id="map"
+        >
+        </div>
 
 
         <script
@@ -1090,7 +1094,7 @@ export default function MapaLeaflet({
         <script>
 
           // ==============================================
-          // NAVEGAR AL DETALLE
+          // VER DETALLE
           // ==============================================
 
           function verDetalle(
@@ -1103,7 +1107,8 @@ export default function MapaLeaflet({
                 .postMessage
             ) {
 
-              window.ReactNativeWebView
+              window
+                .ReactNativeWebView
                 .postMessage(
 
                   JSON.stringify({
@@ -1129,8 +1134,38 @@ export default function MapaLeaflet({
 
           const map =
             L.map(
-              'map'
+              'map',
+              {
+
+                zoomControl:
+                  true,
+
+                dragging:
+                  true,
+
+                touchZoom:
+                  true,
+
+                doubleClickZoom:
+                  true
+
+              }
             );
+
+
+          // ==============================================
+          // LÍMITES GENERALES
+          // ==============================================
+
+          /*
+            Todos los elementos que agreguemos al mapa van
+            extendiendo estos límites.
+
+            Al final hacemos un único fitBounds().
+          */
+
+          const limitesMapa =
+            L.latLngBounds([]);
 
 
           // ==============================================
@@ -1152,7 +1187,9 @@ export default function MapaLeaflet({
             }
 
           )
-          .addTo(map);
+          .addTo(
+            map
+          );
 
 
           // ==============================================
@@ -1163,7 +1200,7 @@ export default function MapaLeaflet({
 
 
           // ==============================================
-          // MARCADORES DE OPORTUNIDADES
+          // OPORTUNIDADES
           // ==============================================
 
           ${marcadores}
@@ -1177,7 +1214,7 @@ export default function MapaLeaflet({
 
 
           // ==============================================
-          // RUTA CALCULADA
+          // RUTA
           // ==============================================
 
           ${rutaHtml}
@@ -1187,58 +1224,90 @@ export default function MapaLeaflet({
           // ENCUADRE AUTOMÁTICO
           // ==============================================
 
-          const puntosMapa = [
+          /*
+            Esperamos un instante a que Leaflet termine de
+            calcular correctamente el tamaño del WebView.
+          */
 
-            ${puntosMapaHtml}
+          setTimeout(
+            () => {
 
-          ];
-
-
-          if (
-            puntosMapa.length > 1
-          ) {
-
-            const limites =
-              L.latLngBounds(
-                puntosMapa
-              );
+              map.invalidateSize();
 
 
-            map.fitBounds(
-              limites,
-              {
+              if (
+                limitesMapa.isValid()
+              ) {
 
-                padding:
-                  [30, 30],
+                const esquinaSurOeste =
+                  limitesMapa.getSouthWest();
 
-                maxZoom:
-                  15
+
+                const esquinaNorEste =
+                  limitesMapa.getNorthEast();
+
+
+                const esUnSoloPunto =
+
+                  esquinaSurOeste.lat ===
+                    esquinaNorEste.lat &&
+
+                  esquinaSurOeste.lng ===
+                    esquinaNorEste.lng;
+
+
+                if (
+                  esUnSoloPunto
+                ) {
+
+                  map.setView(
+
+                    esquinaSurOeste,
+
+                    ${zoom}
+
+                  );
+
+                }
+                else {
+
+                  map.fitBounds(
+                    limitesMapa,
+                    {
+
+                      paddingTopLeft:
+                        [35, 35],
+
+                      paddingBottomRight:
+                        [35, 35],
+
+                      maxZoom:
+                        15,
+
+                      animate:
+                        false
+
+                    }
+                  );
+
+                }
 
               }
-            );
+              else {
 
-          }
-          else if (
-            puntosMapa.length === 1
-          ) {
+                map.setView(
+                  [
+                    ${centroLatitud},
+                    ${centroLongitud}
+                  ],
+                  ${zoom}
+                );
 
-            map.setView(
-              puntosMapa[0],
-              ${zoom}
-            );
+              }
 
-          }
-          else {
-
-            map.setView(
-              [
-                ${centroLatitud},
-                ${centroLongitud}
-              ],
-              ${zoom}
-            );
-
-          }
+            },
+            250
+          );
 
         </script>
 
@@ -1253,7 +1322,9 @@ export default function MapaLeaflet({
   // =====================================================
 
   const manejarMensajeMapa =
-    (event) => {
+    (
+      event
+    ) => {
 
       try {
 
@@ -1270,9 +1341,12 @@ export default function MapaLeaflet({
 
 
         if (
+
           mensaje.tipo ===
             'VER_DETALLE' &&
+
           mensaje.idOportunidad
+
         ) {
 
           console.log(
@@ -1281,15 +1355,9 @@ export default function MapaLeaflet({
           );
 
 
-          if (
-            onVerDetalle
-          ) {
-
-            onVerDetalle(
-              mensaje.idOportunidad
-            );
-
-          }
+          onVerDetalle?.(
+            mensaje.idOportunidad
+          );
 
         }
 
@@ -1320,6 +1388,15 @@ export default function MapaLeaflet({
 
       <WebView
 
+        /*
+          Fuerza una nueva instancia del WebView cuando cambia
+          el contenido geográfico que debe representar.
+        */
+
+        key={
+          claveMapa
+        }
+
         originWhitelist={[
           '*'
         ]}
@@ -1328,9 +1405,23 @@ export default function MapaLeaflet({
           html
         }}
 
-        javaScriptEnabled
+        javaScriptEnabled={
+          true
+        }
 
-        domStorageEnabled
+        domStorageEnabled={
+          true
+        }
+
+        /*
+          IMPORTANTE:
+          mantener esto porque solucionó el conflicto entre
+          Leaflet y el ScrollView principal en Android.
+        */
+
+        nestedScrollEnabled={
+          true
+        }
 
         onMessage={
           manejarMensajeMapa
@@ -1344,6 +1435,10 @@ export default function MapaLeaflet({
 
 }
 
+
+// =====================================================
+// ESTILOS
+// =====================================================
 
 const styles =
   StyleSheet.create({
