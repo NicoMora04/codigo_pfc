@@ -1086,24 +1086,28 @@ const buscarUbicaciones = async (texto) => {
 
           loading={loadingDetalle}
 
+          estadoUbicacion={estadoUbicacionVoluntario}
+
           onVolver={async () => {
 
-              setOportunidadSeleccionada(null);
+            setOportunidadSeleccionada(null);
 
-              setCurrentScreen('VOLUNTARIO_HOME');
+            setCurrentScreen('VOLUNTARIO_HOME');
 
-              await cargarOportunidadesVoluntario(filtrosVoluntario);
+            await cargarOportunidadesVoluntario(
+              filtrosVoluntario
+            );
 
-              setTimeout(() => {
+            setTimeout(() => {
 
-                scrollRef.current?.scrollTo({
-                  y: scrollYVoluntario,
-                  animated: true
-                });
+              scrollRef.current?.scrollTo({
+                y: scrollYVoluntario,
+                animated: true
+              });
 
-              }, 0.1);
+            }, 0.1);
 
-            }}
+          }}
 
         />
 

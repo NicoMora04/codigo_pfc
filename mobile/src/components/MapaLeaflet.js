@@ -1,398 +1,204 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { WebView } from 'react-native-webview';
+import {
+  View,
+  StyleSheet
+} from 'react-native';
+
+import {
+  WebView
+} from 'react-native-webview';
+
 
 export default function MapaLeaflet({
   oportunidades = [],
   zoom = 13,
   onVerDetalle,
   mostrarBotonDetalle = true,
+  ubicacionUsuario = null,
+  tipoUbicacionUsuario = null,
+  rutaCoordenadas = [],
 }) {
+
 
   // =====================================================
   // OPORTUNIDADES CON COORDENADAS VÁLIDAS
   // =====================================================
 
-  const oportunidadesValidas = oportunidades.filter(
-    (oportunidad) =>
-      oportunidad.latitud != null &&
-      oportunidad.longitud != null &&
-      Number.isFinite(Number(oportunidad.latitud)) &&
-      Number.isFinite(Number(oportunidad.longitud))
-  );
+  const oportunidadesValidas =
+    oportunidades.filter(
+      (oportunidad) =>
+        oportunidad.latitud != null &&
+        oportunidad.longitud != null &&
+        Number.isFinite(
+          Number(
+            oportunidad.latitud
+          )
+        ) &&
+        Number.isFinite(
+          Number(
+            oportunidad.longitud
+          )
+        )
+    );
 
 
   // =====================================================
-  // CENTRO INICIAL DEL MAPA
+  // UBICACIÓN DEL USUARIO VÁLIDA
+  // =====================================================
+
+  const ubicacionUsuarioValida =
+    ubicacionUsuario &&
+    ubicacionUsuario.latitud != null &&
+    ubicacionUsuario.longitud != null &&
+    Number.isFinite(
+      Number(
+        ubicacionUsuario.latitud
+      )
+    ) &&
+    Number.isFinite(
+      Number(
+        ubicacionUsuario.longitud
+      )
+    );
+
+
+  // =====================================================
+  // CENTRO INICIAL
   // =====================================================
 
   const centroLatitud =
     oportunidadesValidas.length > 0
-      ? Number(oportunidadesValidas[0].latitud)
-      : -31.6333;
+      ? Number(
+          oportunidadesValidas[0]
+            .latitud
+        )
+      : ubicacionUsuarioValida
+        ? Number(
+            ubicacionUsuario.latitud
+          )
+        : -31.6333;
+
 
   const centroLongitud =
     oportunidadesValidas.length > 0
-      ? Number(oportunidadesValidas[0].longitud)
-      : -60.7000;
+      ? Number(
+          oportunidadesValidas[0]
+            .longitud
+        )
+      : ubicacionUsuarioValida
+        ? Number(
+            ubicacionUsuario.longitud
+          )
+        : -60.7000;
 
 
   // =====================================================
   // BOTÓN VER DETALLE
   // =====================================================
 
-const crearBotonDetalle = (idOportunidad) => {
+  const crearBotonDetalle = (
+    idOportunidad
+  ) => {
 
-  if (
-    !mostrarBotonDetalle ||
-    !idOportunidad
-  ) {
-    return '';
-  }
+    if (
+      !mostrarBotonDetalle ||
+      !idOportunidad
+    ) {
+      return '';
+    }
 
-  const idSeguro =
-    JSON.stringify(
-      String(idOportunidad)
-    );
 
-  return `
-    <button
-      type="button"
-      onclick='verDetalle(${idSeguro})'
-      style="
-        margin-top: 8px;
-        padding: 7px 11px;
-        border: none;
-        border-radius: 7px;
-        background-color: #1F6F5C;
-        color: white;
-        font-weight: bold;
-        font-size: 13px;
-      "
-    >
-      Ver detalle
-    </button>
-  `;
-};
+    const idSeguro =
+      JSON.stringify(
+        String(
+          idOportunidad
+        )
+      );
+
+
+    return `
+      <button
+        type="button"
+        onclick='verDetalle(${idSeguro})'
+        style="
+          margin-top: 8px;
+          padding: 7px 11px;
+          border: none;
+          border-radius: 7px;
+          background-color: #1F6F5C;
+          color: white;
+          font-weight: bold;
+          font-size: 13px;
+        "
+      >
+        Ver detalle
+      </button>
+    `;
+
+  };
 
 
   // =====================================================
   // ZONAS DE UBICACIÓN APROXIMADA
   // =====================================================
 
-  const zonasAproximadas = oportunidadesValidas
-    .filter((oportunidad) => {
+  const zonasAproximadas =
+    oportunidadesValidas
+      .filter(
+        (oportunidad) => {
 
-      const radioKm =
-        Number(oportunidad.radio_km);
-
-      return (
-        Number.isFinite(radioKm) &&
-        radioKm > 0
-      );
-    })
-    .map((oportunidad) => {
-
-      const latitud =
-        Number(oportunidad.latitud);
-
-      const longitud =
-        Number(oportunidad.longitud);
-
-      const radioKm =
-        Number(oportunidad.radio_km);
-
-      const radioMetros =
-        radioKm * 1000;
-
-      const titulo =
-        oportunidad.titulo ||
-        'Oportunidad';
-
-      const organizacion =
-        oportunidad.organizacion ||
-        'Organización no especificada';
-
-      const botonDetalle =
-        crearBotonDetalle(
-          oportunidad.id_oportunidad
-        );
-
-      const contenidoPopup = `
-        <div>
-          <strong>${titulo}</strong>
-          <br/>
-
-          <span>${organizacion}</span>
-          <br/>
-
-          <span
-            style="
-              color: #D97706;
-              font-size: 12px;
-            "
-          >
-            Ubicación aproximada
-            (${radioKm} km de radio)
-          </span>
-
-          <br/>
-
-          ${botonDetalle}
-        </div>
-      `;
-
-      return `
-        L.circle(
-          [${latitud}, ${longitud}],
-          {
-            radius: ${radioMetros},
-            color: '#D97706',
-            fillColor: '#F59E0B',
-            fillOpacity: 0.18,
-            weight: 2
-          }
-        )
-        .addTo(map)
-        .bindPopup(
-          ${JSON.stringify(contenidoPopup)}
-        );
-      `;
-    })
-    .join('\n');
-
-
-  // =====================================================
-  // AGRUPAR OPORTUNIDADES CON LA MISMA COORDENADA
-  // =====================================================
-
-  const oportunidadesAgrupadas =
-    oportunidadesValidas.reduce(
-      (grupos, oportunidad) => {
-
-        const latitud =
-          Number(oportunidad.latitud);
-
-        const longitud =
-          Number(oportunidad.longitud);
-
-        const clave =
-          `${latitud},${longitud}`;
-
-        if (!grupos[clave]) {
-          grupos[clave] = [];
-        }
-
-        grupos[clave].push(
-          oportunidad
-        );
-
-        return grupos;
-
-      },
-      {}
-    );
-
-
-  // =====================================================
-  // CREAR MARCADORES
-  // =====================================================
-
-  const marcadores =
-    Object.values(oportunidadesAgrupadas)
-      .map((grupo) => {
-
-        const primera =
-          grupo[0];
-
-        const latitud =
-          Number(primera.latitud);
-
-        const longitud =
-          Number(primera.longitud);
-
-
-        // =================================================
-        // VARIAS OPORTUNIDADES EN EL MISMO PUNTO
-        // =================================================
-
-        if (grupo.length > 1) {
-
-          const listaOportunidades =
-            grupo
-              .map((oportunidad) => {
-
-                const titulo =
-                  oportunidad.titulo ||
-                  'Oportunidad';
-
-                const organizacion =
-                  oportunidad.organizacion ||
-                  'Organización no especificada';
-
-                const radioKm =
-                  Number(
-                    oportunidad.radio_km
-                  );
-
-                const esAproximada =
-                  Number.isFinite(radioKm) &&
-                  radioKm > 0;
-
-                const botonDetalle =
-                  crearBotonDetalle(
-                    oportunidad.id_oportunidad
-                  );
-
-                return `
-                  <div
-                    style="
-                      margin-bottom: 14px;
-                    "
-                  >
-                    <strong>
-                      ${titulo}
-                    </strong>
-
-                    <br/>
-
-                    <span>
-                      ${organizacion}
-                    </span>
-
-                    <br/>
-
-                    ${
-                      esAproximada
-                        ? `
-                          <span
-                            style="
-                              color: #D97706;
-                              font-size: 12px;
-                            "
-                          >
-                            Ubicación aproximada
-                            (${radioKm} km)
-                          </span>
-                        `
-                        : `
-                          <span
-                            style="
-                              font-size: 12px;
-                            "
-                          >
-                            Ubicación exacta
-                          </span>
-                        `
-                    }
-
-                    <br/>
-
-                    ${botonDetalle}
-                  </div>
-                `;
-              })
-              .join('');
-
-
-          const contenidoPopup = `
-            <div>
-
-              <strong>
-                ${grupo.length}
-                oportunidades en esta ubicación
-              </strong>
-
-              <hr/>
-
-              ${listaOportunidades}
-
-            </div>
-          `;
-
-
-          const iconoAgrupado = `
-            <div
-              style="
-                width: 38px;
-                height: 38px;
-                border-radius: 50%;
-                background-color: #1F6F5C;
-                color: white;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: bold;
-                font-size: 16px;
-                border: 3px solid white;
-                box-shadow:
-                  0 2px 6px rgba(0,0,0,0.35);
-              "
-            >
-              ${grupo.length}
-            </div>
-          `;
-
-
-          return `
-            L.marker(
-              [${latitud}, ${longitud}],
-              {
-                icon: L.divIcon({
-                  className: '',
-                  html:
-                    ${JSON.stringify(iconoAgrupado)},
-                  iconSize: [38, 38],
-                  iconAnchor: [19, 19]
-                })
-              }
-            )
-            .addTo(map)
-            .bindPopup(
-              ${JSON.stringify(contenidoPopup)},
-              {
-                maxWidth: 300
-              }
+          const radioKm =
+            Number(
+              oportunidad.radio_km
             );
-          `;
+
+
+          return (
+            Number.isFinite(
+              radioKm
+            ) &&
+            radioKm > 0
+          );
+
         }
+      )
+      .map(
+        (oportunidad) => {
+
+          const latitud =
+            Number(
+              oportunidad.latitud
+            );
+
+          const longitud =
+            Number(
+              oportunidad.longitud
+            );
+
+          const radioKm =
+            Number(
+              oportunidad.radio_km
+            );
+
+          const radioMetros =
+            radioKm * 1000;
 
 
-        // =================================================
-        // UNA SOLA OPORTUNIDAD
-        // =================================================
-
-        const oportunidad =
-          primera;
-
-        const titulo =
-          oportunidad.titulo ||
-          'Oportunidad';
-
-        const organizacion =
-          oportunidad.organizacion ||
-          'Organización no especificada';
-
-        const radioKm =
-          Number(
-            oportunidad.radio_km
-          );
-
-        const tieneRadio =
-          Number.isFinite(radioKm) &&
-          radioKm > 0;
-
-        const botonDetalle =
-          crearBotonDetalle(
-            oportunidad.id_oportunidad
-          );
+          const titulo =
+            oportunidad.titulo ||
+            'Oportunidad';
 
 
-        // =================================================
-        // UBICACIÓN APROXIMADA
-        // =================================================
+          const organizacion =
+            oportunidad.organizacion ||
+            'Organización no especificada';
 
-        if (tieneRadio) {
+
+          const botonDetalle =
+            crearBotonDetalle(
+              oportunidad.id_oportunidad
+            );
+
 
           const contenidoPopup = `
             <div>
@@ -428,63 +234,773 @@ const crearBotonDetalle = (idOportunidad) => {
 
 
           return `
-            L.marker(
-              [${latitud}, ${longitud}]
+            L.circle(
+              [
+                ${latitud},
+                ${longitud}
+              ],
+              {
+                radius:
+                  ${radioMetros},
+
+                color:
+                  '#D97706',
+
+                fillColor:
+                  '#F59E0B',
+
+                fillOpacity:
+                  0.18,
+
+                weight:
+                  2
+              }
             )
             .addTo(map)
             .bindPopup(
-              ${JSON.stringify(contenidoPopup)}
+              ${JSON.stringify(
+                contenidoPopup
+              )}
             );
           `;
+
+        }
+      )
+      .join('\n');
+
+
+  // =====================================================
+  // AGRUPAR OPORTUNIDADES CON MISMA COORDENADA
+  // =====================================================
+
+  const oportunidadesAgrupadas =
+    oportunidadesValidas.reduce(
+      (
+        grupos,
+        oportunidad
+      ) => {
+
+        const latitud =
+          Number(
+            oportunidad.latitud
+          );
+
+        const longitud =
+          Number(
+            oportunidad.longitud
+          );
+
+
+        const clave =
+          `${latitud},${longitud}`;
+
+
+        if (!grupos[clave]) {
+
+          grupos[clave] = [];
+
         }
 
 
-        // =================================================
-        // UBICACIÓN EXACTA
-        // =================================================
-
-        const contenidoPopup = `
-          <div>
-
-            <strong>
-              ${titulo}
-            </strong>
-
-            <br/>
-
-            <span>
-              ${organizacion}
-            </span>
-
-            <br/>
-
-            <span
-              style="
-                font-size: 12px;
-              "
-            >
-              Ubicación exacta
-            </span>
-
-            <br/>
-
-            ${botonDetalle}
-
-          </div>
-        `;
+        grupos[clave].push(
+          oportunidad
+        );
 
 
-        return `
-          L.marker(
-            [${latitud}, ${longitud}]
-          )
-          .addTo(map)
-          .bindPopup(
-            ${JSON.stringify(contenidoPopup)}
-          );
-        `;
-      })
+        return grupos;
+
+      },
+      {}
+    );
+
+
+  // =====================================================
+  // MARCADORES DE OPORTUNIDADES
+  // =====================================================
+
+  const marcadores =
+    Object.values(
+      oportunidadesAgrupadas
+    )
+      .map(
+        (grupo) => {
+
+          const primera =
+            grupo[0];
+
+
+          const latitud =
+            Number(
+              primera.latitud
+            );
+
+          const longitud =
+            Number(
+              primera.longitud
+            );
+
+
+          // ===============================================
+          // VARIAS OPORTUNIDADES
+          // ===============================================
+
+          if (
+            grupo.length > 1
+          ) {
+
+            const listaOportunidades =
+              grupo
+                .map(
+                  (oportunidad) => {
+
+                    const titulo =
+                      oportunidad.titulo ||
+                      'Oportunidad';
+
+
+                    const organizacion =
+                      oportunidad.organizacion ||
+                      'Organización no especificada';
+
+
+                    const radioKm =
+                      Number(
+                        oportunidad.radio_km
+                      );
+
+
+                    const esAproximada =
+                      Number.isFinite(
+                        radioKm
+                      ) &&
+                      radioKm > 0;
+
+
+                    const botonDetalle =
+                      crearBotonDetalle(
+                        oportunidad.id_oportunidad
+                      );
+
+
+                    return `
+                      <div
+                        style="
+                          margin-bottom:
+                            14px;
+                        "
+                      >
+
+                        <strong>
+                          ${titulo}
+                        </strong>
+
+                        <br/>
+
+                        <span>
+                          ${organizacion}
+                        </span>
+
+                        <br/>
+
+                        ${
+                          esAproximada
+                            ? `
+                              <span
+                                style="
+                                  color:
+                                    #D97706;
+
+                                  font-size:
+                                    12px;
+                                "
+                              >
+                                Ubicación aproximada
+                                (${radioKm} km)
+                              </span>
+                            `
+                            : `
+                              <span
+                                style="
+                                  font-size:
+                                    12px;
+                                "
+                              >
+                                Ubicación exacta
+                              </span>
+                            `
+                        }
+
+                        <br/>
+
+                        ${botonDetalle}
+
+                      </div>
+                    `;
+
+                  }
+                )
+                .join('');
+
+
+            const contenidoPopup = `
+              <div>
+
+                <strong>
+                  ${grupo.length}
+                  oportunidades en esta ubicación
+                </strong>
+
+                <hr/>
+
+                ${listaOportunidades}
+
+              </div>
+            `;
+
+
+            const iconoAgrupado = `
+              <div
+                style="
+                  width:
+                    38px;
+
+                  height:
+                    38px;
+
+                  border-radius:
+                    50%;
+
+                  background-color:
+                    #1F6F5C;
+
+                  color:
+                    white;
+
+                  display:
+                    flex;
+
+                  align-items:
+                    center;
+
+                  justify-content:
+                    center;
+
+                  font-weight:
+                    bold;
+
+                  font-size:
+                    16px;
+
+                  border:
+                    3px solid white;
+
+                  box-shadow:
+                    0 2px 6px
+                    rgba(0,0,0,0.35);
+                "
+              >
+                ${grupo.length}
+              </div>
+            `;
+
+
+            return `
+              L.marker(
+                [
+                  ${latitud},
+                  ${longitud}
+                ],
+                {
+                  icon:
+                    L.divIcon({
+                      className:
+                        '',
+
+                      html:
+                        ${JSON.stringify(
+                          iconoAgrupado
+                        )},
+
+                      iconSize:
+                        [38, 38],
+
+                      iconAnchor:
+                        [19, 19]
+                    })
+                }
+              )
+              .addTo(map)
+              .bindPopup(
+                ${JSON.stringify(
+                  contenidoPopup
+                )},
+                {
+                  maxWidth:
+                    300
+                }
+              );
+            `;
+
+          }
+
+
+          // ===============================================
+          // UNA SOLA OPORTUNIDAD
+          // ===============================================
+
+          const oportunidad =
+            primera;
+
+
+          const titulo =
+            oportunidad.titulo ||
+            'Oportunidad';
+
+
+          const organizacion =
+            oportunidad.organizacion ||
+            'Organización no especificada';
+
+
+          const radioKm =
+            Number(
+              oportunidad.radio_km
+            );
+
+
+          const tieneRadio =
+            Number.isFinite(
+              radioKm
+            ) &&
+            radioKm > 0;
+
+
+          const botonDetalle =
+            crearBotonDetalle(
+              oportunidad.id_oportunidad
+            );
+
+
+          // ===============================================
+          // UBICACIÓN APROXIMADA
+          // ===============================================
+
+          if (
+            tieneRadio
+          ) {
+
+            const contenidoPopup = `
+              <div>
+
+                <strong>
+                  ${titulo}
+                </strong>
+
+                <br/>
+
+                <span>
+                  ${organizacion}
+                </span>
+
+                <br/>
+
+                <span
+                  style="
+                    color:
+                      #D97706;
+
+                    font-size:
+                      12px;
+                  "
+                >
+                  Ubicación aproximada
+                  (${radioKm} km de radio)
+                </span>
+
+                <br/>
+
+                ${botonDetalle}
+
+              </div>
+            `;
+
+
+            return `
+              L.marker(
+                [
+                  ${latitud},
+                  ${longitud}
+                ]
+              )
+              .addTo(map)
+              .bindPopup(
+                ${JSON.stringify(
+                  contenidoPopup
+                )}
+              );
+            `;
+
+          }
+
+
+          // ===============================================
+          // UBICACIÓN EXACTA
+          // ===============================================
+
+          const contenidoPopup = `
+            <div>
+
+              <strong>
+                ${titulo}
+              </strong>
+
+              <br/>
+
+              <span>
+                ${organizacion}
+              </span>
+
+              <br/>
+
+              <span
+                style="
+                  font-size:
+                    12px;
+                "
+              >
+                Ubicación exacta
+              </span>
+
+              <br/>
+
+              ${botonDetalle}
+
+            </div>
+          `;
+
+
+          return `
+            L.marker(
+              [
+                ${latitud},
+                ${longitud}
+              ]
+            )
+            .addTo(map)
+            .bindPopup(
+              ${JSON.stringify(
+                contenidoPopup
+              )}
+            );
+          `;
+
+        }
+      )
       .join('\n');
+
+
+  // =====================================================
+  // MARCADOR DEL USUARIO
+  // =====================================================
+
+  const textoUbicacionUsuario =
+    tipoUbicacionUsuario ===
+      'MANUAL'
+      ? 'Ubicación seleccionada'
+      : 'Tu ubicación actual';
+
+
+  const marcadorUsuario =
+    ubicacionUsuarioValida
+      ? `
+        const iconoUsuario =
+          L.divIcon({
+
+            className:
+              '',
+
+            html:
+              \`
+                <div
+                  style="
+                    width:
+                      14px;
+
+                    height:
+                      14px;
+
+                    border-radius:
+                      50%;
+
+                    background-color:
+                      #2563EB;
+
+                    border:
+                      3px solid white;
+
+                    box-shadow:
+                      0 2px 7px
+                      rgba(0,0,0,0.4);
+                  "
+                >
+                </div>
+              \`,
+
+            iconSize:
+              [14, 14],
+
+            iconAnchor:
+              [7, 7]
+
+          });
+
+
+        L.marker(
+          [
+            ${Number(
+              ubicacionUsuario.latitud
+            )},
+
+            ${Number(
+              ubicacionUsuario.longitud
+            )}
+          ],
+          {
+            icon:
+              iconoUsuario,
+
+            zIndexOffset:
+              1000
+          }
+        )
+        .addTo(map)
+        .bindPopup(
+          ${JSON.stringify(
+            `<strong>${textoUbicacionUsuario}</strong>`
+          )}
+        );
+      `
+      : '';
+
+
+  // =====================================================
+  // RUTA DEVUELTA POR OPENROUTESERVICE
+  // =====================================================
+
+  const rutaValida =
+    Array.isArray(
+      rutaCoordenadas
+    ) &&
+    rutaCoordenadas.length > 1;
+
+
+  /*
+    ORS / GeoJSON devuelve:
+
+    [longitud, latitud]
+
+    Leaflet utiliza:
+
+    [latitud, longitud]
+  */
+
+  const rutaLeaflet =
+    rutaValida
+      ? rutaCoordenadas
+          .filter(
+            (coordenada) =>
+              Array.isArray(
+                coordenada
+              ) &&
+              coordenada.length >= 2
+          )
+          .map(
+            (coordenada) => {
+
+              const longitud =
+                Number(
+                  coordenada[0]
+                );
+
+              const latitud =
+                Number(
+                  coordenada[1]
+                );
+
+
+              return [
+                latitud,
+                longitud
+              ];
+
+            }
+          )
+          .filter(
+            (coordenada) => {
+
+              const latitud =
+                coordenada[0];
+
+              const longitud =
+                coordenada[1];
+
+
+              return (
+                Number.isFinite(
+                  latitud
+                ) &&
+                Number.isFinite(
+                  longitud
+                )
+              );
+
+            }
+          )
+      : [];
+
+
+  // =====================================================
+  // CÓDIGO LEAFLET PARA DIBUJAR LA RUTA
+  // =====================================================
+
+  const rutaHtml =
+    rutaLeaflet.length > 1
+      ? `
+        L.polyline(
+          ${JSON.stringify(
+            rutaLeaflet
+          )},
+          {
+            weight:
+              5,
+
+            opacity:
+              0.85
+          }
+        )
+        .addTo(map);
+      `
+      : '';
+
+
+  // =====================================================
+  // PUNTOS PARA EL ENCUADRE AUTOMÁTICO
+  // =====================================================
+
+  const puntosMapa = [
+
+    ...oportunidadesValidas.map(
+      (oportunidad) => [
+
+        Number(
+          oportunidad.latitud
+        ),
+
+        Number(
+          oportunidad.longitud
+        ),
+
+      ]
+    ),
+
+
+    ...(ubicacionUsuarioValida
+      ? [[
+
+          Number(
+            ubicacionUsuario.latitud
+          ),
+
+          Number(
+            ubicacionUsuario.longitud
+          ),
+
+        ]]
+      : []),
+
+
+    ...(Array.isArray(
+      rutaLeaflet
+    )
+      ? rutaLeaflet
+      : []),
+
+  ];
+
+
+  // =====================================================
+  // VALIDAR PUNTOS DEL MAPA
+  // =====================================================
+
+  const puntosMapaValidos =
+    puntosMapa.filter(
+      (coordenada) => {
+
+        if (
+          !Array.isArray(
+            coordenada
+          ) ||
+          coordenada.length < 2
+        ) {
+          return false;
+        }
+
+
+        const latitud =
+          Number(
+            coordenada[0]
+          );
+
+
+        const longitud =
+          Number(
+            coordenada[1]
+          );
+
+
+        return (
+          Number.isFinite(
+            latitud
+          ) &&
+          Number.isFinite(
+            longitud
+          )
+        );
+
+      }
+    );
+
+
+  // =====================================================
+  // CONVERTIR LOS PUNTOS A JAVASCRIPT DEL HTML
+  // =====================================================
+
+  const puntosMapaHtml =
+    puntosMapaValidos
+      .map(
+        (coordenada) => {
+
+          const latitud =
+            Number(
+              coordenada[0]
+            );
+
+          const longitud =
+            Number(
+              coordenada[1]
+            );
+
+
+          return `
+            [
+              ${latitud},
+              ${longitud}
+            ]
+          `;
+
+        }
+      )
+      .join(',');
 
 
   // =====================================================
@@ -508,28 +1024,49 @@ const crearBotonDetalle = (idOportunidad) => {
           "
         />
 
+
         <link
           rel="stylesheet"
-          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          href="
+            https://unpkg.com/leaflet@1.9.4/dist/leaflet.css
+          "
         />
-        
+
+
         <style>
 
           html,
           body,
           #map {
-            height: 100%;
-            width: 100%;
-            margin: 0;
-            padding: 0;
+
+            height:
+              100%;
+
+            width:
+              100%;
+
+            margin:
+              0;
+
+            padding:
+              0;
+
           }
+
 
           .leaflet-popup-content {
-            min-width: 170px;
+
+            min-width:
+              170px;
+
           }
 
+
           .btn-ver-detalle {
-            cursor: pointer;
+
+            cursor:
+              pointer;
+
           }
 
         </style>
@@ -543,55 +1080,79 @@ const crearBotonDetalle = (idOportunidad) => {
 
 
         <script
-          src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        ></script>
+          src="
+            https://unpkg.com/leaflet@1.9.4/dist/leaflet.js
+          "
+        >
+        </script>
 
 
         <script>
 
-          function verDetalle(idOportunidad) {
+          // ==============================================
+          // NAVEGAR AL DETALLE
+          // ==============================================
+
+          function verDetalle(
+            idOportunidad
+          ) {
 
             if (
               window.ReactNativeWebView &&
-              window.ReactNativeWebView.postMessage
+              window.ReactNativeWebView
+                .postMessage
             ) {
 
-              window.ReactNativeWebView.postMessage(
-                JSON.stringify({
-                  tipo: 'VER_DETALLE',
-                  idOportunidad: idOportunidad
-                })
-              );
+              window.ReactNativeWebView
+                .postMessage(
+
+                  JSON.stringify({
+
+                    tipo:
+                      'VER_DETALLE',
+
+                    idOportunidad:
+                      idOportunidad
+
+                  })
+
+                );
+
             }
-          }
-
-          const map = L.map('map');
-
-          if (${oportunidadesValidas.length} === 0) {
-
-            map.setView(
-              [${centroLatitud}, ${centroLongitud}],
-              ${zoom}
-            );
-
-          } else if (${oportunidadesValidas.length} === 1) {
-
-            map.setView(
-              [${centroLatitud}, ${centroLongitud}],
-              ${zoom}
-            );
 
           }
 
+
+          // ==============================================
+          // CREAR MAPA
+          // ==============================================
+
+          const map =
+            L.map(
+              'map'
+            );
+
+
+          // ==============================================
+          // OPENSTREETMAP
+          // ==============================================
 
           L.tileLayer(
+
             'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+
             {
-              maxZoom: 19,
+
+              maxZoom:
+                19,
+
               attribution:
                 '&copy; OpenStreetMap contributors'
+
             }
-          ).addTo(map);
+
+          )
+          .addTo(map);
 
 
           // ==============================================
@@ -602,32 +1163,81 @@ const crearBotonDetalle = (idOportunidad) => {
 
 
           // ==============================================
-          // MARCADORES
+          // MARCADORES DE OPORTUNIDADES
           // ==============================================
 
           ${marcadores}
 
 
-          if (${oportunidadesValidas.length} > 1) {
-            const puntos = [
-              ${oportunidadesValidas
-                .map(
-                  (oportunidad) =>
-                    `[${Number(oportunidad.latitud)}, ${Number(oportunidad.longitud)}]`
-                )
-                .join(',')}
-            ];
+          // ==============================================
+          // UBICACIÓN DEL USUARIO
+          // ==============================================
+
+          ${marcadorUsuario}
+
+
+          // ==============================================
+          // RUTA CALCULADA
+          // ==============================================
+
+          ${rutaHtml}
+
+
+          // ==============================================
+          // ENCUADRE AUTOMÁTICO
+          // ==============================================
+
+          const puntosMapa = [
+
+            ${puntosMapaHtml}
+
+          ];
+
+
+          if (
+            puntosMapa.length > 1
+          ) {
 
             const limites =
-              L.latLngBounds(puntos);
+              L.latLngBounds(
+                puntosMapa
+              );
+
 
             map.fitBounds(
               limites,
               {
-                padding: [30, 30],
-                maxZoom: 15
+
+                padding:
+                  [30, 30],
+
+                maxZoom:
+                  15
+
               }
             );
+
+          }
+          else if (
+            puntosMapa.length === 1
+          ) {
+
+            map.setView(
+              puntosMapa[0],
+              ${zoom}
+            );
+
+          }
+          else {
+
+            map.setView(
+              [
+                ${centroLatitud},
+                ${centroLongitud}
+              ],
+              ${zoom}
+            );
+
           }
 
         </script>
@@ -642,53 +1252,58 @@ const crearBotonDetalle = (idOportunidad) => {
   // MENSAJES WEBVIEW → REACT NATIVE
   // =====================================================
 
-  const manejarMensajeMapa = (event) => {
+  const manejarMensajeMapa =
+    (event) => {
 
-    try {
+      try {
 
-      const mensaje =
-        JSON.parse(
-          event.nativeEvent.data
-        );
+        const mensaje =
+          JSON.parse(
+            event.nativeEvent.data
+          );
 
-
-      console.log(
-        'MENSAJE RECIBIDO DESDE MAPA:',
-        mensaje
-      );
-
-
-      if (
-        mensaje.tipo === 'VER_DETALLE' &&
-        mensaje.idOportunidad
-      ) {
 
         console.log(
-          'ABRIENDO OPORTUNIDAD:',
-          mensaje.idOportunidad
+          'MENSAJE RECIBIDO DESDE MAPA:',
+          mensaje
         );
 
 
-        if (onVerDetalle) {
+        if (
+          mensaje.tipo ===
+            'VER_DETALLE' &&
+          mensaje.idOportunidad
+        ) {
 
-          onVerDetalle(
+          console.log(
+            'ABRIENDO OPORTUNIDAD:',
             mensaje.idOportunidad
           );
+
+
+          if (
+            onVerDetalle
+          ) {
+
+            onVerDetalle(
+              mensaje.idOportunidad
+            );
+
+          }
 
         }
 
       }
+      catch (error) {
 
-    } catch (error) {
+        console.log(
+          'ERROR MENSAJE MAPA:',
+          error
+        );
 
-      console.log(
-        'ERROR MENSAJE MAPA:',
-        error
-      );
+      }
 
-    }
-
-  };
+    };
 
 
   // =====================================================
@@ -697,28 +1312,53 @@ const crearBotonDetalle = (idOportunidad) => {
 
   return (
 
-    <View style={styles.container}>
+    <View
+      style={
+        styles.container
+      }
+    >
 
       <WebView
-        originWhitelist={['*']}
-        source={{ html }}
+
+        originWhitelist={[
+          '*'
+        ]}
+
+        source={{
+          html
+        }}
+
         javaScriptEnabled
+
         domStorageEnabled
-        onMessage={manejarMensajeMapa}
+
+        onMessage={
+          manejarMensajeMapa
+        }
+
       />
 
     </View>
 
   );
+
 }
 
 
-const styles = StyleSheet.create({
+const styles =
+  StyleSheet.create({
 
-  container: {
-    width: '100%',
-    height: 400,
-    overflow: 'hidden',
-  },
+    container: {
 
-});
+      width:
+        '100%',
+
+      height:
+        400,
+
+      overflow:
+        'hidden',
+
+    },
+
+  });

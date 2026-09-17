@@ -372,27 +372,39 @@ export default function BuscarOportunidadesScreen({
 
   const limpiarFiltros = async () => {
 
-    setNombreBusqueda('');
-    setTipoSeleccionado(null);
-    setUrgenciaSeleccionada(null);
+  setNombreBusqueda('');
+  setTipoSeleccionado(null);
+  setUrgenciaSeleccionada(null);
 
-    setFechaSeleccionada(null);
-    setMostrarFecha(false);
+  setFechaSeleccionada(null);
+  setMostrarFecha(false);
 
-    setUbicacionActual(null);
-    setDireccionActual('');
+  setUbicacionActual(null);
+  setDireccionActual('');
 
-    setUbicacionManualSeleccionada(null);
-    setTextoUbicacion('');
-    setResultadosUbicacion([]);
+  setUbicacionManualSeleccionada(null);
+  setTextoUbicacion('');
+  setResultadosUbicacion([]);
 
-    setModoUbicacion(null);
+  setModoUbicacion(null);
 
-    setRadioBusquedaKm('10');
+  setRadioBusquedaKm('10');
 
-    await onFiltrar({});
 
-  };
+  // Limpiar también la ubicación guardada en App.js
+  onGuardarEstadoUbicacion?.({
+    modoUbicacion: null,
+    ubicacionActual: null,
+    ubicacionManualSeleccionada: null,
+    direccionActual: '',
+    textoUbicacion: '',
+    radioBusquedaKm: '10',
+  });
+
+
+  await onFiltrar({});
+
+};
 
 
   // =====================================================
@@ -1125,6 +1137,14 @@ export default function BuscarOportunidadesScreen({
         <MapaLeaflet
           oportunidades={oportunidades}
           onVerDetalle={onVerDetalle}
+          ubicacionUsuario={
+            modoUbicacion === 'GPS'
+              ? ubicacionActual
+              : modoUbicacion === 'MANUAL'
+                ? ubicacionManualSeleccionada
+                : null
+          }
+          tipoUbicacionUsuario={modoUbicacion}
         />
 
 
