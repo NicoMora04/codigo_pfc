@@ -24,7 +24,7 @@ export default function DetalleOportunidadScreen({
   onInscribirse,
   estadoUbicacion,
   estadoInscripcion,
-  origenDetalle,
+
 }) {
 
   // =====================================================

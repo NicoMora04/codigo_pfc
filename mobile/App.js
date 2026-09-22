@@ -2377,9 +2377,7 @@ const cargarMisInscripciones =
                 estadoInscripcionDetalle
               }
 
-              origenDetalle={
-                origenDetalleVoluntario
-              }
+              
 
               onVolver={async () => {
 

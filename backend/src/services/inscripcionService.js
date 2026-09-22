@@ -41,8 +41,37 @@ const inscribirse = async (idOportunidad, idVoluntario) => {
     throw error;
   }
 
-  // 4. Crear la inscripción en estado PENDIENTE
-  return inscripcionRepository.crear(idOportunidad, idVoluntario);
+// 4. Crear la inscripción en estado PENDIENTE
+try {
+
+  return await inscripcionRepository.crear(
+    idOportunidad,
+    idVoluntario
+  );
+
+}
+catch (error) {
+
+  if (
+    error.code === '23505' &&
+    error.constraint ===
+      'uq_inscripcion_oportunidad_voluntario'
+  ) {
+
+    const duplicateError =
+      new Error(
+        'Ya estás inscripto en esta oportunidad'
+      );
+
+    duplicateError.status = 409;
+
+    throw duplicateError;
+
+  }
+
+  throw error;
+
+}
 };
 
 

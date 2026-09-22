@@ -39,6 +39,14 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor backend corriendo en el puerto ${PORT}`);
-});
+if (require.main === module) {
+
+  app.listen(PORT, () => {
+    console.log(
+      `Servidor backend corriendo en el puerto ${PORT}`
+    );
+  });
+
+}
+
+module.exports = app;
