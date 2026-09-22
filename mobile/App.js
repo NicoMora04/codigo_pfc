@@ -3,6 +3,8 @@ import React, {
   useEffect
 } from 'react';
 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 import {
   StyleSheet,
   View,
@@ -41,6 +43,15 @@ import BuscarOportunidadesScreen
 import DetalleOportunidadScreen
   from './src/screens/DetalleOportunidadScreen';
 
+import MisInscripcionesScreen from './src/screens/MisInscripcionesScreen';
+
+import VoluntarioBottomNav
+  from './src/components/VoluntarioBottomNav';
+
+  import {
+  inscribirseOportunidad, obtenerMisInscripciones
+} from './src/services/inscripcionService';
+
 
 import {
   guardarToken,
@@ -75,6 +86,10 @@ import {
 } from './src/services/ubicacionService';
 
 
+
+
+
+
 export default function App() {
 
   const [
@@ -99,6 +114,21 @@ export default function App() {
     oportunidadesVoluntario,
     setOportunidadesVoluntario
   ] = useState([]);
+
+  const [
+  inscripcionesVoluntario,
+  setInscripcionesVoluntario
+  ] = useState([]);
+
+  const [
+  estadoInscripcionDetalle,
+  setEstadoInscripcionDetalle
+] = useState(null);
+
+const [
+  origenDetalleVoluntario,
+  setOrigenDetalleVoluntario
+] = useState(null);
 
 
   const [
@@ -130,6 +160,10 @@ export default function App() {
     setScrollYVoluntario
   ] = useState(0);
 
+  const [
+    scrollYInscripciones,
+    setScrollYInscripciones
+  ] = useState(0);
 
   const scrollRef =
     React.useRef(null);
@@ -229,6 +263,9 @@ export default function App() {
             await cargarTiposActividad();
 
             await cargarOportunidadesVoluntario();
+
+            await cargarMisInscripciones();
+
 
           }
           else if (
@@ -433,6 +470,8 @@ export default function App() {
           await cargarTiposActividad();
 
           await cargarOportunidadesVoluntario();
+
+          await cargarMisInscripciones();
 
         }
         else if (
@@ -1077,6 +1116,10 @@ export default function App() {
         0
       );
 
+      setScrollYInscripciones(
+        0
+      );
+
 
       setLogoutVisible(
         false
@@ -1643,11 +1686,284 @@ export default function App() {
     };
 
 
+    // ======================================================
+// INSCRIPCIÓN DE VOLUNTARIO
+// ======================================================
+
+const handleInscribirse =
+  async (
+    idOportunidad
+  ) => {
+
+    try {
+
+      setLoading(
+        true
+      );
+
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+
+          'error',
+
+          'Sesión finalizada',
+
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+          await inscribirseOportunidad(
+            token,
+            idOportunidad
+          );
+
+
+        if (
+          currentScreen ===
+          'OPORTUNIDAD_DETALLE'
+        ) {
+
+          setEstadoInscripcionDetalle(
+            data?.inscripcion?.estado ||
+            'PENDIENTE'
+          );
+
+        }
+
+
+        await cargarMisInscripciones();
+
+
+      showAlert(
+
+        'success',
+
+        'Inscripción realizada',
+
+        'Te inscribiste correctamente a la oportunidad. Tu inscripción quedó pendiente de respuesta.'
+
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response
+          ?.status === 401
+      ) {
+
+        await eliminarToken();
+
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+
+          'error',
+
+          'Sesión finalizada',
+
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+
+        'error',
+
+        'No se pudo realizar la inscripción',
+
+        error.response
+          ?.data
+          ?.mensaje ||
+
+        'Ocurrió un error al intentar inscribirte.'
+
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoading(
+        false
+      );
+
+    }
+
+  };
+
+
+  // ======================================================
+// MIS INSCRIPCIONES
+// ======================================================
+
+const cargarMisInscripciones =
+  async () => {
+
+    setLoading(
+      true
+    );
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setInscripcionesVoluntario(
+          []
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+
+          'error',
+
+          'Sesión finalizada',
+
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+        await obtenerMisInscripciones(
+          token
+        );
+
+       
+
+
+      setInscripcionesVoluntario(
+        Array.isArray(data)
+          ? data
+          : []
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response
+          ?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setInscripcionesVoluntario(
+          []
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+
+          'error',
+
+          'Sesión finalizada',
+
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+
+        'error',
+
+        'Error',
+
+        error.response
+          ?.data
+          ?.mensaje ||
+
+        'No se pudieron cargar tus inscripciones.'
+
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoading(
+        false
+      );
+
+    }
+
+  };
+
+
   // ======================================================
   // RENDER PRINCIPAL
   // ======================================================
 
   return (
+
+    <SafeAreaProvider>
 
     <View
       style={
@@ -1710,6 +2026,15 @@ export default function App() {
             ) {
 
               setScrollYVoluntario(
+                y
+              );
+
+            } else if (
+              currentScreen ===
+              'MIS_INSCRIPCIONES'
+            ) {
+
+              setScrollYInscripciones(
                 y
               );
 
@@ -1903,6 +2228,14 @@ export default function App() {
                 loading
               }
 
+              inscripciones={
+                inscripcionesVoluntario
+              }
+
+              onInscribirse={
+                handleInscribirse
+              }
+
               onFiltrar={async (
                 filtros
               ) => {
@@ -1927,14 +2260,34 @@ export default function App() {
               }
 
               onVerDetalle={async (
-                idOportunidad
-              ) => {
-
-                await cargarDetalleOportunidadVoluntario(
                   idOportunidad
-                );
+                ) => {
 
-              }}
+                  const inscripcionExistente =
+                    inscripcionesVoluntario.find(
+                      (inscripcion) =>
+                        inscripcion.id_oportunidad ===
+                        idOportunidad
+                    );
+
+
+                  setOrigenDetalleVoluntario(
+                    'BUSCAR'
+                  );
+
+
+                  setEstadoInscripcionDetalle(
+                    inscripcionExistente
+                      ? inscripcionExistente.estado
+                      : null
+                  );
+
+
+                  await cargarDetalleOportunidadVoluntario(
+                    idOportunidad
+                  );
+
+                }}
 
               filtrosGuardados={
                 filtrosVoluntario
@@ -1951,6 +2304,45 @@ export default function App() {
               showAlert={
                 showAlert
               }
+
+            />
+
+          )}
+
+          {/* ======================================================
+              MIS INSCRIPCIONES
+          ====================================================== */}
+
+          {currentScreen === 'MIS_INSCRIPCIONES' && (
+
+            <MisInscripcionesScreen
+
+              inscripciones={
+                inscripcionesVoluntario
+              }
+
+              loading={
+                loading
+              }
+
+              onVerDetalle={async (
+                idOportunidad,
+                estadoInscripcion
+              ) => {
+
+                setOrigenDetalleVoluntario(
+                  'MIS_INSCRIPCIONES'
+                );
+
+                setEstadoInscripcionDetalle(
+                  estadoInscripcion
+                );
+
+                await cargarDetalleOportunidadVoluntario(
+                  idOportunidad
+                );
+
+              }}
 
             />
 
@@ -1977,12 +2369,54 @@ export default function App() {
               estadoUbicacion={
                 estadoUbicacionVoluntario
               }
+              onInscribirse={
+                handleInscribirse
+              }
+
+              estadoInscripcion={
+                estadoInscripcionDetalle
+              }
+
+              
 
               onVolver={async () => {
 
                 setOportunidadSeleccionada(
                   null
                 );
+
+                if (
+                    origenDetalleVoluntario ===
+                    'MIS_INSCRIPCIONES'
+                  ) {
+
+                    setCurrentScreen(
+                      'MIS_INSCRIPCIONES'
+                    );
+
+                     setTimeout(
+                          () => {
+
+                            scrollRef.current
+                              ?.scrollTo({
+
+                                y:
+                                  scrollYInscripciones,
+
+                                animated:
+                                  true
+
+                              });
+
+                          },
+                          0.1
+                        );
+
+                    return;
+
+                  }
+
+
 
 
                 setCurrentScreen(
@@ -3039,6 +3473,51 @@ export default function App() {
       </ImageBackground>
 
 
+      {(currentScreen === 'VOLUNTARIO_HOME' ||
+                currentScreen === 'MIS_INSCRIPCIONES') && (
+
+                <VoluntarioBottomNav
+
+                  opcionActiva={
+                    currentScreen === 'VOLUNTARIO_HOME'
+                      ? 'BUSCAR'
+                      : 'INSCRIPCIONES'
+                  }
+
+                  onInicio={() => {
+
+                    // Se conectará cuando creemos
+                    // la pantalla principal con el mapa.
+
+                  }}
+
+                  onBuscar={async () => {
+
+                    setCurrentScreen(
+                      'VOLUNTARIO_HOME'
+                    );
+
+
+                    await cargarOportunidadesVoluntario(
+                      filtrosVoluntario
+                    );
+
+                  }}
+
+                  onMisInscripciones={async () => {
+                    setCurrentScreen(
+                      'MIS_INSCRIPCIONES'
+                    );
+
+                    await cargarMisInscripciones();
+
+                  }}
+
+                />
+
+              )}
+
+
       {/* ======================================================
           MODAL GENERAL
       ====================================================== */}
@@ -3296,6 +3775,7 @@ export default function App() {
       </Modal>
 
     </View>
+    </SafeAreaProvider>
 
   );
 

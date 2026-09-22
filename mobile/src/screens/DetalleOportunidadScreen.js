@@ -6,6 +6,8 @@ import {
   obtenerRuta
 } from '../services/rutaService';
 
+
+
 import {
   View,
   Text,
@@ -19,7 +21,10 @@ export default function DetalleOportunidadScreen({
   oportunidad,
   loading,
   onVolver,
+  onInscribirse,
   estadoUbicacion,
+  estadoInscripcion,
+
 }) {
 
   // =====================================================
@@ -754,6 +759,57 @@ export default function DetalleOportunidadScreen({
         </Text>
 
 
+        {estadoInscripcion ? (
+
+            <View style={styles.enrollmentStatusCard}>
+
+              <Text style={styles.enrollmentStatusTitle}>
+                Estado de mi inscripción
+              </Text>
+
+              <Text style={styles.enrollmentStatusValue}>
+                {estadoInscripcion}
+              </Text>
+
+              <Text style={styles.enrollmentStatusDescription}>
+                {estadoInscripcion === 'PENDIENTE'
+                  ? 'Tu solicitud está esperando la respuesta de la organización.'
+                  : estadoInscripcion === 'ACEPTADA'
+                    ? 'Tu inscripción fue aceptada por la organización.'
+                    : estadoInscripcion === 'RECHAZADA'
+                      ? 'Tu solicitud de inscripción no fue aceptada.'
+                      : estadoInscripcion === 'CANCELADA'
+                        ? 'Esta inscripción fue cancelada.'
+                        : estadoInscripcion === 'COMPLETADA'
+                          ? 'Completaste esta actividad.'
+                          : estadoInscripcion === 'AUSENTE'
+                            ? 'La inscripción fue registrada como ausente.'
+                            : 'Consultá el estado actual de tu inscripción.'}
+              </Text>
+
+            </View>
+
+          ) : (
+
+            <TouchableOpacity
+              style={styles.inscriptionButton}
+              onPress={() =>
+                onInscribirse(
+                  oportunidad.id_oportunidad
+                )
+              }
+              activeOpacity={0.8}
+            >
+
+              <Text style={styles.inscriptionButtonText}>
+                Inscribirme
+              </Text>
+
+            </TouchableOpacity>
+
+          )}
+
+
         {/* ================================================= */}
         {/* DISTANCIA */}
         {/* ================================================= */}
@@ -1314,6 +1370,40 @@ const styles =
 
     },
 
+    enrollmentStatusCard: {
+      backgroundColor: '#F2F8F6',
+
+      borderWidth: 1,
+      borderColor: '#CFE4DE',
+
+      borderRadius: 12,
+
+      padding: 16,
+      marginTop: 16,
+    },
+
+    enrollmentStatusTitle: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#5F6B76',
+    },
+
+    enrollmentStatusValue: {
+      fontSize: 17,
+      fontWeight: '700',
+      color: '#1F6F5C',
+
+      marginTop: 5,
+    },
+
+    enrollmentStatusDescription: {
+      fontSize: 13,
+      color: '#5F6B76',
+
+      lineHeight: 18,
+      marginTop: 6,
+    },
+
 
     // =====================================================
     // DISTANCIA
@@ -1699,6 +1789,27 @@ const styles =
       fontSize: 11,
       color: '#5F6B76',
 
+    },
+
+
+    inscriptionButton: {
+      backgroundColor: '#1F6F5C',
+
+      borderRadius: 10,
+
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+
+      alignItems: 'center',
+
+      marginTop: 20,
+    },
+
+    inscriptionButtonText: {
+      color: '#FFFFFF',
+
+      fontSize: 14,
+      fontWeight: '700',
     },
 
   });

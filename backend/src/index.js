@@ -9,6 +9,7 @@ const organizacionRoutes = require('./routes/organizacionRoutes');
 const oportunidadRoutes =require('./routes/oportunidadRoutes');
 const ubicacionRoutes =require('./routes/ubicacionRoutes');
 const tipoActividadRoutes =require('./routes/tipoActividadRoutes');
+const inscripcionRoutes = require('./routes/inscripcionRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,7 +24,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/oportunidades', oportunidadRoutes);
 app.use('/api/organizaciones', organizacionRoutes);
 app.use('/api/tipos-actividad',tipoActividadRoutes);
-
+app.use('/api/inscripciones', inscripcionRoutes);
 // Ruta de diagnóstico (Health Check)
 app.get('/api/health', async (req, res) => {
   try {
@@ -38,6 +39,14 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor backend corriendo en el puerto ${PORT}`);
-});
+if (require.main === module) {
+
+  app.listen(PORT, () => {
+    console.log(
+      `Servidor backend corriendo en el puerto ${PORT}`
+    );
+  });
+
+}
+
+module.exports = app;
