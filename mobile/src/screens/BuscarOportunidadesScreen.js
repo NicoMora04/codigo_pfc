@@ -22,10 +22,12 @@ export default function BuscarOportunidadesScreen({
   onFiltrar,
   onBuscarUbicacion,
   onVerDetalle,
+  onInscribirse,
   filtrosGuardados = {},
   estadoUbicacionGuardado,
   onGuardarEstadoUbicacion,
   showAlert,
+  inscripciones=[],
 }) {
 
   // =====================================================
@@ -742,6 +744,16 @@ export default function BuscarOportunidadesScreen({
       );
 
     };
+
+
+  const estaInscripto = (idOportunidad) => {
+
+  return inscripciones.some(
+    (inscripcion) =>
+      inscripcion.id_oportunidad === idOportunidad
+  );
+
+  };  
 
 
   // =====================================================
@@ -1673,20 +1685,60 @@ export default function BuscarOportunidadesScreen({
               )}
 
 
-              <TouchableOpacity
-                style={styles.detailButton}
-                onPress={() =>
-                  onVerDetalle(
-                    oportunidad.id_oportunidad
-                  )
-                }
-              >
+             <View style={styles.cardActions}>
 
-                <Text style={styles.detailButtonText}>
-                  Ver detalle
-                </Text>
+                <TouchableOpacity
+                  style={styles.detailButton}
+                  onPress={() =>
+                    onVerDetalle(
+                      oportunidad.id_oportunidad
+                    )
+                  }
+                >
+                  <Text style={styles.detailButtonText}>
+                    Ver detalle
+                  </Text>
+                </TouchableOpacity>
 
-              </TouchableOpacity>
+
+                {estaInscripto(
+                      oportunidad.id_oportunidad
+                    ) ? (
+
+                      <View
+                        style={styles.enrolledButton}
+                      >
+
+                        <Text
+                          style={styles.enrolledButtonText}
+                        >
+                          ✓ Inscripto
+                        </Text>
+
+                      </View>
+
+                    ) : (
+
+                      <TouchableOpacity
+                        style={styles.inscriptionButton}
+                        onPress={() =>
+                          onInscribirse(
+                            oportunidad.id_oportunidad
+                          )
+                        }
+                      >
+
+                        <Text
+                          style={styles.inscriptionButtonText}
+                        >
+                          Inscribirme
+                        </Text>
+
+                      </TouchableOpacity>
+
+                    )}
+
+              </View>
 
             </View>
 
@@ -2351,29 +2403,77 @@ const styles =
     },
 
 
-    detailButton: {
+    cardActions: {
+  flexDirection: 'row',
+  gap: 10,
+  marginTop: 14,
+},
 
-      backgroundColor: '#1F6F5C',
+  detailButton: {
+    flex: 1,
 
-      borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#1F6F5C',
 
-      paddingVertical: 10,
-      paddingHorizontal: 14,
+    backgroundColor: '#FFFFFF',
 
-      alignItems: 'center',
+    borderRadius: 10,
 
-      marginTop: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
 
-    },
+    alignItems: 'center',
+  },
 
+  detailButtonText: {
+    color: '#1F6F5C',
 
-    detailButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
 
-      color: '#FFFFFF',
+  inscriptionButton: {
+    flex: 1,
 
-      fontSize: 13,
-      fontWeight: '700',
+    backgroundColor: '#1F6F5C',
 
-    },
+    borderRadius: 10,
+
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+
+    alignItems: 'center',
+  },
+
+  inscriptionButtonText: {
+    color: '#FFFFFF',
+
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  enrolledButton: {
+  flex: 1,
+
+  backgroundColor: '#E8F3F0',
+
+  borderWidth: 1,
+  borderColor: '#1F6F5C',
+
+  borderRadius: 10,
+
+  paddingVertical: 10,
+  paddingHorizontal: 14,
+
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+
+enrolledButtonText: {
+  color: '#1F6F5C',
+
+  fontSize: 13,
+  fontWeight: '700',
+},
 
   });

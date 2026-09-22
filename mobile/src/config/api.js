@@ -1,2 +1,2 @@
-const Base_URL='http://192.168.1.18:3000/api';
+const Base_URL='http://192.168.0.93:3000/api';
 export default Base_URL
