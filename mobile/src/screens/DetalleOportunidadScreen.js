@@ -707,12 +707,20 @@ export default function DetalleOportunidadScreen({
 
 
         <Text style={styles.sectionTitle}>
-          Cupo
+          Cupos
         </Text>
 
+        <Text style={styles.text}>
+          Ocupados:{' '}
+          {oportunidad.cupos_ocupados ?? 0}
+          {' / '}
+          {oportunidad.cupo_total}
+        </Text>
 
         <Text style={styles.text}>
-          {oportunidad.cupo_total}
+          Disponibles:{' '}
+          {oportunidad.cupos_disponibles ??
+            oportunidad.cupo_total}
         </Text>
 
 
@@ -791,21 +799,31 @@ export default function DetalleOportunidadScreen({
 
           ) : (
 
-            <TouchableOpacity
-              style={styles.inscriptionButton}
-              onPress={() =>
-                onInscribirse(
-                  oportunidad.id_oportunidad
-                )
-              }
-              activeOpacity={0.8}
-            >
+             oportunidad.cupos_disponibles === 0 ? (
 
-              <Text style={styles.inscriptionButtonText}>
-                Inscribirme
-              </Text>
+              <View style={styles.noCapacityButton}>
+                <Text style={styles.noCapacityButtonText}>
+                  Sin cupos disponibles
+                </Text>
+              </View>
 
-            </TouchableOpacity>
+            ) : (
+
+              <TouchableOpacity
+                style={styles.inscriptionButton}
+                onPress={() =>
+                  onInscribirse(
+                    oportunidad.id_oportunidad
+                  )
+                }
+                activeOpacity={0.8}
+              >
+                <Text style={styles.inscriptionButtonText}>
+                  Inscribirme
+                </Text>
+              </TouchableOpacity>
+
+            )
 
           )}
 
@@ -1811,5 +1829,19 @@ const styles =
       fontSize: 14,
       fontWeight: '700',
     },
+    noCapacityButton: {
+    backgroundColor: '#E5E7EB',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+
+  noCapacityButtonText: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '700',
+  },
 
   });

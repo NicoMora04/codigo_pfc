@@ -3,7 +3,31 @@ const oportunidadRepository =
 
 const uuidRegex =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+
 // ======================================================
+// VALIDAR OPORTUNIDAD NO ELIMINADA
+// ======================================================
+
+const validarOportunidadNoEliminada = (
+  oportunidad
+) => {
+
+  if (
+    oportunidad.eliminado_en
+  ) {
+
+    const error = new Error(
+      'La oportunidad fue eliminada y ya no puede gestionarse'
+    );
+
+    error.status = 409;
+    throw error;
+  }
+
+};
+
+  // ======================================================
 // CREAR OPORTUNIDAD
 // ======================================================
 
@@ -285,6 +309,11 @@ exports.actualizarOportunidad = async (
     error.status = 403;
     throw error;
   }
+
+  validarOportunidadNoEliminada(
+  oportunidad
+);
+
   if (oportunidad.estado !== 'BORRADOR') {
 
   const error = new Error(
@@ -580,6 +609,10 @@ exports.cancelarOportunidad = async (
     throw error;
   }
 
+  validarOportunidadNoEliminada(
+  oportunidad
+);
+
   if (
     !['BORRADOR', 'PUBLICADA'].includes(oportunidad.estado)
   ) {
@@ -638,6 +671,10 @@ exports.publicarOportunidad = async (
     error.status = 403;
     throw error;
   }
+
+  validarOportunidadNoEliminada(
+  oportunidad
+);
 
   if (oportunidad.estado !== 'BORRADOR') {
     const error = new Error(
@@ -728,6 +765,10 @@ exports.obtenerOportunidadOrganizacion = async (
     throw error;
   }
 
+  validarOportunidadNoEliminada(
+  oportunidad
+);
+
   return oportunidad;
 };
 
@@ -772,6 +813,10 @@ exports.cerrarOportunidad = async (
     error.status = 403;
     throw error;
   }
+
+  validarOportunidadNoEliminada(
+  oportunidad
+);
 
   if (oportunidad.estado !== 'PUBLICADA') {
     const error = new Error(
@@ -828,6 +873,10 @@ exports.finalizarOportunidad = async (
     throw error;
   }
 
+  validarOportunidadNoEliminada(
+  oportunidad
+);
+
   if (oportunidad.estado !== 'CERRADA') {
     const error = new Error(
       'Solo se puede finalizar una oportunidad cerrada'
@@ -865,6 +914,30 @@ exports.obtenerOportunidadesPublicadas = async (filtros = {}) => {
       filtrosNormalizados.nombre = nombre;
     }
   }
+
+  if (filtros.organizacion != null) {
+
+  const organizacion =
+    String(filtros.organizacion).trim();
+
+  if (organizacion.length > 150) {
+
+    const error = new Error(
+      'El nombre de la organización no puede superar los 150 caracteres'
+    );
+
+    error.status = 400;
+    throw error;
+  }
+
+  if (organizacion !== '') {
+
+    filtrosNormalizados.organizacion =
+      organizacion;
+
+  }
+
+}
 
   if (filtros.tipoActividad != null) {
 
@@ -1037,7 +1110,7 @@ if (cantidadParametrosUbicacion === 3) {
 // ======================================================
 
 exports.obtenerDetalleOportunidadVoluntario = async (
-  idOportunidad
+  idOportunidad, idVoluntario
 ) => {
 
   if (
@@ -1053,13 +1126,15 @@ exports.obtenerDetalleOportunidadVoluntario = async (
   }
 
   const oportunidad =
-    await oportunidadRepository.buscarOportunidadPublicadaPorId(
-      idOportunidad
+  await oportunidadRepository
+    .buscarDetalleOportunidadVoluntario(
+      idOportunidad,
+      idVoluntario
     );
 
   if (!oportunidad) {
     const error = new Error(
-      'La oportunidad no existe o no está disponible'
+        'La oportunidad no existe o no tenés acceso a su detalle'
     );
 
     error.status = 404;
@@ -1067,4 +1142,112 @@ exports.obtenerDetalleOportunidadVoluntario = async (
   }
 
   return oportunidad;
+};
+
+// ======================================================
+// ELIMINAR LÓGICAMENTE OPORTUNIDAD
+// ======================================================
+
+exports.eliminarLogicamenteOportunidad = async (
+  idOportunidad,
+  idOrganizacion
+) => {
+
+  if (
+    typeof idOportunidad !== 'string' ||
+    !uuidRegex.test(idOportunidad)
+  ) {
+
+    const error = new Error(
+      'El identificador de oportunidad no es válido'
+    );
+
+    error.status = 400;
+    throw error;
+  }
+
+
+  const oportunidad =
+    await oportunidadRepository
+      .buscarOportunidadPorId(
+        idOportunidad
+      );
+
+
+  if (!oportunidad) {
+
+    const error = new Error(
+      'La oportunidad no existe'
+    );
+
+    error.status = 404;
+    throw error;
+  }
+
+
+  if (
+    oportunidad.id_organizacion !==
+    idOrganizacion
+  ) {
+
+    const error = new Error(
+      'No tenés permisos para eliminar esta oportunidad'
+    );
+
+    error.status = 403;
+    throw error;
+  }
+
+
+  if (
+    ![
+      'BORRADOR',
+      'CANCELADA'
+    ].includes(
+      oportunidad.estado
+    )
+  ) {
+
+    const error = new Error(
+      'Solo se pueden eliminar oportunidades en estado BORRADOR o CANCELADA'
+    );
+
+    error.status = 409;
+    throw error;
+  }
+
+
+  if (
+    oportunidad.eliminado_en
+  ) {
+
+    const error = new Error(
+      'La oportunidad ya fue eliminada'
+    );
+
+    error.status = 409;
+    throw error;
+  }
+
+
+  const oportunidadEliminada =
+    await oportunidadRepository
+      .eliminarLogicamenteOportunidad(
+        idOportunidad
+      );
+
+
+  if (!oportunidadEliminada) {
+
+    const error = new Error(
+      'La oportunidad ya no puede eliminarse'
+    );
+
+    error.status = 409;
+    throw error;
+  }
+
+
+  return oportunidadEliminada;
+
 };

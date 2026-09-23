@@ -111,4 +111,13 @@ router.patch(
   verificarOrganizacionVerificada,
   oportunidadController.finalizarOportunidad
 );
+
+router.patch(
+  '/:id/eliminar',
+  verificarToken,
+  verificarRol('ORGANIZACION'),
+  verificarOrganizacionVerificada,
+  oportunidadController.eliminarLogicamenteOportunidad
+);
+
 module.exports = router;

@@ -22,7 +22,9 @@ export default function MisOportunidadesScreen({
   filtroEstado,
   onCambiarFiltroEstado,
   busqueda,
-  onCambiarBusqueda
+  onCambiarBusqueda,
+  onGestionarInscripciones,
+  onEliminar,
 }) {
  
   const [confirmacion, setConfirmacion] = React.useState(null);
@@ -186,7 +188,16 @@ export default function MisOportunidadesScreen({
             </Text>
 
             <Text style={styles.cardInfo}>
-              Cupo: {oportunidad.cupo_total}
+              Cupos ocupados:{' '}
+              {oportunidad.cupos_ocupados ?? 0}
+              {' / '}
+              {oportunidad.cupo_total}
+            </Text>
+
+            <Text style={styles.cardInfo}>
+              Cupos disponibles:{' '}
+              {oportunidad.cupos_disponibles ??
+                oportunidad.cupo_total}
             </Text>
 
             <Text style={styles.cardInfo}>
@@ -222,6 +233,26 @@ export default function MisOportunidadesScreen({
                   ? `, ${oportunidad.provincia}`
                   : ''}
               </Text>
+            )}
+
+            {(
+              oportunidad.estado === 'PUBLICADA' ||
+              oportunidad.estado === 'CERRADA' || oportunidad.estado === 'FINALIZADA'
+            ) && onGestionarInscripciones && (
+
+              <TouchableOpacity
+                style={styles.btnManage}
+                onPress={() =>
+                  onGestionarInscripciones(
+                    oportunidad
+                  )
+                }
+              >
+                <Text style={styles.btnManageText}>
+                  Gestionar inscripciones
+                </Text>
+              </TouchableOpacity>
+
             )}
 
             <View style={styles.actions}>
@@ -273,7 +304,7 @@ export default function MisOportunidadesScreen({
                       }}
                     >
                       <Text style={styles.btnActionText}>
-                        Cancelar
+                        Cancelar Actividad
                       </Text>
                     </TouchableOpacity>
                   </>
@@ -296,7 +327,7 @@ export default function MisOportunidadesScreen({
                       }}
                     >
                       <Text style={styles.btnSecondaryText}>
-                        Cerrar
+                        Cerrar Incripciones
                       </Text>
                     </TouchableOpacity>
 
@@ -315,7 +346,7 @@ export default function MisOportunidadesScreen({
                       }}
                     >
                       <Text style={styles.btnActionText}>
-                        Cancelar
+                        Cancelar Actividad
                       </Text>
                     </TouchableOpacity>
                   </>
@@ -337,10 +368,49 @@ export default function MisOportunidadesScreen({
                       }}
                   >
                     <Text style={styles.btnActionText}>
-                      Finalizar
+                      Finalizar Actividad
                     </Text>
                   </TouchableOpacity>
                 )}
+
+                {(
+                    oportunidad.estado === 'BORRADOR' ||
+                    oportunidad.estado === 'CANCELADA'
+                  ) && (
+
+                    <TouchableOpacity
+                      style={styles.btnDelete}
+                      onPress={() => {
+
+                        setConfirmacion({
+                          title:
+                            'Eliminar oportunidad',
+
+                          message:
+                            'La oportunidad dejará de aparecer en tu listado, pero se conservará su historial. ¿Deseás continuar?',
+
+                          confirmText:
+                            'Eliminar',
+
+                          destructive:
+                            true,
+
+                          onConfirm: () =>
+                            onEliminar(
+                              oportunidad.id_oportunidad
+                            ),
+                        });
+
+                      }}
+                    >
+
+                      <Text style={styles.btnActionText}>
+                        Eliminar
+                      </Text>
+
+                    </TouchableOpacity>
+
+                  )}
 
               </View>
 
@@ -548,6 +618,30 @@ const styles = StyleSheet.create({
   paddingVertical: 10,
   marginBottom: 12,
   fontSize: 14,
+},
+
+btnManage: {
+  height: 42,
+  borderRadius: 9,
+  borderWidth: 1,
+  borderColor: '#1F6F5C',
+  backgroundColor: '#FFFFFF',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginTop: 14,
+},
+
+btnManageText: {
+  color: '#1F6F5C',
+  fontSize: 14,
+  fontWeight: '600',
+},
+btnDelete: {
+  paddingHorizontal: 14,
+  height: 38,
+  borderRadius: 8,
+  backgroundColor: '#8B1E1E',
+  justifyContent: 'center',
 },
 
 });

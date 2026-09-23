@@ -244,13 +244,30 @@ exports.buscarOportunidadesPorOrganizacion = async (
       u.localidad,
       u.provincia,
       u.es_aproximada,
-      u.direccion
+      u.direccion,
+      (
+        SELECT COUNT(*)::int
+        FROM inscripcion i
+        WHERE i.id_oportunidad = o.id_oportunidad
+          AND i.estado = 'ACEPTADA'
+      ) AS cupos_ocupados,
+
+      GREATEST(
+        o.cupo_total - (
+          SELECT COUNT(*)::int
+          FROM inscripcion i
+          WHERE i.id_oportunidad = o.id_oportunidad
+            AND i.estado = 'ACEPTADA'
+        ),
+        0
+      ) AS cupos_disponibles
     FROM oportunidad o
     INNER JOIN tipo_actividad ta
       ON ta.id_tipo_actividad = o.id_tipo_actividad
     LEFT JOIN ubicacion u
       ON u.id_ubicacion = o.id_ubicacion
     WHERE o.id_organizacion = $1
+    AND o.eliminado_en IS NULL
     ORDER BY o.creado_en DESC
     `,
     [idOrganizacion]
@@ -269,6 +286,7 @@ exports.cerrarOportunidad = async (
     UPDATE oportunidad
     SET
       estado = 'CERRADA',
+      cerrado_en=now(),
       actualizado_en = now()
     WHERE id_oportunidad = $1
     RETURNING *
@@ -289,6 +307,7 @@ exports.finalizarOportunidad = async (
     UPDATE oportunidad
     SET
       estado = 'FINALIZADA',
+      finalizado_en=now(),
       actualizado_en = now()
     WHERE id_oportunidad = $1
     RETURNING *
@@ -299,11 +318,40 @@ exports.finalizarOportunidad = async (
   return result.rows[0];
 };
 
+// ======================================================
+// ELIMINAR LÓGICAMENTE OPORTUNIDAD
+// ======================================================
+
+exports.eliminarLogicamenteOportunidad = async (
+  idOportunidad
+) => {
+
+  const result = await pool.query(
+    `
+    UPDATE oportunidad
+    SET
+      eliminado_en = NOW(),
+      actualizado_en = NOW()
+    WHERE id_oportunidad = $1
+      AND estado IN (
+        'BORRADOR',
+        'CANCELADA'
+      )
+      AND eliminado_en IS NULL
+    RETURNING *;
+    `,
+    [idOportunidad]
+  );
+
+  return result.rows[0] || null;
+};
+
 
 exports.buscarOportunidadesPublicadas = async (filtros = {}) => {
 
   const {
     nombre,
+    organizacion,
     tipoActividad,
     urgencia,
     fecha,
@@ -329,6 +377,18 @@ exports.buscarOportunidadesPublicadas = async (filtros = {}) => {
         `o.titulo ILIKE $${valores.length}`
       );
   }
+
+  // FILTRO: NOMBRE DE ORGANIZACIÓN
+if (organizacion != null) {
+
+  valores.push(
+    `%${organizacion}%`
+  );
+
+  condiciones.push(
+    `org.razon_social ILIKE $${valores.length}`
+  );
+}
 
   // FILTRO: TIPO DE ACTIVIDAD
   if (tipoActividad != null) {
@@ -431,7 +491,24 @@ exports.buscarOportunidadesPublicadas = async (filtros = {}) => {
       u.provincia,
       u.es_aproximada,
       u.direccion
-      ${selectDistancia}
+      ${selectDistancia},
+      (
+        SELECT COUNT(*)::int
+        FROM inscripcion i
+        WHERE i.id_oportunidad = o.id_oportunidad
+          AND i.estado = 'ACEPTADA'
+      ) AS cupos_ocupados,
+
+      GREATEST(
+        o.cupo_total - (
+          SELECT COUNT(*)::int
+          FROM inscripcion i
+          WHERE i.id_oportunidad = o.id_oportunidad
+            AND i.estado = 'ACEPTADA'
+        ),
+        0
+      ) AS cupos_disponibles
+     
     FROM oportunidad o
     INNER JOIN tipo_actividad ta
       ON ta.id_tipo_actividad = o.id_tipo_actividad
@@ -472,7 +549,23 @@ exports.buscarOportunidadPublicadaPorId = async (
       u.localidad,
       u.provincia,
       u.es_aproximada,
-      u.direccion
+      u.direccion,
+        (
+          SELECT COUNT(*)::int
+          FROM inscripcion i
+          WHERE i.id_oportunidad = o.id_oportunidad
+            AND i.estado = 'ACEPTADA'
+        ) AS cupos_ocupados,
+
+        GREATEST(
+          o.cupo_total - (
+            SELECT COUNT(*)::int
+            FROM inscripcion i
+            WHERE i.id_oportunidad = o.id_oportunidad
+              AND i.estado = 'ACEPTADA'
+          ),
+          0
+        ) AS cupos_disponibles
     FROM oportunidad o
     INNER JOIN tipo_actividad ta
       ON ta.id_tipo_actividad = o.id_tipo_actividad
@@ -485,6 +578,92 @@ exports.buscarOportunidadPublicadaPorId = async (
       AND o.fecha_fin >= NOW()
     `,
     [idOportunidad]
+  );
+
+  return result.rows[0] || null;
+};
+
+
+// ======================================================
+// OBTENER DETALLE DE OPORTUNIDAD PARA VOLUNTARIO
+// INCLUYE ACCESO HISTÓRICO SI ESTUVO INSCRIPTO
+// ======================================================
+
+exports.buscarDetalleOportunidadVoluntario = async (
+  idOportunidad,
+  idVoluntario
+) => {
+
+  const result = await pool.query(
+    `
+    SELECT
+      o.*,
+      ta.nombre AS tipo_actividad,
+      org.razon_social AS organizacion,
+      u.latitud,
+      u.longitud,
+      u.localidad,
+      u.provincia,
+      u.es_aproximada,
+      u.direccion,
+
+      (
+        SELECT COUNT(*)::int
+        FROM inscripcion i
+        WHERE i.id_oportunidad = o.id_oportunidad
+          AND i.estado = 'ACEPTADA'
+      ) AS cupos_ocupados,
+
+      GREATEST(
+        o.cupo_total - (
+          SELECT COUNT(*)::int
+          FROM inscripcion i
+          WHERE i.id_oportunidad = o.id_oportunidad
+            AND i.estado = 'ACEPTADA'
+        ),
+        0
+      ) AS cupos_disponibles
+
+    FROM oportunidad o
+
+    INNER JOIN tipo_actividad ta
+      ON ta.id_tipo_actividad = o.id_tipo_actividad
+
+    INNER JOIN organizacion org
+      ON org.id_organizacion = o.id_organizacion
+
+    LEFT JOIN ubicacion u
+      ON u.id_ubicacion = o.id_ubicacion
+
+    WHERE o.id_oportunidad = $1
+      AND (
+        (
+          o.estado = 'PUBLICADA'
+          AND o.fecha_fin >= NOW()
+          AND o.eliminado_en IS NULL
+        )
+        OR
+        (
+          o.estado IN (
+            'PUBLICADA',
+            'CERRADA',
+            'FINALIZADA',
+            'CANCELADA'
+          )
+          AND EXISTS (
+            SELECT 1
+            FROM inscripcion i_hist
+            WHERE i_hist.id_oportunidad =
+              o.id_oportunidad
+              AND i_hist.id_voluntario = $2
+          )
+        )
+      )
+    `,
+    [
+      idOportunidad,
+      idVoluntario
+    ]
   );
 
   return result.rows[0] || null;

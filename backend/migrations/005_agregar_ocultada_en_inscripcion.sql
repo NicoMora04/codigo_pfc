@@ -1,0 +1,2 @@
+ALTER TABLE inscripcion
+ADD COLUMN ocultada_en TIMESTAMPTZ;
