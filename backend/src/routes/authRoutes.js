@@ -24,6 +24,12 @@ router.get(
   }
 );
 
+router.get(
+  '/mi-organizacion',
+  verificarToken,
+  verificarRol('ORGANIZACION'),
+  authController.obtenerMiOrganizacion
+);
 
 
 module.exports = router;

@@ -746,6 +746,75 @@ exports.resetPassword = async (req, res) => {
     }
 
   }
+}
 
-};
+// ======================================================
+// 8. OBTENER MI ORGANIZACIÓN
+// ======================================================
 
+    exports.obtenerMiOrganizacion = async (
+      req,
+      res
+    ) => {
+
+      try {
+
+        const idUsuario =
+          req.user.id;
+
+
+        const resultado =
+          await pool.query(
+            `
+            SELECT
+              u.id_usuario,
+              u.email,
+              u.estado_cuenta,
+              o.razon_social,
+              o.cuit,
+              o.estado_verificacion
+            FROM usuario u
+            INNER JOIN organizacion o
+              ON o.id_usuario = u.id_usuario
+            WHERE u.id_usuario = $1
+            `,
+            [
+              idUsuario
+            ]
+          );
+
+
+        if (
+          resultado.rows.length === 0
+        ) {
+
+          return res.status(404).json({
+            error:
+              'No se encontró la organización asociada al usuario'
+          });
+
+        }
+
+
+        return res.json({
+          organizacion:
+            resultado.rows[0]
+        });
+
+      }
+      catch (error) {
+
+        console.error(
+          'ERROR AL OBTENER ORGANIZACIÓN:',
+          error
+        );
+
+
+        return res.status(500).json({
+          error:
+            'No se pudo obtener la información de la organización'
+        });
+
+      }
+
+    };

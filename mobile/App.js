@@ -51,6 +51,18 @@ import GestionInscripcionesScreen
 import VoluntarioBottomNav
   from './src/components/VoluntarioBottomNav';
 
+import InicioVoluntarioScreen
+  from './src/screens/InicioVoluntarioScreen';
+
+import InicioOrganizacionScreen
+  from './src/screens/InicioOrganizacionScreen';
+
+import OrganizacionBottomNav
+  from './src/components/OrganizacionBottomNav';
+
+import MiOrganizacionScreen
+  from './src/screens/MiOrganizacionScreen';
+
 import {
   inscribirseOportunidad,
   obtenerMisInscripciones,
@@ -74,9 +86,9 @@ import {
   login,
   registrarUsuario,
   recuperarPassword,
-  obtenerPerfilProtegido
+  obtenerPerfilProtegido,
+  obtenerMiOrganizacion
 } from './src/services/authService';
-
 
 import {
   obtenerMisOportunidades,
@@ -95,9 +107,6 @@ import {
 import {
   buscarUbicacionesPorTexto
 } from './src/services/ubicacionService';
-
-
-
 
 
 export default function App() {
@@ -124,6 +133,16 @@ export default function App() {
     oportunidadesVoluntario,
     setOportunidadesVoluntario
   ] = useState([]);
+
+  const [
+  oportunidadesInicioVoluntario,
+  setOportunidadesInicioVoluntario
+  ] = useState([]);
+
+  const [
+  loadingInicioVoluntario,
+  setLoadingInicioVoluntario
+  ] = useState(false);
 
   const [
   inscripcionesVoluntario,
@@ -178,6 +197,11 @@ const [
   const [
     scrollYVoluntario,
     setScrollYVoluntario
+  ] = useState(0);
+
+  const [
+  scrollYInicioVoluntario,
+  setScrollYInicioVoluntario
   ] = useState(0);
 
   const [
@@ -243,6 +267,17 @@ const [
 
   });
 
+  const [
+  datosOrganizacion,
+  setDatosOrganizacion
+] = useState(null);
+
+
+const [
+  loadingDatosOrganizacion,
+  setLoadingDatosOrganizacion
+] = useState(false);
+
 
   // ======================================================
   // MODAL DE CIERRE DE SESIÓN
@@ -291,16 +326,17 @@ const [
           ) {
 
             setCurrentScreen(
-              'VOLUNTARIO_HOME'
+              'VOLUNTARIO_INICIO'
             );
 
 
             await cargarTiposActividad();
 
+            await cargarOportunidadesInicioVoluntario();
+
             await cargarOportunidadesVoluntario();
 
             await cargarMisInscripciones();
-
 
           }
           else if (
@@ -308,7 +344,7 @@ const [
           ) {
 
             setCurrentScreen(
-              'ORGANIZACION_HOME'
+              'ORGANIZACION_INICIO'
             );
 
 
@@ -498,11 +534,13 @@ const [
         ) {
 
           setCurrentScreen(
-            'VOLUNTARIO_HOME'
+            'VOLUNTARIO_INICIO'
           );
 
 
           await cargarTiposActividad();
+
+          await cargarOportunidadesInicioVoluntario();
 
           await cargarOportunidadesVoluntario();
 
@@ -514,7 +552,7 @@ const [
         ) {
 
           setCurrentScreen(
-            'ORGANIZACION_HOME'
+            'ORGANIZACION_INICIO'
           );
 
 
@@ -1488,6 +1526,10 @@ const handleMarcarResultadoParticipacion = async (
         []
       );
 
+      setOportunidadesInicioVoluntario(
+        []
+      );
+
 
       setTiposActividad(
         []
@@ -1538,6 +1580,10 @@ const handleMarcarResultadoParticipacion = async (
 
 
       setScrollYVoluntario(
+        0
+      );
+
+      setScrollYInicioVoluntario(
         0
       );
 
@@ -1719,6 +1765,151 @@ const handleMarcarResultadoParticipacion = async (
 
     };
 
+
+  // ======================================================
+  // OPORTUNIDADES INICIO VOLUNTARIO
+  // ======================================================
+
+  const cargarOportunidadesInicioVoluntario =
+    async () => {
+
+      setLoadingInicioVoluntario(
+        true
+      );
+
+
+      try {
+
+        const token =
+          await obtenerToken();
+
+
+        if (!token) {
+
+          await eliminarToken();
+
+
+          setOportunidadesInicioVoluntario(
+            []
+          );
+
+
+          setCurrentScreen(
+            'A01'
+          );
+
+
+          showAlert(
+
+            'error',
+
+            'Sesión finalizada',
+
+            'Tu sesión no es válida. Iniciá sesión nuevamente.'
+
+          );
+
+
+          return false;
+
+        }
+
+
+        /*
+          Inicio siempre consulta sin filtros.
+
+          De esta manera el mapa principal muestra
+          todas las oportunidades disponibles,
+          independientemente de los filtros que el
+          voluntario haya utilizado en Buscar.
+        */
+
+        const data =
+          await obtenerOportunidadesVoluntario(
+            token,
+            {}
+          );
+
+
+        setOportunidadesInicioVoluntario(
+
+          Array.isArray(
+            data?.oportunidades
+          )
+
+            ? data.oportunidades
+
+            : []
+
+        );
+
+
+        return true;
+
+      }
+      catch (error) {
+
+        if (
+          error.response
+            ?.status === 401
+        ) {
+
+          await eliminarToken();
+
+
+          setOportunidadesInicioVoluntario(
+            []
+          );
+
+
+          setCurrentScreen(
+            'A01'
+          );
+
+
+          showAlert(
+
+            'error',
+
+            'Sesión finalizada',
+
+            'Tu sesión venció. Iniciá sesión nuevamente.'
+
+          );
+
+
+          return false;
+
+        }
+
+
+        showAlert(
+
+          'error',
+
+          'Error',
+
+          error.response
+            ?.data
+            ?.error ||
+
+          'No se pudieron cargar las oportunidades del inicio.'
+
+        );
+
+
+        return false;
+
+      }
+      finally {
+
+        setLoadingInicioVoluntario(
+          false
+        );
+
+      }
+
+    };
 
   // ======================================================
   // OPORTUNIDADES VOLUNTARIO
@@ -2644,6 +2835,75 @@ const handleCancelarInscripcion =
 
   };
 
+   // ======================================================
+// CARGAR DATOS DE LA ORGANIZACIÓN - ORGANIZACIÓN
+// ======================================================
+
+  const cargarDatosOrganizacion =
+  async () => {
+
+    setLoadingDatosOrganizacion(
+      true
+    );
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        return false;
+
+      }
+
+
+      const data =
+        await obtenerMiOrganizacion(
+          token
+        );
+
+
+      setDatosOrganizacion(
+        data.organizacion
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      showAlert(
+
+        'error',
+
+        'Error',
+
+        error.response
+          ?.data
+          ?.error ||
+
+        'No se pudo cargar la información de la organización.'
+
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingDatosOrganizacion(
+        false
+      );
+
+    }
+
+  };
+
 
 
   // ======================================================
@@ -2711,32 +2971,44 @@ const handleCancelarInscripcion =
 
             if (
               currentScreen ===
-              'VOLUNTARIO_HOME'
+                'VOLUNTARIO_INICIO'
+            ) {
+
+              setScrollYInicioVoluntario(
+                y
+              );
+
+            }
+            else if (
+              currentScreen ===
+                'VOLUNTARIO_HOME'
             ) {
 
               setScrollYVoluntario(
                 y
               );
 
-            } else if (
+            }
+            else if (
               currentScreen ===
-              'MIS_INSCRIPCIONES'
+                'MIS_INSCRIPCIONES'
             ) {
 
               setScrollYInscripciones(
                 y
               );
 
-            } else if (
-                currentScreen ===
+            }
+            else if (
+              currentScreen ===
                 'ORGANIZACION_HOME'
-              ) {
+            ) {
 
-                setScrollYOrganizacion(
-                  y
-                );
+              setScrollYOrganizacion(
+                y
+              );
 
-              }
+            }
 
           }}
 
@@ -2908,6 +3180,135 @@ const handleCancelarInscripcion =
           {/* ==================================================
               VOLUNTARIO
           ================================================== */}
+
+          {/* ==================================================
+                INICIO VOLUNTARIO
+            ================================================== */}
+
+            {currentScreen ===
+              'VOLUNTARIO_INICIO' && (
+
+              <InicioVoluntarioScreen
+
+                oportunidades={
+                  oportunidadesInicioVoluntario
+                }
+
+                loading={
+                  loadingInicioVoluntario
+                }
+
+                onLogout={
+                  handleLogout
+                }
+
+
+                onBuscar={async () => {
+
+                  setCurrentScreen(
+                    'VOLUNTARIO_HOME'
+                  );
+
+
+                  await cargarOportunidadesVoluntario(
+                    filtrosVoluntario
+                  );
+
+
+                  setTimeout(
+                    () => {
+
+                      scrollRef.current
+                        ?.scrollTo({
+
+                          y:
+                            scrollYVoluntario,
+
+                          animated:
+                            false
+
+                        });
+
+                    },
+                    0.1
+                  );
+
+                }}
+
+
+                onMisInscripciones={async () => {
+
+                  setCurrentScreen(
+                    'MIS_INSCRIPCIONES'
+                  );
+
+
+                  await cargarMisInscripciones();
+
+
+                  setTimeout(
+                    () => {
+
+                      scrollRef.current
+                        ?.scrollTo({
+
+                          y:
+                            scrollYInscripciones,
+
+                          animated:
+                            false
+
+                        });
+
+                    },
+                    0.1
+                  );
+
+                }}
+
+
+                onVerDetalle={async (
+                  idOportunidad
+                ) => {
+
+                  const inscripcionExistente =
+                    inscripcionesVoluntario.find(
+                      (inscripcion) =>
+
+                        String(
+                          inscripcion.id_oportunidad
+                        ) ===
+                        String(
+                          idOportunidad
+                        )
+                    );
+
+
+                  setOrigenDetalleVoluntario(
+                    'INICIO'
+                  );
+
+
+                  setEstadoInscripcionDetalle(
+
+                    inscripcionExistente
+
+                      ? inscripcionExistente.estado
+
+                      : null
+
+                  );
+
+
+                  await cargarDetalleOportunidadVoluntario(
+                    idOportunidad
+                  );
+
+                }}
+
+              />
+
+            )}
 
           {currentScreen ===
             'VOLUNTARIO_HOME' && (
@@ -3098,7 +3499,42 @@ const handleCancelarInscripcion =
                 setOportunidadSeleccionada(
                   null
                 );
+                
+                if (
+                  origenDetalleVoluntario ===
+                  'INICIO'
+                ) {
 
+                  setCurrentScreen(
+                    'VOLUNTARIO_INICIO'
+                  );
+
+
+                  await cargarOportunidadesInicioVoluntario();
+
+
+                  setTimeout(
+                    () => {
+
+                      scrollRef.current
+                        ?.scrollTo({
+
+                          y:
+                            scrollYInicioVoluntario,
+
+                          animated:
+                            true
+
+                        });
+
+                    },
+                    0.1
+                  );
+
+
+                  return;
+
+                }
                 if (
                     origenDetalleVoluntario ===
                     'MIS_INSCRIPCIONES'
@@ -3160,6 +3596,82 @@ const handleCancelarInscripcion =
                   },
                   0.1
                 );
+
+              }}
+
+            />
+
+          )}
+
+          {/* ==================================================
+              INICIO ORGANIZACIÓN
+          ================================================== */}
+
+          {currentScreen ===
+            'ORGANIZACION_INICIO' && (
+
+            <InicioOrganizacionScreen
+
+              oportunidades={
+                oportunidades
+              }
+
+              loading={
+                loading
+              }
+
+              onLogout={
+                handleLogout
+              }
+
+
+              onMisOportunidades={async () => {
+
+                setCurrentScreen(
+                  'ORGANIZACION_HOME'
+                );
+
+
+                await cargarOportunidades();
+
+              }}
+
+
+              onNuevaOportunidad={async () => {
+
+                setOportunidadEditando(
+                  null
+                );
+
+
+                const tiposCargados =
+                  await cargarTiposActividad();
+
+
+                if (
+                  !tiposCargados
+                ) {
+
+                  return;
+
+                }
+
+
+                setCurrentScreen(
+                  'OPORTUNIDAD_FORM'
+                );
+
+              }}
+
+
+              onMiOrganizacion={async () => {
+
+                setCurrentScreen(
+                  'ORGANIZACION_PERFIL'
+                );
+
+
+                await cargarDatosOrganizacion();
 
               }}
 
@@ -4022,6 +4534,31 @@ const handleCancelarInscripcion =
           )}
 
           {/* ==================================================
+              MI ORGANIZACIÓN
+          ================================================== */}
+
+          {currentScreen ===
+            'ORGANIZACION_PERFIL' && (
+
+            <MiOrganizacionScreen
+
+              organizacion={
+                datosOrganizacion
+              }
+
+              loading={
+                loadingDatosOrganizacion
+              }
+
+              onLogout={
+                handleLogout
+              }
+
+            />
+
+          )}
+
+          {/* ==================================================
                 GESTIÓN DE INSCRIPCIONES - ORGANIZACIÓN
             ================================================== */}
 
@@ -4261,49 +4798,198 @@ const handleCancelarInscripcion =
       </ImageBackground>
 
 
-      {(currentScreen === 'VOLUNTARIO_HOME' ||
-                currentScreen === 'MIS_INSCRIPCIONES') && (
+      {(
+        currentScreen === 'VOLUNTARIO_INICIO' ||
+        currentScreen === 'VOLUNTARIO_HOME' ||
+        currentScreen === 'MIS_INSCRIPCIONES'
+      ) && (
 
-                <VoluntarioBottomNav
+            <VoluntarioBottomNav
 
-                  opcionActiva={
-                    currentScreen === 'VOLUNTARIO_HOME'
-                      ? 'BUSCAR'
-                      : 'INSCRIPCIONES'
-                  }
+              opcionActiva={
 
-                  onInicio={() => {
+                currentScreen ===
+                  'VOLUNTARIO_INICIO'
 
-                    // Se conectará cuando creemos
-                    // la pantalla principal con el mapa.
+                  ? 'INICIO'
 
-                  }}
-
-                  onBuscar={async () => {
-
-                    setCurrentScreen(
+                  : currentScreen ===
                       'VOLUNTARIO_HOME'
-                    );
+
+                    ? 'BUSCAR'
+
+                    : 'INSCRIPCIONES'
+
+              }
 
 
-                    await cargarOportunidadesVoluntario(
-                      filtrosVoluntario
-                    );
+              onInicio={async () => {
 
-                  }}
+                setCurrentScreen(
+                  'VOLUNTARIO_INICIO'
+                );
 
-                  onMisInscripciones={async () => {
-                    setCurrentScreen(
-                      'MIS_INSCRIPCIONES'
-                    );
 
-                    await cargarMisInscripciones();
+                await cargarOportunidadesInicioVoluntario();
 
-                  }}
 
-                />
+                setTimeout(
+                  () => {
 
-              )}
+                    scrollRef.current
+                      ?.scrollTo({
+
+                        y:
+                          scrollYInicioVoluntario,
+
+                        animated:
+                          false
+
+                      });
+
+                  },
+                  0.1
+                );
+
+              }}
+
+
+              onBuscar={async () => {
+
+                setCurrentScreen(
+                  'VOLUNTARIO_HOME'
+                );
+
+
+                await cargarOportunidadesVoluntario(
+                  filtrosVoluntario
+                );
+
+
+                setTimeout(
+                  () => {
+
+                    scrollRef.current
+                      ?.scrollTo({
+
+                        y:
+                          scrollYVoluntario,
+
+                        animated:
+                          false
+
+                      });
+
+                  },
+                  0.1
+                );
+
+              }}
+
+
+              onMisInscripciones={async () => {
+
+                setCurrentScreen(
+                  'MIS_INSCRIPCIONES'
+                );
+
+
+                await cargarMisInscripciones();
+
+
+                setTimeout(
+                  () => {
+
+                    scrollRef.current
+                      ?.scrollTo({
+
+                        y:
+                          scrollYInscripciones,
+
+                        animated:
+                          false
+
+                      });
+
+                  },
+                  0.1
+                );
+
+              }}
+
+            />
+
+            )}
+
+            {/* ======================================================
+                Barra de navegación inferior para la organización
+            ====================================================== */}
+
+            {(
+              currentScreen === 'ORGANIZACION_INICIO' ||
+              currentScreen === 'ORGANIZACION_HOME' ||
+              currentScreen === 'ORGANIZACION_PERFIL'
+            ) && (
+
+              <OrganizacionBottomNav
+
+                opcionActiva={
+
+                  currentScreen ===
+                    'ORGANIZACION_INICIO'
+
+                    ? 'INICIO'
+
+                    : currentScreen ===
+                        'ORGANIZACION_HOME'
+
+                      ? 'OPORTUNIDADES'
+
+                      : 'ORGANIZACION'
+
+                }
+
+
+                onInicio={async () => {
+
+                  setCurrentScreen(
+                    'ORGANIZACION_INICIO'
+                  );
+
+
+                  await cargarOportunidades();
+
+                }}
+
+
+                onMisOportunidades={async () => {
+
+                  setCurrentScreen(
+                    'ORGANIZACION_HOME'
+                  );
+
+
+                  await cargarOportunidades();
+
+                }}
+
+
+                onMiOrganizacion={async () => {
+
+                  setCurrentScreen(
+                    'ORGANIZACION_PERFIL'
+                  );
+
+
+                  await cargarDatosOrganizacion();
+
+                }}
+
+              />
+
+            )}
+
+      
 
 
       {/* ======================================================

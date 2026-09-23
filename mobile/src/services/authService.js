@@ -45,3 +45,27 @@ export const obtenerPerfilProtegido = async (token) => {
 
   return response.data;
 };
+
+export const obtenerMiOrganizacion =
+  async (
+    token
+  ) => {
+
+    const response =
+      await axios.get(
+
+        `${BASE_URL}/auth/mi-organizacion`,
+
+        {
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+        }
+
+      );
+
+
+    return response.data;
+
+  };
