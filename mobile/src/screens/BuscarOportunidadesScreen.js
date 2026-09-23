@@ -35,6 +35,27 @@ export default function BuscarOportunidadesScreen({
   // =====================================================
 
   const [
+  filtrosVisibles,
+  setFiltrosVisibles
+] = React.useState(false);
+
+
+const [
+  tituloBusqueda,
+  setTituloBusqueda
+] = React.useState(
+  filtrosGuardados.nombre ?? ''
+);
+
+
+const [
+  organizacionBusqueda,
+  setOrganizacionBusqueda
+] = React.useState(
+  filtrosGuardados.organizacion ?? ''
+);
+
+  const [
     tipoSeleccionado,
     setTipoSeleccionado
   ] = React.useState(null);
@@ -315,6 +336,12 @@ export default function BuscarOportunidadesScreen({
   // =====================================================
 
   const construirFiltros = ({
+    nombre =
+    tituloBusqueda,
+
+    organizacion =
+    organizacionBusqueda,
+
     tipo =
       tipoSeleccionado,
 
@@ -335,6 +362,20 @@ export default function BuscarOportunidadesScreen({
 
     const filtros = {};
 
+    if (
+      nombre.trim() !== ''
+    ) {
+      filtros.nombre =
+        nombre.trim();
+    }
+
+
+    if (
+      organizacion.trim() !== ''
+    ) {
+      filtros.organizacion =
+        organizacion.trim();
+    }
 
     if (
       tipo !== null
@@ -503,6 +544,14 @@ export default function BuscarOportunidadesScreen({
   // =====================================================
 
   React.useEffect(() => {
+    
+    setTituloBusqueda(
+      filtrosGuardados.nombre ?? ''
+    );
+
+    setOrganizacionBusqueda(
+      filtrosGuardados.organizacion ?? ''
+    );
 
     setTipoSeleccionado(
       filtrosGuardados
@@ -658,6 +707,55 @@ export default function BuscarOportunidadesScreen({
       ?.longitud,
   ]);
 
+  const aplicarFiltros = async () => {
+
+      const ubicacion =
+        ubicacionManualSeleccionada ||
+        ubicacionActual;
+
+      if (ubicacion) {
+
+        const radio =
+          Number(radioBusquedaKm);
+
+        if (
+          !Number.isFinite(radio) ||
+          radio <= 0
+        ) {
+
+          showAlert(
+            'error',
+            'Radio inválido',
+            'Ingresá un radio de búsqueda mayor a 0.'
+          );
+
+          return;
+        }
+
+      }
+
+      onGuardarEstadoUbicacion?.({
+
+        modoUbicacion,
+
+        ubicacionActual,
+
+        ubicacionManualSeleccionada,
+
+        direccionActual,
+
+        textoUbicacion,
+
+        radioBusquedaKm,
+
+      });
+
+      await onFiltrar(
+        construirFiltros()
+      );
+
+    };
+
 
   // =====================================================
   // LIMPIAR FILTROS
@@ -665,6 +763,13 @@ export default function BuscarOportunidadesScreen({
 
   const limpiarFiltros =
     async () => {
+      setTituloBusqueda(
+          ''
+        );
+
+        setOrganizacionBusqueda(
+          ''
+        );
 
       setTipoSeleccionado(
         null
@@ -746,14 +851,44 @@ export default function BuscarOportunidadesScreen({
     };
 
 
-  const estaInscripto = (idOportunidad) => {
+ const obtenerInscripcion = (idOportunidad) => {
 
-  return inscripciones.some(
+  return inscripciones.find(
     (inscripcion) =>
       inscripcion.id_oportunidad === idOportunidad
   );
 
-  };  
+}; 
+
+
+const obtenerTextoEstadoInscripcion = (estado) => {
+
+  switch (estado) {
+
+    case 'PENDIENTE':
+      return 'Solicitud pendiente';
+
+    case 'ACEPTADA':
+      return '✓ Inscripción aceptada';
+
+    case 'RECHAZADA':
+      return 'Inscripción rechazada';
+
+    case 'CANCELADA':
+      return 'Inscripción cancelada';
+
+    case 'COMPLETADA':
+      return 'Actividad completada';
+
+    case 'AUSENTE':
+      return 'Ausente';
+
+    default:
+      return 'Inscripto';
+
+  }
+
+};
 
 
   // =====================================================
@@ -804,10 +939,50 @@ export default function BuscarOportunidadesScreen({
       {/* FILTROS */}
       {/* ================================================= */}
 
+      <TouchableOpacity
+          style={styles.toggleFiltersButton}
+        onPress={() =>
+          setFiltrosVisibles(
+            (valorActual) => !valorActual
+          )
+        }
+      >
+        <Text style={styles.toggleFiltersButtonText}>
+          {filtrosVisibles
+            ? 'Ocultar filtros'
+            : 'Filtros'}
+        </Text>
+      </TouchableOpacity>
+
+  {filtrosVisibles && (
+
       <View style={styles.filterSection}>
 
-
         <Text style={styles.filterTitle}>
+          Buscar por título
+        </Text>
+
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Ej. Colecta de alimentos"
+          value={tituloBusqueda}
+          onChangeText={setTituloBusqueda}
+        />
+
+
+        <Text style={styles.filterTitleSecondary}>
+          Organización
+        </Text>
+
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Ej. Actitud Solidaria"
+          value={organizacionBusqueda}
+          onChangeText={setOrganizacionBusqueda}
+        />
+
+
+        <Text style={styles.filterTitleSecondary}>
           Tipo de actividad
         </Text>
 
@@ -828,12 +1003,7 @@ export default function BuscarOportunidadesScreen({
                 null
               );
 
-              onFiltrar(
-                construirFiltros({
-                  tipo:
-                    null
-                })
-              );
+              
 
             }}
           >
@@ -873,12 +1043,7 @@ export default function BuscarOportunidadesScreen({
                     tipo.id_tipo_actividad
                   );
 
-                  onFiltrar(
-                    construirFiltros({
-                      tipo:
-                        tipo.id_tipo_actividad
-                    })
-                  );
+                  
 
                 }}
               >
@@ -924,12 +1089,7 @@ export default function BuscarOportunidadesScreen({
                 null
               );
 
-              onFiltrar(
-                construirFiltros({
-                  urgencia:
-                    null
-                })
-              );
+              
 
             }}
           >
@@ -973,11 +1133,7 @@ export default function BuscarOportunidadesScreen({
                     urgencia
                   );
 
-                  onFiltrar(
-                    construirFiltros({
-                      urgencia
-                    })
-                  );
+                  
 
                 }}
               >
@@ -1041,12 +1197,7 @@ export default function BuscarOportunidadesScreen({
                 null
               );
 
-              onFiltrar(
-                construirFiltros({
-                  fecha:
-                    null
-                })
-              );
+              
 
             }}
           >
@@ -1093,11 +1244,7 @@ export default function BuscarOportunidadesScreen({
               );
 
 
-              onFiltrar(
-                construirFiltros({
-                  fecha
-                })
-              );
+              
 
             }}
           />
@@ -1420,17 +1567,7 @@ export default function BuscarOportunidadesScreen({
                 });
 
 
-                onFiltrar(
-                  construirFiltros({
-
-                    ubicacion:
-                      ubicacionManualSeleccionada ||
-                      ubicacionActual,
-
-                    radio
-
-                  })
-                );
+              
 
               }}
             >
@@ -1450,6 +1587,15 @@ export default function BuscarOportunidadesScreen({
 
         )}
 
+        <TouchableOpacity
+          style={styles.applyFiltersButton}
+          onPress={aplicarFiltros}
+        >
+          <Text style={styles.applyFiltersButtonText}>
+            Aplicar filtros
+          </Text>
+        </TouchableOpacity>
+
 
         <TouchableOpacity
           style={styles.clearFiltersButton}
@@ -1465,6 +1611,7 @@ export default function BuscarOportunidadesScreen({
         </TouchableOpacity>
 
       </View>
+  )}
 
 
       {/* ================================================= */}
@@ -1623,9 +1770,17 @@ export default function BuscarOportunidadesScreen({
 
 
               <Text style={styles.cardInfo}>
-                Cupo: {oportunidad.cupo_total}
-              </Text>
+                  Cupos ocupados:{' '}
+                  {oportunidad.cupos_ocupados ?? 0}
+                  {' / '}
+                  {oportunidad.cupo_total}
+                </Text>
 
+                <Text style={styles.cardInfo}>
+                  Cupos disponibles:{' '}
+                  {oportunidad.cupos_disponibles ??
+                    oportunidad.cupo_total}
+                </Text>
 
               <Text style={styles.cardInfo}>
 
@@ -1701,40 +1856,46 @@ export default function BuscarOportunidadesScreen({
                 </TouchableOpacity>
 
 
-                {estaInscripto(
-                      oportunidad.id_oportunidad
-                    ) ? (
+                {obtenerInscripcion(
+                    oportunidad.id_oportunidad
+                  ) ? (
 
-                      <View
-                        style={styles.enrolledButton}
-                      >
-
-                        <Text
-                          style={styles.enrolledButtonText}
-                        >
-                          ✓ Inscripto
-                        </Text>
-
-                      </View>
+                    <View style={styles.enrolledButton}>
+                      <Text style={styles.enrolledButtonText}>
+                        {obtenerTextoEstadoInscripcion(
+                          obtenerInscripcion(
+                            oportunidad.id_oportunidad
+                          ).estado
+                        )}
+                      </Text>
+                    </View>
 
                     ) : (
 
-                      <TouchableOpacity
-                        style={styles.inscriptionButton}
-                        onPress={() =>
-                          onInscribirse(
-                            oportunidad.id_oportunidad
-                          )
-                        }
-                      >
+                      oportunidad.cupos_disponibles === 0 ? (
 
-                        <Text
-                          style={styles.inscriptionButtonText}
+                        <View style={styles.noCapacityButton}>
+                          <Text style={styles.noCapacityButtonText}>
+                            Sin cupos
+                          </Text>
+                        </View>
+
+                      ) : (
+
+                        <TouchableOpacity
+                          style={styles.inscriptionButton}
+                          onPress={() =>
+                            onInscribirse(
+                              oportunidad.id_oportunidad
+                            )
+                          }
                         >
-                          Inscribirme
-                        </Text>
+                          <Text style={styles.inscriptionButtonText}>
+                            Inscribirme
+                          </Text>
+                        </TouchableOpacity>
 
-                      </TouchableOpacity>
+                      )
 
                     )}
 
@@ -2453,7 +2614,7 @@ const styles =
   },
 
   enrolledButton: {
-  flex: 1,
+  flex: 1.15,
 
   backgroundColor: '#E8F3F0',
 
@@ -2463,15 +2624,73 @@ const styles =
   borderRadius: 10,
 
   paddingVertical: 10,
-  paddingHorizontal: 14,
+  paddingHorizontal: 8,
 
-  alignItems: 'center',
+  alignItems: 'stretch',
   justifyContent: 'center',
+  minHeight: 48,
 },
 
 enrolledButtonText: {
   color: '#1F6F5C',
 
+  fontSize: 13,
+  fontWeight: '700',
+  textAlign:'center',
+  width:'100%',
+  lineHeight:18,
+  flexShrink:1,
+},
+noCapacityButton: {
+  flex: 1,
+  backgroundColor: '#E5E7EB',
+  borderRadius: 10,
+  paddingVertical: 10,
+  paddingHorizontal: 14,
+  alignItems: 'center',
+},
+
+noCapacityButtonText: {
+  color: '#6B7280',
+  fontSize: 13,
+  fontWeight: '700',
+},
+toggleFiltersButton: {
+  backgroundColor: '#1F6F5C',
+  borderRadius: 12,
+  paddingVertical: 11,
+  paddingHorizontal: 16,
+  alignItems: 'center',
+  marginBottom: 12,
+},
+
+toggleFiltersButtonText: {
+  color: '#FFFFFF',
+  fontSize: 14,
+  fontWeight: '700',
+},
+searchInput: {
+  backgroundColor: '#FFFFFF',
+  borderWidth: 1,
+  borderColor: '#D7DEDA',
+  borderRadius: 10,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  fontSize: 13,
+  color: '#1F2937',
+},
+
+applyFiltersButton: {
+  marginTop: 18,
+  backgroundColor: '#1F6F5C',
+  borderRadius: 12,
+  paddingHorizontal: 14,
+  paddingVertical: 11,
+  alignItems: 'center',
+},
+
+applyFiltersButtonText: {
+  color: '#FFFFFF',
   fontSize: 13,
   fontWeight: '700',
 },

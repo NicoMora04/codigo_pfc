@@ -147,3 +147,18 @@ export const actualizarOportunidad = async (
 
   return response.data;
 };
+
+export const eliminarOportunidad = async (
+  token,
+  idOportunidad
+) => {
+
+  const response = await axios.patch(
+    `${BASE_URL}/oportunidades/${idOportunidad}/eliminar`,
+    {},
+    authHeaders(token)
+  );
+
+  return response.data;
+
+};

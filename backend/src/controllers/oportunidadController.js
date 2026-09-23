@@ -310,6 +310,7 @@ exports.obtenerOportunidadesPublicadas = async (req, res) => {
 
     const filtros = {
       nombre: req.query.nombre,
+      organizacion: req.query.organizacion,
       tipoActividad: req.query.tipoActividad,
       urgencia: req.query.urgencia,
       fecha: req.query.fecha,
@@ -358,10 +359,12 @@ exports.obtenerDetalleOportunidadVoluntario = async (
   try {
 
     const idOportunidad = req.params.id;
+    const idVoluntario =req.user.id;
 
     const oportunidad =
       await oportunidadService.obtenerDetalleOportunidadVoluntario(
-        idOportunidad
+        idOportunidad,
+        idVoluntario
       );
 
     return res.status(200).json({
@@ -380,6 +383,57 @@ exports.obtenerDetalleOportunidadVoluntario = async (
         error.status
           ? error.message
           : 'No se pudo obtener la oportunidad'
+    });
+
+  }
+
+};
+
+// ======================================================
+// ELIMINAR LÓGICAMENTE OPORTUNIDAD
+// ======================================================
+
+exports.eliminarLogicamenteOportunidad = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const idOportunidad =
+      req.params.id;
+
+    const idOrganizacion =
+      req.organizacion.id_organizacion;
+
+    const oportunidad =
+      await oportunidadService
+        .eliminarLogicamenteOportunidad(
+          idOportunidad,
+          idOrganizacion
+        );
+
+    return res.status(200).json({
+      message:
+        'Oportunidad eliminada correctamente',
+      oportunidad
+    });
+
+  }
+  catch (error) {
+
+    console.error(
+      'ERROR AL ELIMINAR OPORTUNIDAD:',
+      error
+    );
+
+    return res.status(
+      error.status || 500
+    ).json({
+      error:
+        error.status
+          ? error.message
+          : 'No se pudo eliminar la oportunidad'
     });
 
   }

@@ -45,11 +45,21 @@ import DetalleOportunidadScreen
 
 import MisInscripcionesScreen from './src/screens/MisInscripcionesScreen';
 
+import GestionInscripcionesScreen
+  from './src/screens/GestionInscripcionesScreen';
+
 import VoluntarioBottomNav
   from './src/components/VoluntarioBottomNav';
 
-  import {
-  inscribirseOportunidad, obtenerMisInscripciones
+import {
+  inscribirseOportunidad,
+  obtenerMisInscripciones,
+  obtenerInscripcionesOportunidad,
+  aceptarInscripcion,
+  rechazarInscripcion,
+  ocultarInscripcion,
+  cancelarInscripcion,
+  marcarResultadoParticipacion
 } from './src/services/inscripcionService';
 
 
@@ -77,14 +87,14 @@ import {
   publicarOportunidad,
   cancelarOportunidad,
   cerrarOportunidad,
-  finalizarOportunidad
+  finalizarOportunidad,
+  eliminarOportunidad
 } from './src/services/oportunidadService';
 
 
 import {
   buscarUbicacionesPorTexto
 } from './src/services/ubicacionService';
-
 
 
 
@@ -119,6 +129,16 @@ export default function App() {
   inscripcionesVoluntario,
   setInscripcionesVoluntario
   ] = useState([]);
+
+  const [
+  inscripcionesOrganizacion,
+  setInscripcionesOrganizacion
+] = useState([]);
+
+const [
+  oportunidadGestionando,
+  setOportunidadGestionando
+] = useState(null);
 
   const [
   estadoInscripcionDetalle,
@@ -165,6 +185,17 @@ const [
     setScrollYInscripciones
   ] = useState(0);
 
+  const [
+  scrollYOrganizacion,
+  setScrollYOrganizacion
+] = useState(0);
+
+const [
+  scrollYOrganizacionGuardado,
+  setScrollYOrganizacionGuardado
+] = useState(0);
+
+
   const scrollRef =
     React.useRef(null);
 
@@ -181,6 +212,10 @@ const [
   ] =
     useState('TODAS');
 
+  const [
+  filtroEstadoInscripciones,
+  setFiltroEstadoInscripciones
+] = React.useState('TODAS');
 
   const [
     busquedaOrganizacion,
@@ -1033,6 +1068,396 @@ const [
 
     };
 
+  // ======================================================
+// INSCRIPCIONES DE UNA OPORTUNIDAD - ORGANIZACIÓN
+// ======================================================
+
+const abrirGestionInscripciones =
+  async (oportunidad) => {
+
+    setScrollYOrganizacionGuardado(
+    scrollYOrganizacion
+    );
+
+    setLoading(true);
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setInscripcionesOrganizacion([]);
+        setOportunidadGestionando(null);
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+        return;
+      }
+
+      const data =
+        await obtenerInscripcionesOportunidad(
+          token,
+          oportunidad.id_oportunidad
+        );
+
+      setOportunidadGestionando(
+        oportunidad
+      );
+
+      setInscripcionesOrganizacion(
+        data.inscripciones || []
+      );
+
+      setCurrentScreen(
+        'GESTION_INSCRIPCIONES'
+      );
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setInscripcionesOrganizacion([]);
+        setOportunidadGestionando(null);
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return;
+      }
+
+      showAlert(
+        'error',
+        'Error',
+        error.response?.data?.error ||
+        'No se pudieron cargar las inscripciones.'
+      );
+
+    }
+    finally {
+
+      setLoading(false);
+
+    }
+
+  };  
+
+  // ======================================================
+// ACEPTAR INSCRIPCIÓN - ORGANIZACIÓN
+// ======================================================
+
+const handleAceptarInscripcion =
+  async (idInscripcion) => {
+
+    if (!oportunidadGestionando) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setInscripcionesOrganizacion([]);
+        setOportunidadGestionando(null);
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+        return;
+      }
+
+      await aceptarInscripcion(
+        token,
+        idInscripcion
+      );
+
+      const data =
+        await obtenerInscripcionesOportunidad(
+          token,
+          oportunidadGestionando.id_oportunidad
+        );
+
+      setInscripcionesOrganizacion(
+        data.inscripciones || []
+      );
+
+      showAlert(
+        'success',
+        'Inscripción aceptada',
+        'El voluntario fue aceptado correctamente.'
+      );
+
+    }
+    catch (error) {
+
+      if (error.response?.status === 401) {
+
+        await eliminarToken();
+
+        setInscripcionesOrganizacion([]);
+        setOportunidadGestionando(null);
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return;
+      }
+
+      showAlert(
+        'error',
+        'No se pudo aceptar',
+        error.response?.data?.error ||
+        error.response?.data?.mensaje ||
+        'Ocurrió un error al aceptar la inscripción.'
+      );
+
+    }
+    finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+
+// ======================================================
+// RECHAZAR INSCRIPCIÓN - ORGANIZACIÓN
+// ======================================================
+
+const handleRechazarInscripcion =
+  async (idInscripcion) => {
+
+    if (!oportunidadGestionando) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setInscripcionesOrganizacion([]);
+        setOportunidadGestionando(null);
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+        return;
+      }
+
+      await rechazarInscripcion(
+        token,
+        idInscripcion
+      );
+
+      const data =
+        await obtenerInscripcionesOportunidad(
+          token,
+          oportunidadGestionando.id_oportunidad
+        );
+
+      setInscripcionesOrganizacion(
+        data.inscripciones || []
+      );
+
+      showAlert(
+        'success',
+        'Inscripción rechazada',
+        'La inscripción fue rechazada correctamente.'
+      );
+
+    }
+    catch (error) {
+
+      if (error.response?.status === 401) {
+
+        await eliminarToken();
+
+        setInscripcionesOrganizacion([]);
+        setOportunidadGestionando(null);
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return;
+      }
+
+      showAlert(
+        'error',
+        'No se pudo rechazar',
+        error.response?.data?.error ||
+        error.response?.data?.mensaje ||
+        'Ocurrió un error al rechazar la inscripción.'
+      );
+
+    }
+    finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+  // ======================================================
+// MARCAR RESULTADO DE PARTICIPACIÓN - ORGANIZACIÓN
+// ======================================================
+
+const handleMarcarResultadoParticipacion = async (
+  idInscripcion,
+  estado
+) => {
+
+  setLoading(true);
+
+  try {
+
+    const token =
+      await obtenerToken();
+
+    if (!token) {
+
+      await eliminarToken();
+
+      setCurrentScreen(
+        'A01'
+      );
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión no es válida. Iniciá sesión nuevamente.'
+      );
+
+      return;
+    }
+
+
+    await marcarResultadoParticipacion(
+      token,
+      idInscripcion,
+      estado
+    );
+
+
+    if (
+      oportunidadGestionando
+        ?.id_oportunidad
+    ) {
+
+      const data =
+        await obtenerInscripcionesOportunidad(
+          token,
+          oportunidadGestionando.id_oportunidad
+        );
+
+      setInscripcionesOrganizacion(
+        data.inscripciones || []
+      );
+
+    }
+
+
+    showAlert(
+      'success',
+      'Participación actualizada',
+      estado === 'COMPLETADA'
+        ? 'El voluntario fue marcado como participante de la actividad.'
+        : 'El voluntario fue marcado como ausente.'
+    );
+
+  }
+  catch (error) {
+
+    if (
+      error.response?.status === 401
+    ) {
+
+      await eliminarToken();
+
+      setCurrentScreen(
+        'A01'
+      );
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión venció. Iniciá sesión nuevamente.'
+      );
+
+      return;
+    }
+
+
+    showAlert(
+      'error',
+      'No se pudo actualizar',
+      error.response?.data?.error ||
+      'No se pudo actualizar el resultado de participación.'
+    );
+
+  }
+  finally {
+
+    setLoading(false);
+
+  }
+
+};
+
 
   // ======================================================
   // 5. CERRAR SESIÓN
@@ -1555,6 +1980,97 @@ const [
 
     };
 
+    // ======================================================
+// ELIMINAR LÓGICAMENTE OPORTUNIDAD - ORGANIZACIÓN
+// ======================================================
+
+const handleEliminarOportunidad = async (
+  idOportunidad
+) => {
+
+  setLoading(true);
+
+  try {
+
+    const token =
+      await obtenerToken();
+
+    if (!token) {
+
+      await eliminarToken();
+
+      setOportunidades([]);
+
+      setCurrentScreen(
+        'A01'
+      );
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión no es válida. Iniciá sesión nuevamente.'
+      );
+
+      return;
+    }
+
+
+    await eliminarOportunidad(
+      token,
+      idOportunidad
+    );
+
+
+    showAlert(
+      'success',
+      'Oportunidad eliminada',
+      'La oportunidad fue quitada de tu listado correctamente.'
+    );
+
+
+    await cargarOportunidades();
+
+  }
+  catch (error) {
+
+    if (
+      error.response?.status === 401
+    ) {
+
+      await eliminarToken();
+
+      setOportunidades([]);
+
+      setCurrentScreen(
+        'A01'
+      );
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión venció. Iniciá sesión nuevamente.'
+      );
+
+      return;
+    }
+
+
+    showAlert(
+      'error',
+      'No se pudo eliminar',
+      error.response?.data?.error ||
+      'Ocurrió un error al eliminar la oportunidad.'
+    );
+
+  }
+  finally {
+
+    setLoading(false);
+
+  }
+
+};
+
 
   // ======================================================
   // BUSCAR UBICACIONES
@@ -1761,7 +2277,7 @@ const handleInscribirse =
 
         'Inscripción realizada',
 
-        'Te inscribiste correctamente a la oportunidad. Tu inscripción quedó pendiente de respuesta.'
+        'Te inscribiste correctamente a la oportunidad. Podés cancelar tu inscripción hasta 3 días antes del inicio de la actividad.'
 
       );
 
@@ -1956,6 +2472,179 @@ const cargarMisInscripciones =
 
   };
 
+  // ======================================================
+// OCULTAR INSCRIPCIÓN - VOLUNTARIO
+// ======================================================
+
+const handleOcultarInscripcion =
+  async (idInscripcion) => {
+
+    setLoading(true);
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setInscripcionesVoluntario([]);
+
+        setCurrentScreen(
+          'A01'
+        );
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+        return;
+      }
+
+      await ocultarInscripcion(
+        token,
+        idInscripcion
+      );
+
+      await cargarMisInscripciones();
+
+      showAlert(
+        'success',
+        'Inscripción quitada',
+        'La inscripción dejó de aparecer en tu listado.'
+      );
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setInscripcionesVoluntario([]);
+
+        setCurrentScreen(
+          'A01'
+        );
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return;
+      }
+
+      showAlert(
+        'error',
+        'No se pudo quitar',
+        error.response?.data?.error ||
+        'Ocurrió un error al quitar la inscripción.'
+      );
+
+    }
+    finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+  // ======================================================
+// CANCELAR INSCRIPCIÓN - VOLUNTARIO
+// ======================================================
+
+const handleCancelarInscripcion =
+  async (idInscripcion) => {
+
+    setLoading(true);
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setInscripcionesVoluntario([]);
+
+        setCurrentScreen(
+          'A01'
+        );
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+        return;
+      }
+
+      await cancelarInscripcion(
+        token,
+        idInscripcion
+      );
+
+      await cargarMisInscripciones();
+
+      showAlert(
+        'success',
+        'Inscripción cancelada',
+        'Tu inscripción fue cancelada correctamente.'
+      );
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setInscripcionesVoluntario([]);
+
+        setCurrentScreen(
+          'A01'
+        );
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return;
+      }
+
+      showAlert(
+        'error',
+        'No se pudo cancelar',
+        error.response?.data?.error ||
+        'Ocurrió un error al cancelar la inscripción.'
+      );
+
+    }
+    finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+
 
   // ======================================================
   // RENDER PRINCIPAL
@@ -2038,7 +2727,16 @@ const cargarMisInscripciones =
                 y
               );
 
-            }
+            } else if (
+                currentScreen ===
+                'ORGANIZACION_HOME'
+              ) {
+
+                setScrollYOrganizacion(
+                  y
+                );
+
+              }
 
           }}
 
@@ -2325,6 +3023,22 @@ const cargarMisInscripciones =
                 loading
               }
 
+              onOcultar={
+                handleOcultarInscripcion
+              }
+
+              onCancelar={
+                handleCancelarInscripcion
+              }
+
+              filtroEstado={
+                filtroEstadoInscripciones
+              }
+
+              onCambiarFiltroEstado={
+                setFiltroEstadoInscripciones
+              }
+
               onVerDetalle={async (
                 idOportunidad,
                 estadoInscripcion
@@ -2487,6 +3201,10 @@ const cargarMisInscripciones =
                 setBusquedaOrganizacion
               }
 
+              onGestionarInscripciones={
+                abrirGestionInscripciones
+              }
+
 
               onNuevaOportunidad={
                 async () => {
@@ -2515,6 +3233,10 @@ const cargarMisInscripciones =
 
                 }
               }
+
+              onEliminar={
+                  handleEliminarOportunidad
+                }
 
 
               onEditar={
@@ -3298,6 +4020,72 @@ const cargarMisInscripciones =
             />
 
           )}
+
+          {/* ==================================================
+                GESTIÓN DE INSCRIPCIONES - ORGANIZACIÓN
+            ================================================== */}
+
+            {currentScreen ===
+              'GESTION_INSCRIPCIONES' &&
+              oportunidadGestionando && (
+
+              <GestionInscripcionesScreen
+
+                oportunidad={
+                  oportunidadGestionando
+                }
+                onMarcarResultado={
+                  handleMarcarResultadoParticipacion
+                }
+
+                inscripciones={
+                  inscripcionesOrganizacion
+                }
+
+                loading={
+                  loading
+                }
+
+                onAceptar={
+                  handleAceptarInscripcion
+                }
+
+                onRechazar={
+                  handleRechazarInscripcion
+                }
+
+                onVolver={() => {
+
+                  setInscripcionesOrganizacion(
+                    []
+                  );
+
+                  setOportunidadGestionando(
+                    null
+                  );
+
+                  setCurrentScreen(
+                    'ORGANIZACION_HOME'
+                  );
+
+                  setTimeout(
+                    () => {
+
+                      scrollRef.current
+                        ?.scrollTo({
+                          y: scrollYOrganizacionGuardado,
+                          animated: true
+                        });
+
+                    },
+                    0.1
+                  );
+
+                }}
+
+              />
+
+            )}
 
 
           {/* ==================================================

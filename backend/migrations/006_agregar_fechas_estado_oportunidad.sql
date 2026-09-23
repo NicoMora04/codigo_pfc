@@ -1,0 +1,3 @@
+ALTER TABLE oportunidad
+ADD COLUMN cerrado_en TIMESTAMPTZ,
+ADD COLUMN finalizado_en TIMESTAMPTZ;
