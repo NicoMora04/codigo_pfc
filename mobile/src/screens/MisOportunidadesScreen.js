@@ -327,7 +327,7 @@ export default function MisOportunidadesScreen({
                       }}
                     >
                       <Text style={styles.btnSecondaryText}>
-                        Cerrar Incripciones
+                        Cerrar Inscripciones
                       </Text>
                     </TouchableOpacity>
 
