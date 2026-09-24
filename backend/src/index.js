@@ -15,7 +15,32 @@ const publicRoutes = require('./routes/publicRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+const corsOrigins = (
+  process.env.CORS_ORIGINS ||
+  'http://localhost:5173'
+)
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+
+      // Permite solicitudes sin Origin:
+      // app móvil, curl, Postman, servidor a servidor.
+      if (
+        !origin ||
+        corsOrigins.includes(origin)
+      ) {
+        return callback(null, true);
+      }
+
+      // Para otros orígenes no se habilita CORS.
+      return callback(null, false);
+    },
+  })
+);
 app.use(express.json());
 app.use('/api/ubicaciones',ubicacionRoutes);
 
@@ -37,8 +62,17 @@ app.get('/api/health', async (req, res) => {
       timestamp: result.rows[0].now
     });
   } catch (error) {
-    res.status(500).json({ status: 'ERROR', message: error.message });
-  }
+  console.error(
+    'ERROR EN HEALTH CHECK:',
+    error
+  );
+
+  res.status(500).json({
+    status: 'ERROR',
+    message:
+      'No se pudo verificar el estado del servicio'
+  });
+}
 });
 
 if (require.main === module) {

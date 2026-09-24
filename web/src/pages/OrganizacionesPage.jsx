@@ -17,11 +17,25 @@ function obtenerIniciales(nombre = '') {
 }
 
 function obtenerUbicacion(organizacion) {
-  if (organizacion.localidad) {
-    return organizacion.localidad
+  const ubicacion =
+    organizacion.ubicacion_aproximada
+
+  if (!ubicacion) {
+    return null
   }
 
-  return organizacion.provincia || null
+  if (
+    ubicacion.localidad &&
+    ubicacion.provincia
+  ) {
+    return `${ubicacion.localidad}, ${ubicacion.provincia}`
+  }
+
+  return (
+    ubicacion.localidad ||
+    ubicacion.provincia ||
+    null
+  )
 }
 
 function OrganizacionesPage() {

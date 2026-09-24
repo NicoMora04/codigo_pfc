@@ -59,19 +59,24 @@ exports.listarOrganizacionesPublicas = async (filtros = {}) => {
   // FILTRO POR UBICACIÓN APROXIMADA
   // ====================================================
 
-  if (ubicacion) {
+if (ubicacion) {
 
-    valores.push(`%${ubicacion}%`);
+  valores.push(`%${ubicacion}%`);
 
-    const indiceUbicacion = valores.length;
+  const indiceUbicacion = valores.length;
 
-    condiciones.push(`
-      (
-        ub.localidad ILIKE $${indiceUbicacion}
-        OR ub.provincia ILIKE $${indiceUbicacion}
-      )
-    `);
-  }
+  condiciones.push(`
+    (
+      ub.localidad ILIKE $${indiceUbicacion}
+      OR ub.provincia ILIKE $${indiceUbicacion}
+      OR CONCAT_WS(
+        ', ',
+        ub.localidad,
+        ub.provincia
+      ) ILIKE $${indiceUbicacion}
+    )
+  `);
+}
 
 
   const query = `

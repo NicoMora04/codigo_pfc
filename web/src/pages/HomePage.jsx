@@ -389,11 +389,14 @@ const [
                   </p>
 
                   <div className="meta-row">
-                    {organizacion.localidad && (
+                    {organizacion.ubicacion_aproximada && (
                       <span className="chip">
-                        {
-                          organizacion.localidad
-                        }
+                        {[
+                          organizacion.ubicacion_aproximada.localidad,
+                          organizacion.ubicacion_aproximada.provincia,
+                        ]
+                          .filter(Boolean)
+                          .join(', ')}
                       </span>
                     )}
 

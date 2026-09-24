@@ -368,14 +368,10 @@ exports.login = async (req, res) => {
     );
 
 
-    res.status(500).json({
-
-      error:
-        'Error en el servidor al intentar loguearse',
-
-      details: error.message
-
-    });
+  res.status(500).json({
+   error:
+    'Error en el servidor al intentar loguearse'
+  });
 
   }
 
@@ -460,7 +456,6 @@ exports.forgotPassword = async (req, res) => {
     // ==================================================
     // 4. CALCULAR HASH SHA-256
     // ==================================================
-    console.log(resetToken)
     const tokenHash = crypto
       .createHash('sha256')
       .update(resetToken)
