@@ -11,6 +11,9 @@ const verificarRol = require('../middleware/roleMiddleware');
 const verificarOrganizacionVerificada =
   require('../middleware/organizacionVerificadaMiddleware');
 
+const perfilPublicoController =
+  require('../controllers/perfilPublicoController');
+
 // ======================================================
 // ESTADO DE VERIFICACIÓN
 // ======================================================
@@ -30,6 +33,17 @@ router.patch(
   organizacionController.solicitarNuevaVerificacion
 );
 
+// ======================================================
+// PERFIL PÚBLICO PROPIO
+// ======================================================
+
+router.get(
+  '/mi-perfil',
+  verificarToken,
+  verificarRol('ORGANIZACION'),
+  verificarOrganizacionVerificada,
+  perfilPublicoController.obtenerPerfilPropio
+);
 
 module.exports = router;
 

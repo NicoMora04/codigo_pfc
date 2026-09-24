@@ -10,6 +10,7 @@ const oportunidadRoutes =require('./routes/oportunidadRoutes');
 const ubicacionRoutes =require('./routes/ubicacionRoutes');
 const tipoActividadRoutes =require('./routes/tipoActividadRoutes');
 const inscripcionRoutes = require('./routes/inscripcionRoutes');
+const publicRoutes = require('./routes/publicRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,6 +26,7 @@ app.use('/api/oportunidades', oportunidadRoutes);
 app.use('/api/organizaciones', organizacionRoutes);
 app.use('/api/tipos-actividad',tipoActividadRoutes);
 app.use('/api/inscripciones', inscripcionRoutes);
+app.use('/api/public', publicRoutes);
 // Ruta de diagnóstico (Health Check)
 app.get('/api/health', async (req, res) => {
   try {
