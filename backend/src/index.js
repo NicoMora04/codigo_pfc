@@ -11,6 +11,8 @@ const ubicacionRoutes =require('./routes/ubicacionRoutes');
 const tipoActividadRoutes =require('./routes/tipoActividadRoutes');
 const inscripcionRoutes = require('./routes/inscripcionRoutes');
 const publicRoutes = require('./routes/publicRoutes');
+const donacionRoutes =require('./routes/donacionRoutes');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,6 +44,15 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(
+  '/uploads',
+  express.static(
+    path.join(
+      __dirname,
+      '../uploads'
+    )
+  )
+);
 app.use('/api/ubicaciones',ubicacionRoutes);
 
 // Enlazamos las rutas bajo el prefijo /api/auth
@@ -51,6 +62,7 @@ app.use('/api/oportunidades', oportunidadRoutes);
 app.use('/api/organizaciones', organizacionRoutes);
 app.use('/api/tipos-actividad',tipoActividadRoutes);
 app.use('/api/inscripciones', inscripcionRoutes);
+app.use('/api/donaciones',donacionRoutes);
 app.use('/api/public', publicRoutes);
 // Ruta de diagnóstico (Health Check)
 app.get('/api/health', async (req, res) => {

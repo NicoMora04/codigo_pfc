@@ -45,5 +45,30 @@ router.get(
   perfilPublicoController.obtenerPerfilPropio
 );
 
+// ======================================================
+// ORGANIZACIONES DISPONIBLES PARA DONACIÓN
+// ======================================================
+
+router.get(
+  '/disponibles-donacion',
+  verificarToken,
+  verificarRol('VOLUNTARIO'),
+  organizacionController
+    .listarDisponiblesParaDonacion
+);
+
+
+// ======================================================
+// DETALLE DE ORGANIZACIÓN PARA DONACIÓN
+// ======================================================
+
+router.get(
+  '/:id/detalle-donacion',
+  verificarToken,
+  verificarRol('VOLUNTARIO'),
+  organizacionController
+    .obtenerDetalleDisponibleDonacion
+);
+
 module.exports = router;
 

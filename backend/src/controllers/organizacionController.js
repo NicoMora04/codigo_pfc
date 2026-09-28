@@ -90,3 +90,120 @@ exports.solicitarNuevaVerificacion = async (req, res) => {
   }
 
 };
+
+// ======================================================
+// LISTAR ORGANIZACIONES DISPONIBLES PARA DONACIÓN
+// ======================================================
+
+exports.listarDisponiblesParaDonacion =
+  async (req, res) => {
+
+    try {
+
+      const organizaciones =
+        await organizacionService
+          .listarDisponiblesParaDonacion({
+
+            nombre:
+              req.query.nombre,
+
+            idTipoActividad:
+              req.query.id_tipo_actividad,
+
+            latitud:
+              req.query.latitud,
+
+            longitud:
+              req.query.longitud,
+
+            radioBusquedaKm:
+              req.query.radio_km
+
+          });
+
+
+      return res
+        .status(200)
+        .json({
+          organizaciones
+        });
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL CONSULTAR ORGANIZACIONES PARA DONACIÓN:',
+        error
+      );
+
+
+      return res
+        .status(
+          error.status || 500
+        )
+        .json({
+
+          error:
+            error.status
+              ? error.message
+              : 'No se pudieron consultar las organizaciones'
+
+        });
+
+    }
+
+  };
+
+
+  // ======================================================
+// DETALLE DE ORGANIZACIÓN PARA DONACIÓN
+// ======================================================
+
+exports.obtenerDetalleDisponibleDonacion =
+  async (req, res) => {
+
+    try {
+
+      const {
+        id
+      } = req.params;
+
+
+      const organizacion =
+        await organizacionService
+          .obtenerDetalleDisponibleDonacion(
+            id
+          );
+
+
+      return res.status(200).json({
+
+        organizacion
+
+      });
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL CONSULTAR ORGANIZACIÓN PARA DONACIÓN:',
+        error
+      );
+
+
+      return res
+        .status(
+          error.status || 500
+        )
+        .json({
+
+          error:
+            error.status
+              ? error.message
+              : 'No se pudo consultar la organización'
+
+        });
+
+    }
+
+  };
