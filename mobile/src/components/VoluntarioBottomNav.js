@@ -13,6 +13,7 @@ export default function VoluntarioBottomNav({
   opcionActiva,
   onInicio,
   onBuscar,
+  onDonar,
   onMisInscripciones,
 }) {
 
@@ -82,6 +83,33 @@ const insets = useSafeAreaInsets();
           ]}
         >
           Buscar
+        </Text>
+
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.item}
+        onPress={onDonar}
+      >
+
+        <Text
+          style={[
+            styles.icon,
+            opcionActiva === 'DONAR' &&
+              styles.activeText
+          ]}
+        >
+          🎁
+        </Text>
+
+        <Text
+          style={[
+            styles.label,
+            opcionActiva === 'DONAR' &&
+              styles.activeText
+          ]}
+        >
+          Donar
         </Text>
 
       </TouchableOpacity>

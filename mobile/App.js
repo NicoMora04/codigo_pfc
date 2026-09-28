@@ -63,6 +63,7 @@ import OrganizacionBottomNav
 import MiOrganizacionScreen
   from './src/screens/MiOrganizacionScreen';
 
+
 import {
   inscribirseOportunidad,
   obtenerMisInscripciones,
@@ -108,6 +109,30 @@ import {
   buscarUbicacionesPorTexto
 } from './src/services/ubicacionService';
 
+import OrganizacionesDonacionScreen
+  from './src/screens/OrganizacionesDonacionScreen';
+
+import {
+  obtenerOrganizacionesDonacion,
+  obtenerDetalleOrganizacionDonacion,
+  obtenerCategoriasDonacion,
+  registrarDonacion,
+  subirImagenDonacion,
+  obtenerMisDonaciones,
+  obtenerDetalleDonacion
+} from './src/services/donacionService';  
+
+import RegistrarDonacionScreen
+  from './src/screens/RegistrarDonacionScreen';
+
+import DetalleOrganizacionDonacionScreen
+  from './src/screens/DetalleOrganizacionDonacionScreen';
+
+import MisDonacionesScreen
+  from './src/screens/MisDonacionesScreen';
+
+import DetalleDonacionScreen
+  from './src/screens/DetalleDonacionScreen';
 
 export default function App() {
 
@@ -268,6 +293,25 @@ const [
   });
 
   const [
+  estadoUbicacionDonacion,
+  setEstadoUbicacionDonacion
+] = useState({
+
+  modoUbicacion: null,
+
+  ubicacionActual: null,
+
+  ubicacionManualSeleccionada: null,
+
+  direccionActual: '',
+
+  textoUbicacion: '',
+
+  radioBusquedaKm: '10',
+
+});
+
+  const [
   datosOrganizacion,
   setDatosOrganizacion
 ] = useState(null);
@@ -279,6 +323,39 @@ const [
 ] = useState(false);
 
 
+  const [
+  organizacionesDonacion,
+  setOrganizacionesDonacion
+] = useState([]);
+
+
+const [
+  filtrosDonacion,
+  setFiltrosDonacion
+] = useState({});
+
+
+const [
+  loadingDonacion,
+  setLoadingDonacion
+] = useState(false);
+
+
+const [
+  organizacionDonacionSeleccionada,
+  setOrganizacionDonacionSeleccionada
+] = useState(null);
+
+const [
+  loadingDetalleDonacion,
+  setLoadingDetalleDonacion
+] = useState(false);
+
+const [
+  scrollYDonacion,
+  setScrollYDonacion
+] = useState(0);
+
   // ======================================================
   // MODAL DE CIERRE DE SESIÓN
   // ======================================================
@@ -287,6 +364,58 @@ const [
     logoutVisible,
     setLogoutVisible
   ] = useState(false);
+
+
+  const [
+  categoriasDonacion,
+  setCategoriasDonacion
+] = useState([]);
+
+
+const [
+  loadingCategoriasDonacion,
+  setLoadingCategoriasDonacion
+] = useState(false);
+
+const [
+  loadingRegistroDonacion,
+  setLoadingRegistroDonacion
+] = useState(false);
+
+const [
+  donacionesVoluntario,
+  setDonacionesVoluntario
+] = useState([]);
+
+
+const [
+  filtroEstadoDonaciones,
+  setFiltroEstadoDonaciones
+] = useState(null);
+
+
+const [
+  loadingMisDonaciones,
+  setLoadingMisDonaciones
+] = useState(false);
+
+
+const [
+  donacionSeleccionada,
+  setDonacionSeleccionada
+] = useState(null);
+
+
+const [
+  loadingDetalleDonacionPropia,
+  setLoadingDetalleDonacionPropia
+] = useState(false);
+
+
+const [
+  scrollYMisDonaciones,
+  setScrollYMisDonaciones
+] = useState(0);
 
 
   // ======================================================
@@ -1588,6 +1717,30 @@ const handleMarcarResultadoParticipacion = async (
       );
 
       setScrollYInscripciones(
+        0
+      );
+
+      setDonacionesVoluntario(
+        []
+      );
+
+      setFiltroEstadoDonaciones(
+        null
+      );
+
+      setDonacionSeleccionada(
+        null
+      );
+
+      setLoadingMisDonaciones(
+        false
+      );
+
+      setLoadingDetalleDonacionPropia(
+        false
+      );
+
+      setScrollYMisDonaciones(
         0
       );
 
@@ -2905,6 +3058,693 @@ const handleCancelarInscripcion =
   };
 
 
+  const cargarOrganizacionesDonacion =
+  async (filtros = {}) => {
+
+    try {
+
+      setLoadingDonacion(
+        true
+      );
+
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        return;
+
+      }
+
+
+      const data =
+        await obtenerOrganizacionesDonacion(
+          token,
+          filtros
+        );
+
+
+      setOrganizacionesDonacion(
+        data.organizaciones || []
+      );
+
+
+      setFiltrosDonacion(
+        filtros
+      );
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL CARGAR ORGANIZACIONES PARA DONACIÓN:',
+        error
+      );
+
+
+      if (
+        error.response
+          ?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return;
+
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudieron cargar las organizaciones',
+        error.response
+          ?.data
+          ?.error ||
+          'Ocurrió un error al consultar las organizaciones.'
+      );
+
+    }
+    finally {
+
+      setLoadingDonacion(
+        false
+      );
+
+    }
+
+  };
+
+
+  const cargarDetalleOrganizacionDonacion =
+  async (
+    idOrganizacion
+  ) => {
+
+    try {
+
+      setLoadingDetalleDonacion(
+        true
+      );
+
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+        return;
+
+      }
+
+
+      const data =
+        await obtenerDetalleOrganizacionDonacion(
+          token,
+          idOrganizacion
+        );
+
+
+      setOrganizacionDonacionSeleccionada(
+        data.organizacion
+      );
+
+      setCurrentScreen(
+      'DETALLE_ORGANIZACION_DONACION'
+       ) ;
+
+
+      
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL CONSULTAR DETALLE DE ORGANIZACIÓN:',
+        error
+      );
+
+
+      if (
+        error.response
+          ?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return;
+
+      }
+
+
+      showAlert(
+        'error',
+        'Organización no disponible',
+        error.response
+          ?.data
+          ?.error ||
+          'No se pudo consultar la organización.'
+      );
+
+    }
+    finally {
+
+      setLoadingDetalleDonacion(
+        false
+      );
+
+    }
+
+  };
+
+const cargarCategoriasDonacion =
+  async () => {
+
+    try {
+
+      setLoadingCategoriasDonacion(
+        true
+      );
+
+
+      const token = await obtenerToken();
+
+
+      const data =
+        await obtenerCategoriasDonacion(
+          token
+        );
+
+
+      setCategoriasDonacion(
+        data.categorias || []
+      );
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR CATEGORÍAS DONACIÓN:',
+        error
+      );
+
+
+      showAlert(
+        'error',
+        'Error',
+        'No se pudieron cargar las categorías de donación.'
+      );
+
+    }
+    finally {
+
+      setLoadingCategoriasDonacion(
+        false
+      );
+
+    }
+
+  };
+
+
+  const handleRegistrarDonacion =
+  async (
+    datos,
+    idempotencyKey,
+    imagenSeleccionada
+  ) => {
+
+    try {
+
+      setLoadingRegistroDonacion(
+        true
+      );
+
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      if (
+        !organizacionDonacionSeleccionada
+          ?.id_organizacion
+      ) {
+
+        showAlert(
+          'error',
+          'Organización no disponible',
+          'No se pudo determinar la organización destinataria.'
+        );
+
+
+        return false;
+
+      }
+
+
+      const respuesta =
+  await registrarDonacion(
+    token,
+    {
+      ...datos,
+
+      id_organizacion:
+        organizacionDonacionSeleccionada
+          .id_organizacion
+    },
+    idempotencyKey
+  );
+
+
+const donacionRegistrada =
+  respuesta?.donacion ||
+  respuesta;
+
+
+const idDonacion =
+  donacionRegistrada
+    ?.id_donacion;
+
+
+if (
+  imagenSeleccionada
+) {
+
+  if (
+    !idDonacion
+  ) {
+
+    throw new Error(
+      'No se pudo identificar la donación registrada.'
+    );
+
+  }
+
+
+  try {
+
+    await subirImagenDonacion(
+      token,
+      idDonacion,
+      imagenSeleccionada
+    );
+
+  }
+  catch (errorImagen) {
+
+    console.error(
+      'ERROR AL SUBIR IMAGEN DE DONACIÓN:',
+      errorImagen
+    );
+
+
+    showAlert(
+      'error',
+      'Imagen no adjuntada',
+      errorImagen.response
+        ?.data
+        ?.error ||
+        'La donación fue registrada, pero no se pudo adjuntar la imagen. Podés reemplazarla, quitarla o intentar nuevamente.'
+    );
+
+
+    return false;
+
+  }
+
+}
+
+
+      showAlert(
+        'success',
+        'Donación registrada',
+        'Tu donación fue enviada correctamente a la organización y quedó pendiente de revisión.'
+      );
+
+
+      setCurrentScreen(
+        'DETALLE_ORGANIZACION_DONACION'
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL REGISTRAR DONACIÓN:',
+        error.response?.data ||
+        error.message
+      );
+
+
+      if (
+        error.response?.status ===
+        401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudo registrar la donación',
+        error.response?.data?.error ||
+        'Ocurrió un error al registrar la donación.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingRegistroDonacion(
+        false
+      );
+
+    }
+
+  };
+
+// ======================================================
+// MIS DONACIONES - VOLUNTARIO
+// ======================================================
+
+const cargarMisDonaciones =
+  async (
+    estado = null
+  ) => {
+
+    try {
+
+      setLoadingMisDonaciones(
+        true
+      );
+
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setDonacionesVoluntario(
+          []
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+        await obtenerMisDonaciones(
+          token,
+          estado
+        );
+
+
+      setDonacionesVoluntario(
+
+        Array.isArray(
+          data?.donaciones
+        )
+
+          ? data.donaciones
+
+          : []
+
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL CARGAR MIS DONACIONES:',
+        error
+      );
+
+
+      if (
+        error.response?.status ===
+        401
+      ) {
+
+        await eliminarToken();
+
+        setDonacionesVoluntario(
+          []
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'Error',
+        error.response
+          ?.data
+          ?.error ||
+        'No se pudieron cargar tus donaciones.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingMisDonaciones(
+        false
+      );
+
+    }
+
+  };
+
+
+// ======================================================
+// DETALLE DE DONACIÓN PROPIA
+// ======================================================
+
+const cargarDetalleDonacionPropia =
+  async (
+    idDonacion
+  ) => {
+
+    try {
+
+      setLoadingDetalleDonacionPropia(
+        true
+      );
+
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setDonacionSeleccionada(
+          null
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+        await obtenerDetalleDonacion(
+          token,
+          idDonacion
+        );
+
+
+      setDonacionSeleccionada(
+        data?.donacion || null
+      );
+
+
+      setCurrentScreen(
+        'DETALLE_DONACION'
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL CARGAR DETALLE DE DONACIÓN:',
+        error
+      );
+
+
+      if (
+        error.response?.status ===
+        401
+      ) {
+
+        await eliminarToken();
+
+        setDonacionSeleccionada(
+          null
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'Donación no disponible',
+        error.response
+          ?.data
+          ?.error ||
+        'No se pudo consultar la donación.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingDetalleDonacionPropia(
+        false
+      );
+
+    }
+
+  };
 
   // ======================================================
   // RENDER PRINCIPAL
@@ -3008,7 +3848,26 @@ const handleCancelarInscripcion =
                 y
               );
 
-            }
+            }else if (
+                currentScreen ===
+                  'VOLUNTARIO_DONAR'
+              ) {
+
+                setScrollYDonacion(
+                  y
+                );
+
+              }
+              else if (
+                currentScreen ===
+                  'MIS_DONACIONES'
+              ) {
+
+                setScrollYMisDonaciones(
+                  y
+                );
+
+              }
 
           }}
 
@@ -3602,6 +4461,325 @@ const handleCancelarInscripcion =
             />
 
           )}
+
+
+        {currentScreen ===
+          'VOLUNTARIO_DONAR' && (
+
+          <OrganizacionesDonacionScreen
+
+            organizaciones={
+              organizacionesDonacion
+            }
+
+            loading={
+              loadingDonacion
+            }
+
+            tiposActividad={
+              tiposActividad
+            }
+
+            filtrosGuardados={
+              filtrosDonacion
+            }
+
+            onFiltrar={
+              cargarOrganizacionesDonacion
+            }
+
+            onBuscarUbicacion={
+              buscarUbicaciones
+            }
+
+            estadoUbicacionGuardado={
+              estadoUbicacionDonacion
+            }
+
+            onGuardarEstadoUbicacion={
+              setEstadoUbicacionDonacion
+            }
+
+            showAlert={
+              showAlert
+            }
+
+
+            onMisDonaciones={
+              async () => {
+
+                setFiltroEstadoDonaciones(
+                  null
+                );
+
+                setCurrentScreen(
+                  'MIS_DONACIONES'
+                );
+
+
+                await cargarMisDonaciones(
+                  null
+                );
+
+
+                setTimeout(
+                  () => {
+
+                    scrollRef.current
+                      ?.scrollTo({
+                        y:
+                          scrollYMisDonaciones,
+
+                        animated:
+                          false
+                      });
+
+                  },
+                  0.1
+                );
+
+              }
+            }
+
+
+            onSeleccionarOrganizacion={
+              async (organizacion) => {
+
+                await cargarDetalleOrganizacionDonacion(
+                  organizacion.id_organizacion
+                );
+
+              }
+            }
+
+          />
+
+        )}
+
+          
+
+         {currentScreen ===
+              'DETALLE_ORGANIZACION_DONACION' && (
+
+              <DetalleOrganizacionDonacionScreen
+
+                organizacion={
+                  organizacionDonacionSeleccionada
+                }
+
+                loading={
+                  loadingDetalleDonacion
+                }
+
+                onVolver={() => {
+
+                  setCurrentScreen(
+                    'VOLUNTARIO_DONAR'
+                  );
+
+                  setTimeout(
+                    () => {
+
+                      scrollRef.current
+                        ?.scrollTo({
+                          y: scrollYDonacion,
+                          animated: true
+                        });
+
+                    },
+                    0.1
+                  );
+
+                }}
+
+                onDonar={async () => {
+
+                  await cargarCategoriasDonacion();
+
+                  setCurrentScreen(
+                    'REGISTRAR_DONACION'
+                  );
+
+                }}
+
+              />
+
+            )}
+
+
+            {/* ==================================================
+                REGISTRAR DONACIÓN - V06
+            ================================================== */}
+
+            {currentScreen ===
+              'REGISTRAR_DONACION' && (
+
+              <RegistrarDonacionScreen
+
+                organizacion={
+                  organizacionDonacionSeleccionada
+                }
+
+                categorias={
+                  categoriasDonacion
+                }
+
+                loadingCategorias={
+                  loadingCategoriasDonacion
+                }
+                loadingRegistro={
+                  loadingRegistroDonacion
+                }
+
+                showAlert={
+                  showAlert
+                }
+
+                onVolver={() => {
+
+                  setCurrentScreen(
+                    'DETALLE_ORGANIZACION_DONACION'
+                  );
+
+                }}
+
+                 onRegistrar={
+                  handleRegistrarDonacion
+                }
+
+              />
+
+            )}
+
+      {/* ==================================================
+          MIS DONACIONES - V07
+      ================================================== */}
+
+      {currentScreen ===
+        'MIS_DONACIONES' && (
+
+        <MisDonacionesScreen
+
+          donaciones={
+            donacionesVoluntario
+          }
+
+          loading={
+            loadingMisDonaciones
+          }
+
+          estadoFiltro={
+            filtroEstadoDonaciones
+          }
+
+          onCambiarEstado={
+            async (
+              nuevoEstado
+            ) => {
+
+              setFiltroEstadoDonaciones(
+                nuevoEstado
+              );
+
+
+              await cargarMisDonaciones(
+                nuevoEstado
+              );
+
+
+              scrollRef.current
+                ?.scrollTo({
+                  y: 0,
+                  animated: true
+                });
+
+            }
+          }
+
+
+          onVolver={() => {
+
+            setCurrentScreen(
+              'VOLUNTARIO_DONAR'
+            );
+
+
+            setTimeout(
+              () => {
+
+                scrollRef.current
+                  ?.scrollTo({
+                    y:
+                      scrollYDonacion,
+
+                    animated:
+                      true
+                  });
+
+              },
+              0.1
+            );
+
+          }}
+
+          onVerDetalle={
+            cargarDetalleDonacionPropia
+          }
+
+        />
+
+      )}
+
+
+    {/* ==================================================
+        DETALLE DE DONACIÓN
+    ================================================== */}
+
+    {currentScreen ===
+      'DETALLE_DONACION' && (
+
+      <DetalleDonacionScreen
+
+        donacion={
+          donacionSeleccionada
+        }
+
+        loading={
+          loadingDetalleDonacionPropia
+        }
+
+        onVolver={() => {
+
+          setDonacionSeleccionada(
+            null
+          );
+
+
+          setCurrentScreen(
+            'MIS_DONACIONES'
+          );
+
+
+          setTimeout(
+            () => {
+
+              scrollRef.current
+                ?.scrollTo({
+                  y:
+                    scrollYMisDonaciones,
+                  animated:
+                    true
+                });
+
+            },
+            0.1
+          );
+
+        }}
+
+      />
+
+    )}  
 
           {/* ==================================================
               INICIO ORGANIZACIÓN
@@ -4801,6 +5979,8 @@ const handleCancelarInscripcion =
       {(
         currentScreen === 'VOLUNTARIO_INICIO' ||
         currentScreen === 'VOLUNTARIO_HOME' ||
+        currentScreen === 'VOLUNTARIO_DONAR' ||
+        currentScreen === 'MIS_DONACIONES'||
         currentScreen === 'MIS_INSCRIPCIONES'
       ) && (
 
@@ -4817,6 +5997,15 @@ const handleCancelarInscripcion =
                       'VOLUNTARIO_HOME'
 
                     ? 'BUSCAR'
+
+                    : (
+                      currentScreen ===
+                        'VOLUNTARIO_DONAR' ||
+                      currentScreen ===
+                        'MIS_DONACIONES'
+                    )
+
+                    ? 'DONAR'
 
                     : 'INSCRIPCIONES'
 
@@ -4887,6 +6076,34 @@ const handleCancelarInscripcion =
               }}
 
 
+              onDonar={async () => {
+
+                setCurrentScreen(
+                  'VOLUNTARIO_DONAR'
+                );
+
+
+                await cargarOrganizacionesDonacion(
+                  filtrosDonacion
+                );
+
+
+                setTimeout(
+                  () => {
+
+                    scrollRef.current
+                      ?.scrollTo({
+                        y: 0,
+                        animated: false
+                      });
+
+                  },
+                  0.1
+                );
+
+              }}
+
+
               onMisInscripciones={async () => {
 
                 setCurrentScreen(
@@ -4920,6 +6137,8 @@ const handleCancelarInscripcion =
             />
 
             )}
+
+            
 
             {/* ======================================================
                 Barra de navegación inferior para la organización
@@ -4988,6 +6207,8 @@ const handleCancelarInscripcion =
               />
 
             )}
+
+            
 
       
 
@@ -5680,6 +6901,8 @@ const styles =
       fontWeight:
         'bold'
 
-    }
+    },
+
+    
 
   });
