@@ -124,6 +124,91 @@ router.get(
     .listarDonacionesPropias
 );
 
+// ======================================================
+// DONACIONES RECIBIDAS POR LA ORGANIZACIÓN
+// ======================================================
+
+router.get(
+  '/recibidas',
+  verificarToken,
+  verificarRol(
+    'ORGANIZACION'
+  ),
+  donacionController
+    .listarDonacionesRecibidas
+);
+
+// ======================================================
+// DETALLE DE DONACIÓN RECIBIDA POR LA ORGANIZACIÓN
+// ======================================================
+
+router.get(
+  '/recibidas/:id',
+  verificarToken,
+  verificarRol(
+    'ORGANIZACION'
+  ),
+  donacionController
+    .obtenerDetalleDonacionRecibida
+);
+
+// ======================================================
+// ACEPTAR DONACIÓN RECIBIDA
+// ======================================================
+
+router.patch(
+  '/recibidas/:id/aceptar',
+  verificarToken,
+  verificarRol(
+    'ORGANIZACION'
+  ),
+  donacionController
+    .aceptarDonacion
+);
+
+
+// ======================================================
+// RECHAZAR DONACIÓN RECIBIDA
+// ======================================================
+
+router.patch(
+  '/recibidas/:id/rechazar',
+  verificarToken,
+  verificarRol(
+    'ORGANIZACION'
+  ),
+  donacionController
+    .rechazarDonacion
+);
+
+// ======================================================
+// COORDINAR DONACIÓN RECIBIDA
+// ======================================================
+
+router.patch(
+  '/recibidas/:id/coordinar',
+  verificarToken,
+  verificarRol(
+    'ORGANIZACION'
+  ),
+  donacionController
+    .coordinarDonacion
+);
+
+
+// ======================================================
+// MARCAR DONACIÓN COMO RECIBIDA
+// ======================================================
+
+router.patch(
+  '/recibidas/:id/recibir',
+  verificarToken,
+  verificarRol(
+    'ORGANIZACION'
+  ),
+  donacionController
+    .marcarDonacionRecibida
+);
 
 // ======================================================
 // DETALLE DE DONACIÓN PROPIA
@@ -169,5 +254,8 @@ router.patch(
   donacionController
     .actualizarImagenDonacion
 );
+
+
+
 module.exports =
   router;

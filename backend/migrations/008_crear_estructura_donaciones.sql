@@ -39,7 +39,7 @@ CREATE TABLE donacion (
     unidad VARCHAR(40) NOT NULL,
 
     condicion_bien VARCHAR(60) NOT NULL,
-    disponible_desde DATE NOT NULL,,
+    disponible_desde DATE NOT NULL,
 
     imagen_url TEXT,
 

@@ -424,3 +424,343 @@ exports.obtenerDetalleDonacionPropia =
     }
 
   };
+
+  // ======================================================
+// LISTAR DONACIONES RECIBIDAS POR LA ORGANIZACIÓN
+// ======================================================
+
+exports.listarDonacionesRecibidas =
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      const idUsuarioOrganizacion =
+        req.user.id;
+
+
+      const estado =
+        req.query.estado;
+
+
+      const donaciones =
+        await donacionService
+          .listarDonacionesRecibidas(
+            idUsuarioOrganizacion,
+            estado
+          );
+
+
+      return res
+        .status(200)
+        .json({
+          donaciones
+        });
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL CONSULTAR DONACIONES RECIBIDAS:',
+        error
+      );
+
+
+      return res
+        .status(
+          error.status || 500
+        )
+        .json({
+
+          error:
+            error.status
+              ? error.message
+              : 'No se pudieron consultar las donaciones recibidas'
+
+        });
+
+    }
+
+  };
+
+
+  // ======================================================
+// OBTENER DETALLE DE DONACIÓN RECIBIDA POR ORGANIZACIÓN
+// ======================================================
+
+exports.obtenerDetalleDonacionRecibida =
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      const donacion =
+        await donacionService
+          .obtenerDetalleDonacionRecibida(
+            req.params.id,
+            req.user.id
+          );
+
+
+      return res
+        .status(200)
+        .json({
+          donacion
+        });
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL CONSULTAR DETALLE DE DONACIÓN RECIBIDA:',
+        error
+      );
+
+
+      return res
+        .status(
+          error.status || 500
+        )
+        .json({
+
+          error:
+            error.status
+              ? error.message
+              : 'No se pudo consultar la donación recibida'
+
+        });
+
+    }
+
+  };
+
+  // ======================================================
+// ACEPTAR DONACIÓN
+// ======================================================
+
+exports.aceptarDonacion =
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      const donacion =
+        await donacionService
+          .aceptarDonacion(
+            req.params.id,
+            req.user.id
+          );
+
+
+      return res
+        .status(200)
+        .json({
+          mensaje:
+            'Donación aceptada correctamente',
+
+          donacion
+        });
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL ACEPTAR DONACIÓN:',
+        error
+      );
+
+
+      return res
+        .status(
+          error.status || 500
+        )
+        .json({
+
+          error:
+            error.status
+              ? error.message
+              : 'No se pudo aceptar la donación'
+
+        });
+
+    }
+
+  };
+
+
+// ======================================================
+// RECHAZAR DONACIÓN
+// ======================================================
+
+exports.rechazarDonacion =
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      const donacion =
+        await donacionService
+          .rechazarDonacion(
+            req.params.id,
+            req.user.id,
+            req.body.observacion
+          );
+
+
+      return res
+        .status(200)
+        .json({
+          mensaje:
+            'Donación rechazada correctamente',
+
+          donacion
+        });
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL RECHAZAR DONACIÓN:',
+        error
+      );
+
+
+      return res
+        .status(
+          error.status || 500
+        )
+        .json({
+
+          error:
+            error.status
+              ? error.message
+              : 'No se pudo rechazar la donación'
+
+        });
+
+    }
+
+  };
+
+  // ======================================================
+// COORDINAR DONACIÓN
+// ======================================================
+
+exports.coordinarDonacion =
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      const donacion =
+        await donacionService
+          .coordinarDonacion(
+            req.params.id,
+            req.user.id,
+            req.body.detalle_coordinacion,
+            req.body.telefono_contacto
+          );
+
+
+      return res
+        .status(200)
+        .json({
+
+          mensaje:
+            'Donación coordinada correctamente',
+
+          donacion
+
+        });
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL COORDINAR DONACIÓN:',
+        error
+      );
+
+
+      return res
+        .status(
+          error.status || 500
+        )
+        .json({
+
+          error:
+            error.status
+              ? error.message
+              : 'No se pudo coordinar la donación'
+
+        });
+
+    }
+
+  };
+
+
+// ======================================================
+// MARCAR DONACIÓN COMO RECIBIDA
+// ======================================================
+
+exports.marcarDonacionRecibida =
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      const donacion =
+        await donacionService
+          .marcarDonacionRecibida(
+            req.params.id,
+            req.user.id
+          );
+
+
+      return res
+        .status(200)
+        .json({
+          mensaje:
+            'Donación marcada como recibida correctamente',
+
+          donacion
+        });
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL MARCAR DONACIÓN COMO RECIBIDA:',
+        error
+      );
+
+
+      return res
+        .status(
+          error.status || 500
+        )
+        .json({
+
+          error:
+            error.status
+              ? error.message
+              : 'No se pudo marcar la donación como recibida'
+
+        });
+
+    }
+
+  };

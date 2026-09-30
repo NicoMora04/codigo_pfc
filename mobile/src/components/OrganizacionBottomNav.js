@@ -16,6 +16,7 @@ export default function OrganizacionBottomNav({
   opcionActiva,
   onInicio,
   onMisOportunidades,
+  onDonaciones,
   onMiOrganizacion,
 }) {
 
@@ -104,6 +105,41 @@ export default function OrganizacionBottomNav({
           ]}
         >
           Mis oportunidades
+        </Text>
+
+      </TouchableOpacity>
+
+
+      <TouchableOpacity
+        style={styles.item}
+        onPress={
+          onDonaciones
+        }
+      >
+
+        <Text
+          style={[
+            styles.icon,
+
+            opcionActiva ===
+              'DONACIONES' &&
+              styles.activeText
+          ]}
+        >
+          🎁
+        </Text>
+
+
+        <Text
+          style={[
+            styles.label,
+
+            opcionActiva ===
+              'DONACIONES' &&
+              styles.activeText
+          ]}
+        >
+          Donaciones
         </Text>
 
       </TouchableOpacity>

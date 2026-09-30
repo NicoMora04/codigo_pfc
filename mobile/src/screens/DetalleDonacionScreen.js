@@ -368,6 +368,96 @@ export default function DetalleDonacionScreen({
             )}
           </Text>
 
+           {/* ==================================================
+                  MOTIVO DE RECHAZO
+            ================================================== */}
+
+            {donacion.estado === 'RECHAZADA' && (
+
+              <View style={styles.rejectionCard}>
+
+                <Text style={styles.rejectionTitle}>
+                  Donación rechazada
+                </Text>
+
+
+                <Text style={styles.label}>
+                  Motivo del rechazo
+                </Text>
+
+                <Text style={styles.value}>
+                  {donacion.motivo_rechazo ||
+                    'La organización no indicó un motivo adicional.'}
+                </Text>
+
+              </View>
+
+            )} 
+          {/* ==================================================
+                DATOS DE COORDINACIÓN
+            ================================================== */}
+
+            {(
+              donacion.estado === 'COORDINADA' ||
+              donacion.estado === 'RECIBIDA'
+            ) && (
+
+              <View style={styles.coordinationCard}>
+
+                <Text style={styles.coordinationTitle}>
+                  Datos de coordinación
+                </Text>
+
+
+                <Text style={styles.label}>
+                  Detalle acordado
+                </Text>
+
+                <Text style={styles.value}>
+                  {donacion.detalle_coordinacion ||
+                    'Sin información'}
+                </Text>
+
+
+                <Text style={styles.label}>
+                  Teléfono de la organización
+                </Text>
+
+                <Text style={styles.valueStrong}>
+                  {donacion.telefono_contacto ||
+                    'Sin información'}
+                </Text>
+
+
+                <Text style={styles.coordinationHelp}>
+                  Utilizá este contacto si necesitás comunicarte con la organización por alguna dificultad relacionada con la entrega.
+                </Text>
+
+              </View>
+
+            )}
+
+          {/* ==================================================
+                  ESTADO FINAL
+            ================================================== */}
+
+            {donacion.estado === 'RECIBIDA' && (
+
+              <View style={styles.finalStateCard}>
+
+                <Text style={styles.finalStateTitle}>
+                  Donación recibida
+                </Text>
+
+                <Text style={styles.finalStateText}>
+                  La organización confirmó la recepción de la donación.
+                  Este es el estado final del ofrecimiento.
+                </Text>
+
+              </View>
+
+            )}
+
         </View>
 
       </View>
@@ -584,5 +674,68 @@ backButtonText: {
       borderBottomWidth: 1,
       borderBottomColor: '#E6F2EF',
     },
+    coordinationCard: {
+  marginTop: 22,
+  padding: 15,
+  borderRadius: 12,
+  backgroundColor: '#F6FAF8',
+  borderWidth: 1,
+  borderColor: '#DCEAE5',
+},
+
+
+coordinationTitle: {
+  fontSize: 16,
+  fontWeight: 'bold',
+  color: '#164C40',
+  marginBottom: 5,
+},
+
+
+coordinationHelp: {
+  marginTop: 12,
+  fontSize: 11,
+  lineHeight: 16,
+  color: '#7A8782',
+},
+rejectionCard: {
+  marginTop: 22,
+  padding: 15,
+  borderRadius: 12,
+  backgroundColor: '#FFF6F6',
+  borderWidth: 1,
+  borderColor: '#F1D4D4',
+},
+
+
+rejectionTitle: {
+  fontSize: 16,
+  fontWeight: 'bold',
+  color: '#8A3A3A',
+  marginBottom: 5,
+},
+finalStateCard: {
+  marginTop: 16,
+  padding: 15,
+  borderRadius: 12,
+  backgroundColor: '#F1F8F5',
+  borderWidth: 1,
+  borderColor: '#CFE3DA',
+},
+
+
+finalStateTitle: {
+  fontSize: 16,
+  fontWeight: 'bold',
+  color: '#164C40',
+},
+
+
+finalStateText: {
+  marginTop: 6,
+  fontSize: 13,
+  lineHeight: 19,
+  color: '#5F6B76',
+},
 
   });

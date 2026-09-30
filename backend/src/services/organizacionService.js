@@ -82,14 +82,55 @@ exports.listarDisponiblesParaDonacion =
 
     }
 
+    let tipoActividadNormalizado =
+      null;
+
+
+    if (
+      idTipoActividad != null &&
+      idTipoActividad !== ''
+    ) {
+
+      const tipoNumero =
+        Number(
+          idTipoActividad
+        );
+
+
+      if (
+        !Number.isInteger(
+          tipoNumero
+        ) ||
+        tipoNumero <= 0
+      ) {
+
+        const error =
+          new Error(
+            'El tipo de actividad indicado no es válido'
+          );
+
+
+        error.status =
+          400;
+
+
+        throw error;
+
+      }
+
+
+      tipoActividadNormalizado =
+        tipoNumero;
+
+    }
+
 
     const filtrosNormalizados = {
 
       nombre:
         nombre?.trim() || null,
 
-      idTipoActividad:
-        idTipoActividad || null,
+      idTipoActividad: tipoActividadNormalizado,
 
       latitud: null,
 

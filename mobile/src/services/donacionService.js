@@ -200,3 +200,166 @@ export const obtenerDetalleDonacion =
     return response.data;
 
   };
+
+
+  // ======================================================
+// DONACIONES RECIBIDAS POR ORGANIZACIÓN
+// ======================================================
+
+export const obtenerDonacionesRecibidas =
+  async (
+    token,
+    estado = null
+  ) => {
+
+    const params = {};
+
+    if (
+      estado &&
+      estado !== 'TODAS'
+    ) {
+
+      params.estado =
+        estado;
+
+    }
+
+
+    const response =
+      await axios.get(
+        `${BASE_URL}/donaciones/recibidas`,
+        {
+          ...authHeaders(token),
+          params
+        }
+      );
+
+
+    return response.data;
+
+  };
+
+
+// ======================================================
+// DETALLE DE DONACIÓN RECIBIDA
+// ======================================================
+
+export const obtenerDetalleDonacionRecibida =
+  async (
+    token,
+    idDonacion
+  ) => {
+
+    const response =
+      await axios.get(
+        `${BASE_URL}/donaciones/recibidas/${idDonacion}`,
+        authHeaders(token)
+      );
+
+
+    return response.data;
+
+  };
+
+
+// ======================================================
+// ACEPTAR DONACIÓN
+// ======================================================
+
+export const aceptarDonacionRecibida =
+  async (
+    token,
+    idDonacion
+  ) => {
+
+    const response =
+      await axios.patch(
+        `${BASE_URL}/donaciones/recibidas/${idDonacion}/aceptar`,
+        {},
+        authHeaders(token)
+      );
+
+
+    return response.data;
+
+  };
+
+
+// ======================================================
+// RECHAZAR DONACIÓN
+// ======================================================
+
+export const rechazarDonacionRecibida =
+  async (
+    token,
+    idDonacion,
+    observacion = null
+  ) => {
+
+    const response =
+      await axios.patch(
+        `${BASE_URL}/donaciones/recibidas/${idDonacion}/rechazar`,
+        {
+          observacion
+        },
+        authHeaders(token)
+      );
+
+
+    return response.data;
+
+  };
+
+
+// ======================================================
+// COORDINAR DONACIÓN
+// ======================================================
+
+export const coordinarDonacionRecibida =
+  async (
+    token,
+    idDonacion,
+    detalleCoordinacion,
+    telefonoContacto
+  ) => {
+
+    const response =
+      await axios.patch(
+        `${BASE_URL}/donaciones/recibidas/${idDonacion}/coordinar`,
+        {
+          detalle_coordinacion:
+            detalleCoordinacion,
+
+          telefono_contacto:
+            telefonoContacto
+        },
+        authHeaders(token)
+      );
+
+
+    return response.data;
+
+  };
+
+
+// ======================================================
+// MARCAR DONACIÓN COMO RECIBIDA
+// ======================================================
+
+export const marcarDonacionComoRecibida =
+  async (
+    token,
+    idDonacion
+  ) => {
+
+    const response =
+      await axios.patch(
+        `${BASE_URL}/donaciones/recibidas/${idDonacion}/recibir`,
+        {},
+        authHeaders(token)
+      );
+
+
+    return response.data;
+
+  };

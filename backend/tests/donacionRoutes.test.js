@@ -1038,6 +1038,191 @@ describe(
     );
 
   }
+
+  
+);
+
+test(
+  'rechaza una fecha de disponibilidad inexistente',
+  async () => {
+
+    const response =
+      await request(app)
+        .post(
+          '/api/donaciones'
+        )
+        .set(
+          'Authorization',
+          `Bearer ${tokenVoluntario}`
+        )
+        .set(
+          'Idempotency-Key',
+          idempotencyKey
+        )
+        .send({
+          ...donacionValida,
+
+          disponible_desde:
+            '2099-02-30',
+        });
+
+
+    expect(
+      response.status
+    ).toBe(400);
+
+
+    expect(
+      response.body.error
+    ).toBe(
+      'La fecha de disponibilidad no es válida'
+    );
+
+
+    expect(
+      donacionRepository
+        .crearDonacionTransaccional
+    ).not.toHaveBeenCalled();
+
+  }
+);
+
+
+test(
+  'rechaza una unidad que supera los 40 caracteres',
+  async () => {
+
+    const response =
+      await request(app)
+        .post(
+          '/api/donaciones'
+        )
+        .set(
+          'Authorization',
+          `Bearer ${tokenVoluntario}`
+        )
+        .set(
+          'Idempotency-Key',
+          idempotencyKey
+        )
+        .send({
+          ...donacionValida,
+
+          unidad:
+            'a'.repeat(41),
+        });
+
+
+    expect(
+      response.status
+    ).toBe(400);
+
+
+    expect(
+      response.body.error
+    ).toBe(
+      'La unidad no puede superar los 40 caracteres'
+    );
+
+
+    expect(
+      donacionRepository
+        .crearDonacionTransaccional
+    ).not.toHaveBeenCalled();
+
+  }
+);
+
+
+test(
+  'rechaza una condición del bien que supera los 60 caracteres',
+  async () => {
+
+    const response =
+      await request(app)
+        .post(
+          '/api/donaciones'
+        )
+        .set(
+          'Authorization',
+          `Bearer ${tokenVoluntario}`
+        )
+        .set(
+          'Idempotency-Key',
+          idempotencyKey
+        )
+        .send({
+          ...donacionValida,
+
+          condicion_bien:
+            'a'.repeat(61),
+        });
+
+
+    expect(
+      response.status
+    ).toBe(400);
+
+
+    expect(
+      response.body.error
+    ).toBe(
+      'La condición del bien no puede superar los 60 caracteres'
+    );
+
+
+    expect(
+      donacionRepository
+        .crearDonacionTransaccional
+    ).not.toHaveBeenCalled();
+
+  }
+);
+
+
+test(
+  'rechaza una cantidad que supera el máximo permitido',
+  async () => {
+
+    const response =
+      await request(app)
+        .post(
+          '/api/donaciones'
+        )
+        .set(
+          'Authorization',
+          `Bearer ${tokenVoluntario}`
+        )
+        .set(
+          'Idempotency-Key',
+          idempotencyKey
+        )
+        .send({
+          ...donacionValida,
+
+          cantidad:
+            99999999.99 + 1,
+        });
+
+
+    expect(
+      response.status
+    ).toBe(400);
+
+
+    expect(
+      response.body.error
+    ).toBe(
+      'La cantidad indicada supera el máximo permitido'
+    );
+
+
+    expect(
+      donacionRepository
+        .crearDonacionTransaccional
+    ).not.toHaveBeenCalled();
+
+  }
 );
 
 // ======================================================

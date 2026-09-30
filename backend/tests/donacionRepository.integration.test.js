@@ -119,6 +119,8 @@ const segundaIdempotencyKey =
   const terceraIdempotencyKey =
   'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 
+  const cuartaIdempotencyKey =
+  'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 // ======================================================
 // PREPARAR DATOS DE PRUEBA
 // ======================================================
@@ -141,13 +143,15 @@ await pool.query(
   WHERE idempotency_key IN (
     $1,
     $2,
-    $3
+    $3,
+    $4
   )
   `,
   [
     idempotencyKey,
     segundaIdempotencyKey,
-    terceraIdempotencyKey
+    terceraIdempotencyKey,
+    cuartaIdempotencyKey
   ]
 );
     await pool.query(
@@ -1009,6 +1013,144 @@ describe(
 
   }
 );
+
+  }
+);
+
+test(
+  'maneja dos registros concurrentes con la misma clave de idempotencia sin crear duplicados',
+  async () => {
+
+    const datosBase = {
+
+      idVoluntario,
+
+      idOrganizacion,
+
+      idCategoriaDonacion:
+        idCategoria,
+
+      idUbicacion:
+        null,
+
+      descripcion:
+        'Donación concurrente de prueba',
+
+      cantidad:
+        4,
+
+      unidad:
+        'cajas',
+
+      condicionBien:
+        'Nuevo',
+
+      disponibleDesde:
+        '2099-06-01',
+
+      idempotencyKey:
+        cuartaIdempotencyKey,
+
+    };
+
+
+    const [
+      resultadoUno,
+      resultadoDos,
+    ] =
+      await Promise.all([
+
+        donacionRepository
+          .crearDonacionTransaccional(
+            datosBase
+          ),
+
+        donacionRepository
+          .crearDonacionTransaccional(
+            datosBase
+          ),
+
+      ]);
+
+
+    // Una solicitud debe crear la donación
+    // y la otra reutilizarla.
+
+    const resultadosReutilizacion = [
+      resultadoUno.reutilizada,
+      resultadoDos.reutilizada,
+    ].sort();
+
+
+    expect(
+      resultadosReutilizacion
+    ).toEqual([
+      false,
+      true,
+    ]);
+
+
+    // Ambas deben referirse exactamente
+    // a la misma donación.
+
+    expect(
+      resultadoUno
+        .donacion
+        .id_donacion
+    ).toBe(
+      resultadoDos
+        .donacion
+        .id_donacion
+    );
+
+
+    // En PostgreSQL debe existir
+    // una única donación.
+
+    const donacionesBD =
+      await pool.query(
+        `
+        SELECT
+          id_donacion
+        FROM donacion
+        WHERE idempotency_key = $1
+        `,
+        [
+          cuartaIdempotencyKey,
+        ]
+      );
+
+
+    expect(
+      donacionesBD.rows
+    ).toHaveLength(1);
+
+
+    // Y tampoco debe duplicarse
+    // el historial inicial.
+
+    const historialBD =
+      await pool.query(
+        `
+        SELECT
+          h.id_historial
+        FROM historial_estado_donacion h
+
+        INNER JOIN donacion d
+          ON d.id_donacion =
+            h.id_donacion
+
+        WHERE d.idempotency_key = $1
+        `,
+        [
+          cuartaIdempotencyKey,
+        ]
+      );
+
+
+    expect(
+      historialBD.rows
+    ).toHaveLength(1);
 
   }
 );
