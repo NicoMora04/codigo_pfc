@@ -2511,5 +2511,79 @@ test(
   }
 );
 
+test(
+  'elimina la imagen nueva si falla la persistencia de imagen_url en la base de datos',
+  async () => {
+
+    donacionRepository
+      .actualizarImagenDonacion
+      .mockRejectedValueOnce(
+        new Error(
+          'Fallo simulado de base de datos'
+        )
+      );
+
+
+    const response =
+      await request(app)
+        .patch(
+          `/api/donaciones/${idDonacion}/imagen`
+        )
+        .set(
+          'Authorization',
+          `Bearer ${tokenVoluntario}`
+        )
+        .attach(
+          'imagen',
+          jpegValido,
+          {
+            filename:
+              'imagen-error-bd.jpg',
+
+            contentType:
+              'image/jpeg',
+          }
+        );
+
+
+    expect(
+      response.status
+    ).toBe(500);
+
+
+    expect(
+      donacionRepository
+        .actualizarImagenDonacion
+    ).toHaveBeenCalledTimes(1);
+
+
+    const imagenUrl =
+      donacionRepository
+        .actualizarImagenDonacion
+        .mock.calls[0][2];
+
+
+    const rutaImagen =
+      path.join(
+        __dirname,
+        '..',
+        imagenUrl.replace(
+          /^\/+/,
+          ''
+        )
+      );
+
+
+    expect(
+      fs.existsSync(
+        rutaImagen
+      )
+    ).toBe(false);
+
   }
+);
+
+  }
+
+  
 );
