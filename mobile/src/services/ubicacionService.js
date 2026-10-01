@@ -5,19 +5,32 @@ export const buscarUbicacionesPorTexto = async (
   token,
   texto
 ) => {
-  const response = await axios.get(
-    `${BASE_URL}/ubicaciones/buscar`,
-    {
-      params: {
-        q: texto
-      },
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+
+  const config = {
+    params: {
+      q: texto
     }
-  );
+  };
+
+
+  if (token) {
+
+    config.headers = {
+      Authorization: `Bearer ${token}`
+    };
+
+  }
+
+
+  const response =
+    await axios.get(
+      `${BASE_URL}/ubicaciones/buscar`,
+      config
+    );
+
 
   return response.data;
+
 };
 
 export const registrarUbicacion = async (

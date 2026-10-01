@@ -47,7 +47,6 @@ router.post(
 
 router.get(
   '/buscar',
-  verificarToken,
   ubicacionController.buscarDirecciones
 );
 

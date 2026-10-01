@@ -3,7 +3,6 @@ import React from 'react';
 import {
   ActivityIndicator,
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -174,65 +173,60 @@ export default function MisDonacionesScreen({
       </Text>
 
 
-      <Text style={styles.filterTitle}>
-        Filtrar por estado
-      </Text>
+    <View style={styles.filterCard}>
 
+        <Text style={styles.filterTitle}>
+          Filtrar por estado
+        </Text>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={
-          styles.filtersContainer
-        }
-      >
+        <View style={styles.filtersContainer}>
 
-        {estados.map(
-          (estado) => {
+          {estados.map(
+            (estado) => {
 
-            const activo =
-              estadoFiltro ===
-              estado.valor;
+              const activo =
+                estadoFiltro ===
+                estado.valor;
 
+              return (
 
-            return (
-
-              <TouchableOpacity
-                key={
-                  estado.valor ||
-                  'TODAS'
-                }
-                style={[
-                  styles.filterButton,
-                  activo &&
-                    styles.filterButtonActive,
-                ]}
-                onPress={() =>
-                  onCambiarEstado(
-                    estado.valor
-                  )
-                }
-              >
-
-                <Text
+                <TouchableOpacity
+                  key={
+                    estado.valor ||
+                    'TODAS'
+                  }
                   style={[
-                    styles.filterButtonText,
+                    styles.filterButton,
                     activo &&
-                      styles.filterButtonTextActive,
+                      styles.filterButtonActive,
                   ]}
+                  onPress={() =>
+                    onCambiarEstado(
+                      estado.valor
+                    )
+                  }
                 >
-                  {estado.texto}
-                </Text>
 
-              </TouchableOpacity>
+                  <Text
+                    style={[
+                      styles.filterButtonText,
+                      activo &&
+                        styles.filterButtonTextActive,
+                    ]}
+                  >
+                    {estado.texto}
+                  </Text>
 
-            );
+                </TouchableOpacity>
 
-          }
-        )}
+              );
 
-      </ScrollView>
+            }
+          )}
 
+        </View>
+
+      </View>
 
       {loading ? (
 
@@ -504,21 +498,14 @@ const styles =
     },
 
 
-    filtersContainer: {
-      paddingBottom: 18,
-      gap: 8,
-    },
-
-
     filterButton: {
+      paddingHorizontal: 12,
       paddingVertical: 8,
-      paddingHorizontal: 14,
-      borderRadius: 20,
+      borderRadius: 18,
+      backgroundColor: '#F0F4F2',
       borderWidth: 1,
-      borderColor: '#CFE2DD',
-      backgroundColor: '#FFFFFF',
+      borderColor: '#DCE5E1',
     },
-
 
     filterButtonActive: {
       backgroundColor: '#1F6F5C',
@@ -679,6 +666,19 @@ const styles =
       color: '#FFFFFF',
       fontSize: 13,
       fontWeight: 'bold',
+    },
+    filterCard: {
+      backgroundColor: '#FFFFFF',
+      borderRadius: 16,
+      padding: 14,
+      marginBottom: 18,
+      borderWidth: 1,
+      borderColor: '#E1E8E5',
+    },
+    filtersContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
     },
 
   });

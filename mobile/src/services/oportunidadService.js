@@ -55,15 +55,23 @@ export const obtenerOportunidadPorId = async (
   return response.data;
 };
 
-export const obtenerTiposActividad = async (token) => {
-  const response = await axios.get(
-    `${BASE_URL}/tipos-actividad`,
-    authHeaders(token)
-  );
+export const obtenerTiposActividad = async (token = null) => {
+
+  const config =
+    token
+      ? authHeaders(token)
+      : {};
+
+
+  const response =
+    await axios.get(
+      `${BASE_URL}/tipos-actividad`,
+      config
+    );
+
 
   return response.data;
 };
-
 
 export const publicarOportunidad = async (
   token,

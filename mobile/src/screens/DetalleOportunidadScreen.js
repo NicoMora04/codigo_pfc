@@ -757,7 +757,9 @@ export default function DetalleOportunidadScreen({
 
 
         <Text style={styles.sectionTitle}>
-          Ubicación
+          {oportunidad.tipo_ubicacion === 'RADIO'
+            ? 'Ubicación aproximada'
+            : 'Ubicación'}
         </Text>
 
 

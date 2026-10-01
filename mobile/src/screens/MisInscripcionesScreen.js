@@ -294,6 +294,12 @@ const puedeCancelarInscripcion = (
 
               </View>
 
+              {inscripcion.oportunidad_estado === 'CANCELADA' && (
+                <Text style={styles.cancelledActivityInfo}>
+                  La organización canceló esta actividad.
+                </Text>
+              )}
+
 
               <TouchableOpacity
                 style={styles.detailButton}
@@ -323,7 +329,7 @@ const puedeCancelarInscripcion = (
                         title:
                           'Cancelar inscripción',
                         message:
-                          '¿Deseás cancelar tu inscripción a esta actividad? Si tu inscripción estaba aceptada, el cupo quedará disponible nuevamente.',
+                           '¿Deseás cancelar tu inscripción a esta actividad?\n\nEsta acción no se puede deshacer. Si continuás, no podrás volver a inscribirte en esta misma actividad.\n\nSi tu inscripción estaba aceptada, el cupo quedará disponible nuevamente.',
                         confirmText:
                           'Cancelar inscripción',
                         destructive:
@@ -620,6 +626,12 @@ cancelButtonText: {
   color: '#FFFFFF',
   fontSize: 13,
   fontWeight: '700',
+},
+cancelledActivityInfo: {
+  fontSize: 12,
+  color: '#5F6B76',
+  marginTop: 6,
+  lineHeight: 17,
 },
 
   });

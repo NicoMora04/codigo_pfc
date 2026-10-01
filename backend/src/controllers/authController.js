@@ -18,8 +18,12 @@ exports.register = async (req, res) => {
     rol,
     nombre,
     apellido,
+    telefono,
     razon_social,
-    cuit
+    cuit,
+    descripcion,
+    ubicacion,
+    tipos_actividad
   } = req.body;
 
   let client;
@@ -56,7 +60,7 @@ exports.register = async (req, res) => {
 
 
 
-
+  let tiposActividadNormalizados = [];
 
     // ==================================================
     // 2. VALIDACIONES SEGÚN EL ROL
@@ -71,7 +75,21 @@ exports.register = async (req, res) => {
         });
       }
 
+       if (
+      telefono &&
+      !/^\d{7,15}$/.test(
+        telefono.trim()
+      )
+    ) {
+      return res.status(400).json({
+        error:
+          'El teléfono debe contener entre 7 y 15 dígitos numéricos'
+      });
     }
+
+    }
+
+       
 
 
     if (rol === 'ORGANIZACION') {
@@ -87,6 +105,146 @@ exports.register = async (req, res) => {
         return res.status(400).json({
         error: 'El CUIT debe contener exactamente 11 dígitos'
       });
+      }
+
+      if (!ubicacion) {
+  return res.status(400).json({
+    error:
+      'La ubicación institucional es obligatoria para organizaciones'
+  });}
+
+
+
+
+    const {
+      latitud,
+      longitud,
+      direccion,
+      localidad,
+      provincia
+    } = ubicacion;
+
+
+    if (
+      typeof latitud !== 'number' ||
+      !Number.isFinite(latitud) ||
+      latitud < -90 ||
+      latitud > 90
+    ) {
+
+      return res.status(400).json({
+        error:
+          'La latitud indicada no es válida'
+      });
+
+    }
+
+
+    if (
+      typeof longitud !== 'number' ||
+      !Number.isFinite(longitud) ||
+      longitud < -180 ||
+      longitud > 180
+    ) {
+
+      return res.status(400).json({
+        error:
+          'La longitud indicada no es válida'
+      });
+
+    }
+
+
+    if (
+      localidad != null &&
+      typeof localidad !== 'string'
+    ) {
+
+      return res.status(400).json({
+        error:
+          'La localidad indicada no es válida'
+      });
+
+    }
+
+
+    if (
+      provincia != null &&
+      typeof provincia !== 'string'
+    ) {
+
+      return res.status(400).json({
+        error:
+          'La provincia indicada no es válida'
+      });
+
+    }
+
+
+    if (
+      direccion != null &&
+      (
+        typeof direccion !== 'string' ||
+        direccion.trim().length === 0 ||
+        direccion.trim().length > 255
+      )
+    ) {
+
+      return res.status(400).json({
+        error:
+          'La dirección indicada no es válida'
+      });
+
+    }
+
+    if (
+  !Array.isArray(tipos_actividad) ||
+  tipos_actividad.length === 0
+) {
+
+  return res.status(400).json({
+    error:
+      'La organización debe seleccionar al menos un tipo de actividad'
+  });
+
+}
+
+
+ tiposActividadNormalizados =
+    [
+    ...new Set(
+      tipos_actividad.map(
+        (id) => Number(id)
+      )
+    )
+  ];
+
+
+if (
+  tiposActividadNormalizados.some(
+    (id) =>
+      !Number.isInteger(id) ||
+      id <= 0
+  )
+) {
+
+  return res.status(400).json({
+    error:
+      'Uno o más tipos de actividad no son válidos'
+  });
+
+}
+
+      if (
+        descripcion &&
+        descripcion.trim().length > 500
+      ) {
+
+        return res.status(400).json({
+          error:
+            'La descripción institucional no puede superar los 500 caracteres'
+        });
+
 }
 
     }
@@ -158,15 +316,17 @@ exports.register = async (req, res) => {
           (
             id_usuario,
             nombre,
-            apellido
+            apellido,
+            telefono
           )
         VALUES
-          ($1, $2, $3)
+          ($1, $2, $3,$4)
         `,
         [
           userId,
           nombre,
-          apellido
+          apellido,
+          telefono?.trim() || null
         ]
       );
 
@@ -175,27 +335,202 @@ exports.register = async (req, res) => {
 
     else if (rol === 'ORGANIZACION') {
 
-      await client.query(
-        `
-        INSERT INTO organizacion
-          (
-            id_usuario,
-            razon_social,
-            cuit,
-            estado_verificacion
-          )
-        VALUES
-          ($1, $2, $3, 'PENDIENTE')
-        `,
-        [
-          userId,
-          razon_social,
-          cuit
-        ]
-      );
+        // ==================================================
+        // 6.1 OBTENER O CREAR UBICACIÓN INSTITUCIONAL
+        // ==================================================
 
-    }
+        const {
+          latitud,
+          longitud,
+          direccion,
+          localidad,
+          provincia
+        } = ubicacion;
 
+
+        const ubicacionExistente =
+          await client.query(
+            `
+            SELECT
+              id_ubicacion,
+              direccion
+            FROM ubicacion
+            WHERE latitud = $1
+              AND longitud = $2
+              AND localidad IS NOT DISTINCT FROM $3
+              AND provincia IS NOT DISTINCT FROM $4
+              AND es_aproximada = FALSE
+            LIMIT 1
+            `,
+            [
+              latitud,
+              longitud,
+              localidad?.trim() || null,
+              provincia?.trim() || null
+            ]
+          );
+
+
+        let idUbicacion;
+
+
+        if (
+          ubicacionExistente.rows.length > 0
+        ) {
+
+          idUbicacion =
+            ubicacionExistente
+              .rows[0]
+              .id_ubicacion;
+
+
+          // Si la ubicación ya existía pero no tenía
+          // dirección, completamos el dato.
+          if (
+            !ubicacionExistente
+              .rows[0]
+              .direccion &&
+            direccion?.trim()
+          ) {
+
+            await client.query(
+              `
+              UPDATE ubicacion
+              SET direccion = $1
+              WHERE id_ubicacion = $2
+              `,
+              [
+                direccion.trim(),
+                idUbicacion
+              ]
+            );
+
+          }
+
+        }
+        else {
+
+          const nuevaUbicacion =
+            await client.query(
+              `
+              INSERT INTO ubicacion
+                (
+                  latitud,
+                  longitud,
+                  direccion,
+                  localidad,
+                  provincia,
+                  es_aproximada
+                )
+              VALUES
+                ($1, $2, $3, $4, $5, FALSE)
+              RETURNING
+                id_ubicacion
+              `,
+              [
+                latitud,
+                longitud,
+                direccion?.trim() || null,
+                localidad?.trim() || null,
+                provincia?.trim() || null
+              ]
+            );
+
+
+          idUbicacion =
+            nuevaUbicacion
+              .rows[0]
+              .id_ubicacion;
+
+        }
+
+
+        // ==================================================
+        // 6.2 CREAR ORGANIZACIÓN
+        // ==================================================
+
+        const organizacionResult =
+          await client.query(
+            `
+            INSERT INTO organizacion
+              (
+                id_usuario,
+                razon_social,
+                cuit,
+                descripcion,
+                id_ubicacion,
+                estado_verificacion
+              )
+            VALUES
+              ($1, $2, $3, $4, $5, 'PENDIENTE')
+            RETURNING
+              id_organizacion
+            `,
+            [
+              userId,
+              razon_social,
+              cuit,
+              descripcion?.trim() || null,
+              idUbicacion
+            ]
+          );
+
+
+        const idOrganizacion =
+          organizacionResult
+            .rows[0]
+            .id_organizacion;
+
+        const tiposExistentes =
+          await client.query(
+            `
+            SELECT
+              id_tipo_actividad
+            FROM tipo_actividad
+            WHERE id_tipo_actividad =
+              ANY($1::smallint[])
+            `,
+            [
+              tiposActividadNormalizados
+            ]
+          );
+
+
+        if (
+          tiposExistentes.rows.length !==
+          tiposActividadNormalizados.length
+        ) {
+
+          const error =
+            new Error(
+              'Uno o más tipos de actividad no existen'
+            );
+
+          error.status = 400;
+
+          throw error;
+
+        }
+
+
+        await client.query(
+          `
+          INSERT INTO organizacion_tipo_actividad
+            (
+              id_organizacion,
+              id_tipo_actividad
+            )
+          SELECT
+            $1,
+            UNNEST($2::smallint[])
+          `,
+          [
+            idOrganizacion,
+            tiposActividadNormalizados
+          ]
+        );
+
+      }
 
     // ==================================================
     // 7. CONFIRMAR TRANSACCIÓN
@@ -242,6 +577,16 @@ exports.register = async (req, res) => {
           'Ya existe un registro con alguno de los datos ingresados'
       });
     }
+
+    if (error.status) {
+
+        return res.status(
+          error.status
+        ).json({
+          error: error.message
+        });
+
+      }
 
 
     return res.status(500).json({
@@ -499,8 +844,8 @@ exports.forgotPassword = async (req, res) => {
     // 7. CREAR ENLACE DE RECUPERACIÓN
     // ==================================================
 
-    const resetLink =
-      `http://localhost:3000/api/auth/reset-password?token=${resetToken}`;
+   const resetLink =
+  `${process.env.WEB_URL}/restablecer-contrasena?token=${resetToken}`;
 
 
     // ==================================================

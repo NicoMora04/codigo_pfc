@@ -60,6 +60,21 @@ import InicioOrganizacionScreen
 import OrganizacionBottomNav
   from './src/components/OrganizacionBottomNav';
 
+import AdminBottomNav
+  from './src/components/AdminBottomNav';
+
+import OrganizacionesPendientesScreen
+  from './src/screens/OrganizacionesPendientesScreen';
+
+import DetalleOrganizacionPendienteScreen
+  from './src/screens/DetalleOrganizacionPendienteScreen';  
+
+import {
+  obtenerOrganizacionesPendientes,
+  aprobarOrganizacion,
+  rechazarOrganizacion
+} from './src/services/adminService';  
+
 import MiOrganizacionScreen
   from './src/screens/MiOrganizacionScreen';
 
@@ -259,6 +274,11 @@ const [
 const [
   scrollYDonacionesRecibidas,
   setScrollYDonacionesRecibidas
+] = useState(0);
+
+const [
+  scrollYOrganizacionesPendientes,
+  setScrollYOrganizacionesPendientes
 ] = useState(0);
 
   const scrollRef =
@@ -472,6 +492,31 @@ const [
   setScrollYMisDonaciones
 ] = useState(0);
 
+// ======================================================
+// ADMINISTRACIÓN
+// ======================================================
+
+const [
+  organizacionesPendientes,
+  setOrganizacionesPendientes
+] = useState([]);
+
+
+const [
+  loadingAdmin,
+  setLoadingAdmin
+] = useState(false);
+
+const [
+  organizacionAdminSeleccionada,
+  setOrganizacionAdminSeleccionada
+] = useState(null);
+
+
+const [
+  loadingAccionAdmin,
+  setLoadingAccionAdmin
+] = useState(false);
 
   // ======================================================
   // VERIFICAR SESIÓN GUARDADA
@@ -1216,70 +1261,72 @@ const [
       }
       catch (error) {
 
-        if (
-          error.response
-            ?.status === 401
-        ) {
+      if (
+        error.response
+          ?.status === 401
+      ) {
 
-          await eliminarToken();
+        await eliminarToken();
 
-
-          setOportunidades(
-            []
-          );
-
-
-          setTiposActividad(
-            []
-          );
-
-
-          setOportunidadEditando(
-            null
-          );
-
-
-          setCurrentScreen(
-            'A01'
-          );
-
-
-          showAlert(
-
-            'error',
-
-            'Sesión finalizada',
-
-            'Tu sesión venció. Iniciá sesión nuevamente.'
-
-          );
-
-
-          return;
-
-        }
-
-
-        const errorMsg =
-
-          error.response
-            ?.data
-            ?.error ||
-
-          'No se pudieron cargar las oportunidades';
-
-
-        showAlert(
-
-          'error',
-
-          'Error',
-
-          errorMsg
-
+        setOportunidades(
+          []
         );
 
+        setTiposActividad(
+          []
+        );
+
+        setOportunidadEditando(
+          null
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return;
+
       }
+
+
+      // Organización pendiente o rechazada:
+      // navegar no debe mostrar un error.
+      if (
+        error.response
+          ?.status === 403
+      ) {
+
+        setOportunidades(
+          []
+        );
+
+        return;
+
+      }
+
+
+      const errorMsg =
+
+        error.response
+          ?.data
+          ?.error ||
+
+        'No se pudieron cargar las oportunidades';
+
+
+      showAlert(
+        'error',
+        'Error',
+        errorMsg
+      );
+
+    }
       finally {
 
         setLoading(
@@ -1433,6 +1480,7 @@ const handleAceptarInscripcion =
       setInscripcionesOrganizacion(
         data.inscripciones || []
       );
+      await cargarOportunidades();
 
       showAlert(
         'success',
@@ -1680,6 +1728,450 @@ const handleMarcarResultadoParticipacion = async (
 
 };
 
+// ======================================================
+// ADMIN - ORGANIZACIONES PENDIENTES
+// ======================================================
+
+const cargarOrganizacionesPendientes =
+  async () => {
+
+    setLoadingAdmin(
+      true
+    );
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setOrganizacionesPendientes(
+          []
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+        await obtenerOrganizacionesPendientes(
+          token
+        );
+
+
+      const organizaciones =
+        data?.organizaciones;
+
+
+      if (
+        !Array.isArray(
+          organizaciones
+        )
+      ) {
+
+        setOrganizacionesPendientes(
+          []
+        );
+
+
+        showAlert(
+          'error',
+          'Error',
+          'La respuesta de organizaciones pendientes no es válida.'
+        );
+
+
+        return false;
+
+      }
+
+
+      setOrganizacionesPendientes(
+        organizaciones
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status ===
+        401
+      ) {
+
+        await eliminarToken();
+
+        setOrganizacionesPendientes(
+          []
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      if (
+        error.response?.status ===
+        403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'Error',
+        error.response
+          ?.data
+          ?.error ||
+        'No se pudieron obtener las organizaciones pendientes.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingAdmin(
+        false
+      );
+
+    }
+
+  };
+
+
+  // ======================================================
+// ADMIN - APROBAR ORGANIZACIÓN
+// ======================================================
+
+const handleAprobarOrganizacion =
+  async () => {
+
+    if (
+      !organizacionAdminSeleccionada
+        ?.id_organizacion
+    ) {
+
+      showAlert(
+        'error',
+        'Error',
+        'No se pudo identificar la organización.'
+      );
+
+      return false;
+
+    }
+
+
+    setLoadingAccionAdmin(
+      true
+    );
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+        await aprobarOrganizacion(
+          token,
+          organizacionAdminSeleccionada
+            .id_organizacion
+        );
+
+
+      showAlert(
+        'success',
+        'Organización aprobada',
+        data.message ||
+        'La organización fue verificada correctamente.'
+      );
+
+
+      setOrganizacionAdminSeleccionada(
+        null
+      );
+
+
+      await cargarOrganizacionesPendientes();
+
+
+      setCurrentScreen(
+        'ADMIN_ORGANIZACIONES'
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status ===
+        401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudo aprobar',
+        error.response
+          ?.data
+          ?.error ||
+        'No se pudo aprobar la organización.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingAccionAdmin(
+        false
+      );
+
+    }
+
+  };
+
+
+  // ======================================================
+// ADMIN - RECHAZAR ORGANIZACIÓN
+// ======================================================
+
+const handleRechazarOrganizacion =
+  async (motivo) => {
+
+    if (
+      !organizacionAdminSeleccionada
+        ?.id_organizacion
+    ) {
+
+      showAlert(
+        'error',
+        'Error',
+        'No se pudo identificar la organización.'
+      );
+
+      return false;
+
+    }
+
+
+    if (
+      !motivo ||
+      !motivo.trim()
+    ) {
+
+      showAlert(
+        'error',
+        'Motivo obligatorio',
+        'Ingresá un motivo para rechazar la organización.'
+      );
+
+      return false;
+
+    }
+
+
+    setLoadingAccionAdmin(
+      true
+    );
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+        await rechazarOrganizacion(
+          token,
+          organizacionAdminSeleccionada
+            .id_organizacion,
+          motivo.trim()
+        );
+
+
+      showAlert(
+        'success',
+        'Organización rechazada',
+        data.message ||
+        'La organización fue rechazada correctamente.'
+      );
+
+
+      setOrganizacionAdminSeleccionada(
+        null
+      );
+
+
+      await cargarOrganizacionesPendientes();
+
+
+      setCurrentScreen(
+        'ADMIN_ORGANIZACIONES'
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status ===
+        401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudo rechazar',
+        error.response
+          ?.data
+          ?.error ||
+        'No se pudo rechazar la organización.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingAccionAdmin(
+        false
+      );
+
+    }
+
+  };
 
   // ======================================================
   // 5. CERRAR SESIÓN
@@ -1825,6 +2317,22 @@ const handleMarcarResultadoParticipacion = async (
 
         setScrollYDonacionesRecibidas(
           0
+        );
+
+        setOrganizacionesPendientes(
+          []
+        );
+
+        setLoadingAdmin(
+          false
+        );
+
+        setOrganizacionAdminSeleccionada(
+          null
+        );
+
+        setLoadingAccionAdmin(
+          false
         );
 
 
@@ -4523,13 +5031,21 @@ const cargarDetalleDonacionPropia =
 
           contentContainerStyle={[
 
-            styles.scrollContainer,
+              styles.scrollContainer,
 
-            currentScreen ===
-              'ORGANIZACION_HOME' &&
-              styles.scrollContainerOrganizacion
+              (
+                currentScreen ===
+                  'ORGANIZACION_HOME' ||
 
-          ]}
+                currentScreen ===
+                  'ADMIN_ORGANIZACIONES' ||
+                  
+                  currentScreen ===
+                  'ADMIN_ORGANIZACION_DETALLE'
+              ) &&
+                styles.scrollContainerOrganizacion
+
+            ]}
 
           onScroll={(
             event
@@ -4609,7 +5125,16 @@ const cargarDetalleDonacionPropia =
                   y
                 );
 
-              }
+              } else if (
+                  currentScreen ===
+                  'ADMIN_ORGANIZACIONES'
+                ) {
+
+                  setScrollYOrganizacionesPendientes(
+                    event.nativeEvent.contentOffset.y
+                  );
+
+                }
 
           }}
 
@@ -6829,6 +7354,116 @@ const cargarDetalleDonacionPropia =
 
           )}
 
+        {/* ==================================================
+            ADMIN - ORGANIZACIONES
+        ================================================== */}
+
+        {currentScreen ===
+          'ADMIN_ORGANIZACIONES' && (
+
+          <OrganizacionesPendientesScreen
+
+            organizaciones={
+              organizacionesPendientes
+            }
+
+            loading={
+              loadingAdmin
+            }
+
+            onVerDetalle={(
+                organizacion
+              ) => {
+
+                setOrganizacionAdminSeleccionada(
+                  organizacion
+                );
+
+                setCurrentScreen(
+                  'ADMIN_ORGANIZACION_DETALLE'
+                );
+
+
+                setTimeout(
+                  () => {
+
+                    scrollRef.current
+                      ?.scrollTo({
+                        y: 0,
+                        animated: false
+                      });
+
+                  },
+                  0.1
+                );
+
+              }}
+
+            onLogout={
+              handleLogout
+            }
+
+          />
+
+        )}  
+
+
+      {/* ==================================================
+          ADMIN - DETALLE ORGANIZACIÓN
+      ================================================== */}
+
+      {currentScreen ===
+        'ADMIN_ORGANIZACION_DETALLE' && (
+
+        <DetalleOrganizacionPendienteScreen
+
+          organizacion={
+            organizacionAdminSeleccionada
+          }
+
+          loading={
+            loadingAccionAdmin
+          }
+
+          onVolver={() => {
+
+            setCurrentScreen(
+              'ADMIN_ORGANIZACIONES'
+            );
+
+
+            setTimeout(
+              () => {
+
+                scrollRef.current
+                  ?.scrollTo({
+
+                    y:
+                      scrollYOrganizacionesPendientes,
+
+                    animated:
+                      true
+
+                  });
+
+              },
+              100
+            );
+
+          }}
+
+          onAprobar={
+            handleAprobarOrganizacion
+          }
+
+          onRechazar={
+            handleRechazarOrganizacion
+          }
+
+        />
+
+      )}
+
 
         </ScrollView>
 
@@ -7109,6 +7744,84 @@ const cargarDetalleDonacionPropia =
               />
 
             )}
+
+        {/* ======================================================
+              Barra de navegación inferior para ADMIN
+          ====================================================== */}
+
+          {(
+            currentScreen ===
+              'ADMIN_HOME' ||
+
+            currentScreen ===
+              'ADMIN_ORGANIZACIONES'
+          ) && (
+
+            <AdminBottomNav
+
+              opcionActiva={
+
+                currentScreen ===
+                  'ADMIN_HOME'
+
+                  ? 'INICIO'
+
+                  : 'ORGANIZACIONES'
+
+              }
+
+
+              onInicio={() => {
+
+                setCurrentScreen(
+                  'ADMIN_HOME'
+                );
+
+
+                setTimeout(
+                  () => {
+
+                    scrollRef.current
+                      ?.scrollTo({
+                        y: 0,
+                        animated: false
+                      });
+
+                  },
+                  0.1
+                );
+
+              }}
+
+
+              onOrganizaciones={async () => {
+
+                setCurrentScreen(
+                  'ADMIN_ORGANIZACIONES'
+                );
+
+
+                await cargarOrganizacionesPendientes();
+
+
+                setTimeout(
+                  () => {
+
+                    scrollRef.current
+                      ?.scrollTo({
+                        y: 0,
+                        animated: false
+                      });
+
+                  },
+                  0.1
+                );
+
+              }}
+
+            />
+
+          )}    
 
             
 

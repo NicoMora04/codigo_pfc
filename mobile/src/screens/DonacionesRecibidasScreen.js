@@ -349,8 +349,7 @@ export default function DonacionesRecibidasScreen({
 
                 <Text style={styles.infoText}>
                   Cantidad:{' '}
-                  {donacion.cantidad}{' '}
-                  {donacion.unidad || ''}
+                  {donacion.cantidad}
                 </Text>
 
 
@@ -611,7 +610,7 @@ const styles =
     },
 
     infoBlock: {
-      marginTop: 12,
+      marginTop: 0,
       gap: 4,
     },
 

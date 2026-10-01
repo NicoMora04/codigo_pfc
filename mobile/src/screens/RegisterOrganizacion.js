@@ -1,7 +1,18 @@
-import React, { useState } from 'react';
+import React, {
+  useState,
+  useEffect
+} from 'react';
+
+import {
+  obtenerTiposActividad
+} from '../services/oportunidadService';
 import { 
   StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator 
 } from 'react-native';
+
+import {
+  buscarUbicacionesPorTexto
+} from '../services/ubicacionService';
 
 export default function RegisterOrganizacion({ onRegister, onBack, loading, showAlert }) {
   const [razonSocial, setRazonSocial] = useState('');
@@ -10,9 +21,223 @@ export default function RegisterOrganizacion({ onRegister, onBack, loading, show
   const [password, setPassword] = useState('');
   const [descripcion, setDescripcion] = useState('');
 
+  const [
+  busquedaUbicacion,
+  setBusquedaUbicacion
+] = useState('');
+
+
+const [
+  resultadosUbicacion,
+  setResultadosUbicacion
+] = useState([]);
+
+
+const [
+  ubicacionSeleccionada,
+  setUbicacionSeleccionada
+] = useState(null);
+
+
+const [
+  buscandoUbicacion,
+  setBuscandoUbicacion
+] = useState(false);
+
+
+const [
+  tiposActividad,
+  setTiposActividad
+] = useState([]);
+
+
+const [
+  tiposSeleccionados,
+  setTiposSeleccionados
+] = useState([]);
+
+
+const [
+  cargandoTipos,
+  setCargandoTipos
+] = useState(false);
+
   // RegEx de formato de correo y CUIT numérico
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const cuitRegex = /^[0-9]{11}$/;
+
+  React.useEffect(() => {
+
+    if (
+      busquedaUbicacion
+        .trim()
+        .length < 3
+    ) {
+
+      setResultadosUbicacion(
+        []
+      );
+
+      return;
+
+    }
+
+
+    if (
+      ubicacionSeleccionada
+    ) {
+
+      return;
+
+    }
+
+
+    const timeout =
+      setTimeout(
+        async () => {
+
+          try {
+
+            setBuscandoUbicacion(
+              true
+            );
+
+
+            const data =
+              await buscarUbicacionesPorTexto(
+                null,
+                busquedaUbicacion.trim()
+              );
+
+
+            setResultadosUbicacion(
+              data.resultados || []
+            );
+
+          }
+          catch (error) {
+
+            console.log(
+              'Error buscando ubicación:',
+              error.response?.data ||
+              error.message
+            );
+
+
+            setResultadosUbicacion(
+              []
+            );
+
+          }
+          finally {
+
+            setBuscandoUbicacion(
+              false
+            );
+
+          }
+
+        },
+        600
+      );
+
+
+    return () =>
+      clearTimeout(
+        timeout
+      );
+
+  }, [
+    busquedaUbicacion,
+    ubicacionSeleccionada
+  ]);
+
+
+  useEffect(() => {
+
+  const cargarTipos =
+    async () => {
+
+      try {
+
+        setCargandoTipos(
+          true
+        );
+
+
+        const data =
+          await obtenerTiposActividad();
+
+
+        setTiposActividad(
+          Array.isArray(
+            data?.tiposActividad
+          )
+            ? data.tiposActividad
+            : []
+        );
+
+      }
+      catch (error) {
+
+        console.log(
+          'Error cargando tipos de actividad:',
+          error.response?.data ||
+          error.message
+        );
+
+
+        showAlert(
+          'error',
+          'Error',
+          'No se pudieron cargar los tipos de actividad.'
+        );
+
+      }
+      finally {
+
+        setCargandoTipos(
+          false
+        );
+
+      }
+
+    };
+
+
+  cargarTipos();
+
+}, []);
+
+const alternarTipoActividad =
+  (idTipoActividad) => {
+
+    setTiposSeleccionados(
+      (actuales) => {
+
+        if (
+          actuales.includes(
+            idTipoActividad
+          )
+        ) {
+
+          return actuales.filter(
+            (id) =>
+              id !== idTipoActividad
+          );
+
+        }
+
+
+        return [
+          ...actuales,
+          idTipoActividad
+        ];
+
+      }
+    );
+
+  };
 
   const handleSubmit = () => {
     // 1. Validar Campos Obligatorios Vacíos
@@ -45,15 +270,76 @@ export default function RegisterOrganizacion({ onRegister, onBack, loading, show
       return;
     }
 
+    if (!ubicacionSeleccionada) {
+
+  showAlert(
+    'error',
+    'Ubicación requerida',
+    'Buscá y seleccioná la ubicación institucional de la organización.'
+  );
+
+  return;
+
+}
+
+if (
+  tiposSeleccionados.length === 0
+) {
+
+  showAlert(
+    'error',
+    'Tipo de actividad requerido',
+    'Seleccioná al menos un tipo de actividad que represente a la organización.'
+  );
+
+  return;
+
+}
+
     // Envío de datos corregidos y limpios
-    onRegister({
-  razon_social: razonSocial.trim(),
-  cuit: cuit.trim(),
-  email: email.trim(),
-  password: password,
-  descripcion: descripcion.trim(),
-  rol: 'ORGANIZACION'
-});
+   onRegister({
+
+      razon_social:
+        razonSocial.trim(),
+
+      cuit:
+        cuit.trim(),
+
+      email:
+        email.trim(),
+
+      password:
+        password,
+
+      descripcion:
+        descripcion.trim(),
+
+      ubicacion: {
+
+        latitud:
+          ubicacionSeleccionada.latitud,
+
+        longitud:
+          ubicacionSeleccionada.longitud,
+
+        direccion:
+          ubicacionSeleccionada.detalle ||
+         ubicacionSeleccionada.nombre,
+
+        localidad:
+          ubicacionSeleccionada.localidad,
+
+        provincia:
+          ubicacionSeleccionada.provincia,
+      },
+
+       tipos_actividad:
+         tiposSeleccionados,
+
+      rol:
+        'ORGANIZACION'
+
+    });
   };
 
   return (
@@ -132,7 +418,250 @@ export default function RegisterOrganizacion({ onRegister, onBack, loading, show
               onChangeText={setDescripcion}
               multiline
               numberOfLines={3}
+              maxLength={500}
             />
+          </View>
+
+          <View style={styles.field}>
+
+          <Text style={styles.label}>
+            Tipos de actividad *
+          </Text>
+
+
+          <Text style={styles.helperText}>
+            Seleccioná uno o más tipos que representen las actividades de la organización.
+          </Text>
+
+
+          {
+            cargandoTipos ? (
+
+              <ActivityIndicator
+                size="small"
+                color="#1F6F5C"
+                style={{
+                  marginTop: 10
+                }}
+              />
+
+            ) : (
+
+              <View style={styles.typesContainer}>
+
+                {
+                  tiposActividad.map(
+                    (tipo) => {
+
+                      const seleccionado =
+                        tiposSeleccionados.includes(
+                          tipo.id_tipo_actividad
+                        );
+
+
+                      return (
+
+                        <TouchableOpacity
+
+                          key={
+                            tipo.id_tipo_actividad
+                          }
+
+                          style={[
+                            styles.typeChip,
+                            seleccionado &&
+                              styles.typeChipSelected
+                          ]}
+
+                          onPress={() =>
+                            alternarTipoActividad(
+                              tipo.id_tipo_actividad
+                            )
+                          }
+
+                        >
+
+                          <Text
+                            style={[
+                              styles.typeChipText,
+                              seleccionado &&
+                                styles.typeChipTextSelected
+                            ]}
+                          >
+                            {
+                              seleccionado
+                                ? `✓ ${tipo.nombre}`
+                                : tipo.nombre
+                            }
+                          </Text>
+
+                        </TouchableOpacity>
+
+                      );
+
+                    }
+                  )
+                }
+
+              </View>
+
+            )
+          }
+
+        </View>
+
+
+          <View style={styles.field}>
+
+            <Text style={styles.label}>
+              Ubicación institucional *
+            </Text>
+
+
+            <TextInput
+
+              style={styles.input}
+
+              placeholder="Buscá una dirección o localidad..."
+
+              placeholderTextColor="#9CA3AF"
+
+              value={
+                busquedaUbicacion
+              }
+
+              onChangeText={(texto) => {
+
+                setBusquedaUbicacion(
+                  texto
+                );
+
+                setUbicacionSeleccionada(
+                  null
+                );
+
+              }}
+
+            />
+
+
+            <Text style={styles.helperText}>
+              Seleccioná una ubicación de la lista para asociarla a la organización.
+            </Text>
+
+
+            {buscandoUbicacion && (
+
+              <ActivityIndicator
+
+                size="small"
+
+                color="#1F6F5C"
+
+                style={styles.locationLoader}
+
+              />
+
+            )}
+
+
+            {!buscandoUbicacion &&
+              resultadosUbicacion.map(
+                (resultado) => (
+
+                  <TouchableOpacity
+
+                    key={
+                      resultado.placeId
+                    }
+
+                    style={
+                      styles.locationResult
+                    }
+
+                    onPress={() => {
+
+                      setUbicacionSeleccionada(
+                        resultado
+                      );
+
+
+                      setBusquedaUbicacion(
+                        resultado.detalle ||
+                        resultado.nombre
+                      );
+
+
+                      setResultadosUbicacion(
+                        []
+                      );
+
+                    }}
+
+                  >
+
+                    <Text style={styles.locationResultTitle}>
+
+                      {
+                        resultado.nombre
+                      }
+
+                    </Text>
+
+
+                    {
+                      resultado.detalle && (
+
+                        <Text style={styles.locationResultDetail}>
+
+                          {
+                            resultado.detalle
+                          }
+
+                        </Text>
+
+                      )
+                    }
+
+                  </TouchableOpacity>
+
+                )
+              )
+            }
+
+
+            {ubicacionSeleccionada && (
+
+              <View style={styles.locationSelected}>
+
+                <Text style={styles.locationSelectedTitle}>
+                  ✓ Ubicación seleccionada
+                </Text>
+
+
+                <Text style={styles.locationSelectedText}>
+                  {
+                    ubicacionSeleccionada.detalle ||
+                    ubicacionSeleccionada.nombre
+                  }
+                </Text>
+
+
+                <Text style={styles.locationSelectedSecondary}>
+                  {
+                    [
+                      ubicacionSeleccionada.localidad,
+                      ubicacionSeleccionada.provincia
+                    ]
+                      .filter(Boolean)
+                      .join(', ')
+                  }
+                </Text>
+
+              </View>
+
+            )}
+
           </View>
 
           <TouchableOpacity 
@@ -197,5 +726,152 @@ const styles = StyleSheet.create({
   input: { width: '100%', height: 48, backgroundColor: '#F9FAFB', borderRadius: 10, paddingHorizontal: 14, borderWidth: 1, borderColor: '#D7DEDA', fontSize: 14, color: '#1F2937' },
   textArea: { height: 80, paddingVertical: 10, textAlignVertical: 'top' },
   btnPrimary: { width: '100%', height: 48, backgroundColor: '#1F6F5C', borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
-  btnPrimaryText: { color: '#FFFFFF', fontSize: 15, fontWeight: 'bold' }
+  btnPrimaryText: { color: '#FFFFFF', fontSize: 15, fontWeight: 'bold' },
+  locationLoader: {
+
+  marginTop: 10,
+
+},
+
+
+locationResult: {
+
+  backgroundColor: '#FFFFFF',
+
+  borderWidth: 1,
+  borderColor: '#D7DEDA',
+
+  borderRadius: 10,
+
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+
+  marginTop: 6,
+
+},
+
+
+locationResultTitle: {
+
+  fontSize: 13,
+
+  fontWeight: '700',
+
+  color: '#1F2937',
+
+},
+
+
+locationResultDetail: {
+
+  fontSize: 11,
+
+  color: '#5F6B76',
+
+  marginTop: 3,
+
+  lineHeight: 16,
+
+},
+
+
+locationSelected: {
+
+  backgroundColor: '#EAF5F2',
+
+  borderWidth: 1,
+  borderColor: '#CFE4DE',
+
+  borderRadius: 10,
+
+  padding: 11,
+
+  marginTop: 8,
+
+},
+
+
+locationSelectedTitle: {
+
+  fontSize: 12,
+
+  fontWeight: '700',
+
+  color: '#1F6F5C',
+
+},
+
+
+locationSelectedText: {
+
+  fontSize: 12,
+
+  color: '#374151',
+
+  marginTop: 3,
+
+},
+
+typesContainer: {
+
+  flexDirection: 'row',
+
+  flexWrap: 'wrap',
+
+  gap: 8,
+
+  marginTop: 10,
+
+},
+
+
+typeChip: {
+
+  paddingHorizontal: 12,
+
+  paddingVertical: 8,
+
+  borderRadius: 18,
+
+  borderWidth: 1,
+
+  borderColor: '#D7DEDA',
+
+  backgroundColor: '#F9FAFB',
+
+},
+
+
+typeChipSelected: {
+
+  backgroundColor: '#E6F2EF',
+
+  borderColor: '#1F6F5C',
+
+},
+
+
+typeChipText: {
+
+  fontSize: 12,
+
+  color: '#4B5563',
+
+  fontWeight: '600',
+
+},
+
+
+typeChipTextSelected: {
+
+  color: '#164C40',
+
+  fontWeight: '700',
+
+},
+locationSelectedSecondary: {
+  fontSize: 11,
+  color: '#6B7280',
+  marginTop: 2,
+},
 });

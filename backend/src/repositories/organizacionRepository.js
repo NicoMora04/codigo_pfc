@@ -265,6 +265,7 @@ exports.obtenerDetalleDisponibleDonacion =
 
           ub.latitud,
           ub.longitud,
+          ub.direccion,
           ub.localidad,
           ub.provincia,
           ub.es_aproximada,

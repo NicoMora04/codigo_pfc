@@ -86,14 +86,17 @@ export default function DetalleOrganizacionDonacionScreen({
     organizacion.razon_social;
 
 
-  const ubicacion = [
+const ubicacionGeneral = [
+  organizacion.localidad,
+  organizacion.provincia,
+]
+  .filter(Boolean)
+  .join(', ');
 
-    organizacion.localidad,
-    organizacion.provincia,
 
-  ]
-    .filter(Boolean)
-    .join(', ');
+const ubicacionCompleta =
+  organizacion.direccion ||
+  ubicacionGeneral;
 
 
   // =====================================================
@@ -191,11 +194,23 @@ export default function DetalleOrganizacionDonacionScreen({
 
 
         <Text style={styles.text}>
-          {
-            ubicacion ||
-            'Ubicación no especificada.'
-          }
-        </Text>
+        {
+          ubicacionCompleta ||
+          'Ubicación no especificada.'
+        }
+      </Text>
+
+        {
+          organizacion.direccion &&
+          ubicacionGeneral &&
+          organizacion.direccion !== ubicacionGeneral && (
+
+            <Text style={styles.locationSecondary}>
+              {ubicacionGeneral}
+            </Text>
+
+          )
+        }
 
 
         {organizacion.es_aproximada && (
@@ -440,5 +455,10 @@ const styles =
       marginBottom: 16,
 
     },
+    locationSecondary: {
+    fontSize: 12,
+    color: '#7A858D',
+    marginTop: 3,
+  },
 
   });

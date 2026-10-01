@@ -330,29 +330,19 @@ export default function DetalleDonacionScreen({
             Ubicación aproximada
           </Text>
 
-          {(
-            donacion.direccion ||
-            donacion.localidad ||
-            donacion.provincia
-          ) ? (
+         {donacion.direccion ? (
 
-            <Text style={styles.value}>
-              {[
-                donacion.direccion,
-                donacion.localidad,
-                donacion.provincia,
-              ]
-                .filter(Boolean)
-                .join(', ')}
-            </Text>
+              <Text style={styles.value}>
+                {donacion.direccion}
+              </Text>
 
-          ) : (
+            ) : (
 
-            <Text style={styles.valueMuted}>
-              No se indicó una ubicación.
-            </Text>
+              <Text style={styles.valueMuted}>
+                No se indicó una ubicación.
+              </Text>
 
-          )}
+            )}
 
 
           <View style={styles.separator} />

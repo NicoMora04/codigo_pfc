@@ -239,6 +239,7 @@ exports.buscarOportunidadesPorOrganizacion = async (
     SELECT
       o.*,
       ta.nombre AS tipo_actividad,
+      org.razon_social AS organizacion,
       u.latitud,
       u.longitud,
       u.localidad,
@@ -264,6 +265,8 @@ exports.buscarOportunidadesPorOrganizacion = async (
     FROM oportunidad o
     INNER JOIN tipo_actividad ta
       ON ta.id_tipo_actividad = o.id_tipo_actividad
+    INNER JOIN organizacion org
+      ON org.id_organizacion = o.id_organizacion  
     LEFT JOIN ubicacion u
       ON u.id_ubicacion = o.id_ubicacion
     WHERE o.id_organizacion = $1

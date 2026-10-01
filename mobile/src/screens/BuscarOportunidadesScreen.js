@@ -1521,68 +1521,6 @@ const obtenerTextoEstadoInscripcion = (estado) => {
               placeholder="Ej: 10"
             />
 
-
-            <TouchableOpacity
-              style={styles.searchNearbyButton}
-              onPress={() => {
-
-                const radio =
-                  Number(
-                    radioBusquedaKm
-                  );
-
-
-                if (
-                  !Number.isFinite(
-                    radio
-                  ) ||
-                  radio <= 0
-                ) {
-
-                  showAlert(
-                    'error',
-                    'Radio inválido',
-                    'Ingresá un radio de búsqueda mayor a 0.'
-                  );
-
-                  return;
-
-                }
-
-
-                onGuardarEstadoUbicacion?.({
-
-                  modoUbicacion,
-
-                  ubicacionActual,
-
-                  ubicacionManualSeleccionada,
-
-                  direccionActual,
-
-                  textoUbicacion,
-
-                  radioBusquedaKm,
-
-                });
-
-
-              
-
-              }}
-            >
-
-              <Text style={styles.searchNearbyButtonText}>
-
-                {modoUbicacion ===
-                  'MANUAL'
-                  ? 'Buscar en esta ubicación'
-                  : 'Buscar cerca de mí'}
-
-              </Text>
-
-            </TouchableOpacity>
-
           </View>
 
         )}
@@ -2277,32 +2215,6 @@ const styles =
       paddingVertical: 9,
 
       width: 120,
-
-    },
-
-
-    searchNearbyButton: {
-
-      backgroundColor: '#1F6F5C',
-
-      borderRadius: 12,
-
-      paddingHorizontal: 14,
-      paddingVertical: 11,
-
-      alignSelf: 'flex-start',
-
-      marginTop: 10,
-
-    },
-
-
-    searchNearbyButtonText: {
-
-      color: '#FFFFFF',
-
-      fontSize: 13,
-      fontWeight: '700',
 
     },
 
