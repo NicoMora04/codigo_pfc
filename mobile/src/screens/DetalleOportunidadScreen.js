@@ -2,6 +2,9 @@ import React from 'react';
 
 import MapaLeaflet from '../components/MapaLeaflet';
 
+import * as Location
+  from 'expo-location';
+
 import {
   obtenerRuta
 } from '../services/rutaService';
@@ -66,6 +69,13 @@ export default function DetalleOportunidadScreen({
       'driving-car'
     );
 
+  const [
+  ubicacionRuta,
+  setUbicacionRuta
+] =
+  React.useState(
+    null
+  );  
 
   // =====================================================
   // BLOQUEOS DE RUTEO
@@ -82,7 +92,7 @@ export default function DetalleOportunidadScreen({
       null
     );
 
-
+  
   // =====================================================
   // UBICACIÓN DE REFERENCIA
   // =====================================================
@@ -124,7 +134,15 @@ export default function DetalleOportunidadScreen({
 
   }
 
+const ubicacionVisual =
+  ubicacionRuta ||
+  ubicacionUsuario;
 
+
+const tipoUbicacionVisual =
+  ubicacionRuta
+    ? 'GPS'
+    : modoUbicacion;
   // =====================================================
   // INVALIDAR RUTA SI CAMBIA LA UBICACIÓN
   // =====================================================
@@ -336,40 +354,40 @@ export default function DetalleOportunidadScreen({
     null;
 
 
-  if (
-    ubicacionUsuario &&
-    oportunidad.latitud !=
-      null &&
-    oportunidad.longitud !=
-      null
-  ) {
+ if (
+  ubicacionVisual &&
+  oportunidad.latitud !=
+    null &&
+  oportunidad.longitud !=
+    null
+) {
 
-    distanciaKm =
-      calcularDistanciaKm(
+  distanciaKm =
+    calcularDistanciaKm(
 
-        Number(
-          ubicacionUsuario
-            .latitud
-        ),
+      Number(
+        ubicacionVisual
+          .latitud
+      ),
 
-        Number(
-          ubicacionUsuario
-            .longitud
-        ),
+      Number(
+        ubicacionVisual
+          .longitud
+      ),
 
-        Number(
-          oportunidad
-            .latitud
-        ),
+      Number(
+        oportunidad
+          .latitud
+      ),
 
-        Number(
-          oportunidad
-            .longitud
-        )
+      Number(
+        oportunidad
+          .longitud
+      )
 
-      );
+    );
 
-  }
+}
 
 
   // =====================================================
@@ -453,40 +471,155 @@ export default function DetalleOportunidadScreen({
     };
 
 
-  // =====================================================
-  // CALCULAR RUTA
-  // =====================================================
+ // =====================================================
+// CALCULAR RUTA
+// =====================================================
 
-  const calcularRuta =
-    async () => {
+const calcularRuta =
+  async () => {
+
+    if (
+      oportunidad?.latitud ==
+        null ||
+      oportunidad?.longitud ==
+        null
+    ) {
+
+      setErrorRuta(
+        'La oportunidad no posee una ubicación válida para calcular la ruta.'
+      );
+
+      return;
+
+    }
+
+
+    if (
+      calculoRutaEnCurso
+        .current
+    ) {
+
+      console.log(
+        'CALCULO IGNORADO: YA HAY UNO EN CURSO'
+      );
+
+      return;
+
+    }
+
+
+    try {
+
+      calculoRutaEnCurso.current =
+        true;
+
+
+      setCalculandoRuta(
+        true
+      );
+
+
+      setErrorRuta(
+        ''
+      );
+
+
+      // ===============================================
+      // OBTENER ORIGEN DE LA RUTA
+      // ===============================================
+
+      let origenRuta =
+        ubicacionRuta;
+
+
+      /*
+        Si anteriormente ya se obtuvo la ubicación
+        GPS mediante los filtros, puede reutilizarse.
+
+        Una ubicación MANUAL no se utiliza como origen
+        automático de la ruta, ya que la ruta representa
+        el recorrido desde la ubicación actual del usuario.
+      */
 
       if (
-        !ubicacionUsuario ||
-        oportunidad?.latitud ==
-          null ||
-        oportunidad?.longitud ==
-          null
+        !origenRuta &&
+        modoUbicacion ===
+          'GPS' &&
+        estadoUbicacion
+          ?.ubicacionActual
       ) {
 
-        setErrorRuta(
-          'No hay una ubicación válida para calcular la ruta.'
-        );
-
-        return;
+        origenRuta =
+          estadoUbicacion
+            .ubicacionActual;
 
       }
 
 
+      // ===============================================
+      // PEDIR UBICACIÓN SI TODAVÍA NO EXISTE
+      // ===============================================
+
+      if (
+        !origenRuta
+      ) {
+
+        const {
+          status
+        } =
+          await Location
+            .requestForegroundPermissionsAsync();
+
+
+        if (
+          status !==
+            'granted'
+        ) {
+
+          setErrorRuta(
+            'Para calcular la ruta es necesario permitir el acceso a tu ubicación.'
+          );
+
+          return;
+
+        }
+
+
+        const posicion =
+          await Location
+            .getCurrentPositionAsync({
+              accuracy:
+                Location.Accuracy.Balanced,
+            });
+
+
+        origenRuta = {
+
+          latitud:
+            posicion.coords
+              .latitude,
+
+          longitud:
+            posicion.coords
+              .longitude,
+
+        };
+      }
+
+      
+
+      // ===============================================
+      // CLAVE DE LA RUTA
+      // ===============================================
+
       const claveRuta = [
 
         Number(
-          ubicacionUsuario
-            .latitud
+          origenRuta.latitud
         ),
 
         Number(
-          ubicacionUsuario
-            .longitud
+          origenRuta.longitud
         ),
 
         Number(
@@ -504,9 +637,9 @@ export default function DetalleOportunidadScreen({
       ].join('|');
 
 
-      // =================================================
+      // ===============================================
       // EVITAR RECALCULAR LA MISMA RUTA
-      // =================================================
+      // ===============================================
 
       if (
         ruta &&
@@ -524,114 +657,86 @@ export default function DetalleOportunidadScreen({
       }
 
 
-      // =================================================
-      // EVITAR SOLICITUDES SIMULTÁNEAS
-      // =================================================
-
-      if (
-        calculoRutaEnCurso
-          .current
-      ) {
-
-        console.log(
-          'CALCULO IGNORADO: YA HAY UNO EN CURSO'
-        );
-
-        return;
-
-      }
+      setRuta(
+        null
+      );
 
 
-      try {
-
-        calculoRutaEnCurso.current =
-          true;
-
-
-        setCalculandoRuta(
-          true
-        );
+      console.log(
+        'INICIANDO CALCULO DE RUTA'
+      );
 
 
-        setErrorRuta(
-          ''
-        );
+      // ===============================================
+      // CALCULAR RUTA
+      // ===============================================
 
+      const resultado =
+        await obtenerRuta(
 
-        setRuta(
-          null
+          origenRuta,
+
+          {
+
+            latitud:
+              oportunidad
+                .latitud,
+
+            longitud:
+              oportunidad
+                .longitud,
+
+          },
+
+          perfilRuta
+
         );
 
 
-        console.log(
-          'INICIANDO CALCULO DE RUTA'
-        );
+      setUbicacionRuta(
+        origenRuta
+      );
 
+      setRuta(
+        resultado
+      );
 
-        const resultado =
-          await obtenerRuta(
+      ultimaRutaCalculada.current =
+        claveRuta;
 
-            ubicacionUsuario,
+    }
+    catch (
+      error
+    ) {
 
-            {
-
-              latitud:
-                oportunidad
-                  .latitud,
-
-              longitud:
-                oportunidad
-                  .longitud,
-
-            },
-
-            perfilRuta
-
-          );
-
-
-        setRuta(
-          resultado
-        );
-
-
-        ultimaRutaCalculada.current =
-          claveRuta;
-
-      }
-      catch (
+      console.log(
+        'ERROR CALCULANDO RUTA:',
         error
-      ) {
-
-        console.log(
-          'ERROR ORS:',
-          error
-        );
+      );
 
 
-        setErrorRuta(
+      setErrorRuta(
 
-          error?.message ||
+        error?.message ||
 
-          'No se pudo calcular la ruta.'
+        'No se pudo calcular la ruta.'
 
-        );
+      );
 
-      }
-      finally {
+    }
+    finally {
 
-        calculoRutaEnCurso.current =
-          false;
+      calculoRutaEnCurso.current =
+        false;
 
 
-        setCalculandoRuta(
-          false
-        );
+      setCalculandoRuta(
+        false
+      );
 
-      }
+    }
 
-    };
-
+  };
 
   // =====================================================
   // RENDER
@@ -881,7 +986,10 @@ export default function DetalleOportunidadScreen({
         {/* RUTA */}
         {/* ================================================= */}
 
-        {ubicacionUsuario && (
+        {oportunidad.latitud !=
+          null &&
+          oportunidad.longitud !=
+          null && (
 
           <View style={styles.routeCard}>
 
@@ -891,7 +999,7 @@ export default function DetalleOportunidadScreen({
 
 
             <Text style={styles.routeDescription}>
-              Elegí cómo querés llegar y calculá la distancia por ruta y el tiempo estimado.
+              Elegí cómo querés llegar. Si es necesario, la aplicación solicitará tu ubicación actual para calcular la ruta y el tiempo estimado.
             </Text>
 
 
@@ -1159,12 +1267,11 @@ export default function DetalleOportunidadScreen({
 
             <Text style={styles.mapSubtitle}>
 
-              {ubicacionUsuario
-                ? 'Compará tu ubicación de referencia con la ubicación de la oportunidad.'
+              {ubicacionVisual
+                ? 'Compará tu ubicación con la ubicación de la oportunidad.'
                 : 'Consultá en el mapa dónde se realizará la actividad.'}
 
             </Text>
-
 
             <MapaLeaflet
               oportunidades={[
@@ -1177,17 +1284,16 @@ export default function DetalleOportunidadScreen({
                 15
               }
               ubicacionUsuario={
-                ubicacionUsuario
+                ubicacionVisual
               }
               tipoUbicacionUsuario={
-                modoUbicacion
+                tipoUbicacionVisual
               }
               rutaCoordenadas={
                 ruta?.coordenadas ||
                 []
               }
             />
-
 
             {/* ================================================= */}
             {/* LEYENDA DEL MAPA */}
@@ -1196,7 +1302,7 @@ export default function DetalleOportunidadScreen({
             <View style={styles.mapLegend}>
 
 
-              {ubicacionUsuario && (
+              {ubicacionVisual && (
 
                 <View style={styles.legendItem}>
 
@@ -1204,7 +1310,7 @@ export default function DetalleOportunidadScreen({
 
                   <Text style={styles.legendText}>
 
-                    {modoUbicacion ===
+                    {tipoUbicacionVisual ===
                       'MANUAL'
                       ? 'Ubicación seleccionada'
                       : 'Tu ubicación actual'}

@@ -19,6 +19,7 @@ export default function DetalleOrganizacionPendienteScreen({
   onVolver,
   onAprobar,
   onRechazar,
+  onAnular,
 }) {
 
   const [
@@ -37,6 +38,17 @@ export default function DetalleOrganizacionPendienteScreen({
     motivoRechazo,
     setMotivoRechazo
   ] = React.useState('');
+
+  const [
+  modalAnulacionVisible,
+  setModalAnulacionVisible
+] = React.useState(false);
+
+
+const [
+  motivoAnulacion,
+  setMotivoAnulacion
+] = React.useState('');
 
 
   // =====================================================
@@ -96,7 +108,36 @@ export default function DetalleOrganizacionPendienteScreen({
         );
 
     };
+  // =====================================================
+// CONFIRMAR ANULACIÓN
+// =====================================================
 
+const confirmarAnulacion =
+  async () => {
+
+    if (
+      !motivoAnulacion.trim()
+    ) {
+      return;
+    }
+
+
+    const resultado =
+      await onAnular?.(
+        motivoAnulacion.trim()
+      );
+
+
+    if (!resultado) {
+      return;
+    }
+
+
+    setMotivoAnulacion('');
+
+    setModalAnulacionVisible(false);
+
+  };
 
   if (!organizacion) {
 
@@ -179,10 +220,22 @@ export default function DetalleOrganizacionPendienteScreen({
         </Text>
 
 
-        <View style={styles.statusBadge}>
+        <View
+          style={[
+            styles.statusBadge,
+            organizacion.estado_verificacion === 'RECHAZADA' &&
+              styles.statusRejectedBadge
+          ]}
+        >
 
-          <Text style={styles.statusText}>
-            PENDIENTE
+          <Text
+            style={[
+              styles.statusText,
+              organizacion.estado_verificacion === 'RECHAZADA' &&
+                styles.statusRejectedText
+            ]}
+          >
+            {organizacion.estado_verificacion}
           </Text>
 
         </View>
@@ -369,7 +422,8 @@ export default function DetalleOrganizacionPendienteScreen({
           Revisá la información institucional antes de aprobar o rechazar la solicitud.
         </Text>
 
-
+        {organizacion.estado_verificacion === 'PENDIENTE' && (
+          <>
         <TouchableOpacity
 
           style={[
@@ -428,6 +482,31 @@ export default function DetalleOrganizacionPendienteScreen({
           </Text>
 
         </TouchableOpacity>
+
+           </>
+        )}
+         
+        <TouchableOpacity
+  style={[
+    styles.annulButton,
+    loading &&
+      styles.disabledButton
+  ]}
+  disabled={loading}
+  onPress={() => {
+
+    setMotivoAnulacion('');
+
+    setModalAnulacionVisible(true);
+
+  }}
+>
+
+  <Text style={styles.annulButtonText}>
+    Anular registro
+  </Text>
+
+</TouchableOpacity>
 
       </View>
 
@@ -645,7 +724,140 @@ export default function DetalleOrganizacionPendienteScreen({
 
       </Modal>
 
+                  {/* ================================================= */}
+{/* MODAL ANULACIÓN */}
+{/* ================================================= */}
 
+<Modal
+  visible={
+    modalAnulacionVisible
+  }
+  transparent
+  animationType="fade"
+  onRequestClose={() => {
+
+    if (loading) {
+      return;
+    }
+
+    setModalAnulacionVisible(false);
+    setMotivoAnulacion('');
+
+  }}
+>
+
+  <View style={styles.modalOverlay}>
+
+    <View style={styles.modalCard}>
+
+      <Text style={styles.modalTitle}>
+        Anular registro
+      </Text>
+
+
+      <Text style={styles.modalText}>
+        Esta acción eliminará el registro inválido de la organización y liberará su CUIT y correo para que puedan utilizarse nuevamente.
+      </Text>
+
+
+      <Text style={styles.warningText}>
+        Esta operación no puede deshacerse.
+      </Text>
+
+
+      <Text style={styles.inputLabel}>
+        Motivo de la anulación *
+      </Text>
+
+
+      <TextInput
+        style={styles.textArea}
+        value={
+          motivoAnulacion
+        }
+        onChangeText={
+          setMotivoAnulacion
+        }
+        placeholder="Ingresá el motivo de la anulación..."
+        placeholderTextColor="#9CA3AF"
+        multiline
+        numberOfLines={4}
+        maxLength={500}
+        editable={!loading}
+      />
+
+
+      <Text style={styles.characterCounter}>
+        {motivoAnulacion.length}/500
+      </Text>
+
+
+      {
+        !motivoAnulacion.trim() && (
+
+          <Text style={styles.requiredText}>
+            El motivo es obligatorio.
+          </Text>
+
+        )
+      }
+
+
+      <View style={styles.modalActions}>
+
+        <TouchableOpacity
+          style={styles.cancelButton}
+          disabled={loading}
+          onPress={() => {
+
+            setModalAnulacionVisible(false);
+            setMotivoAnulacion('');
+
+          }}
+        >
+
+          <Text style={styles.cancelButtonText}>
+            Volver
+          </Text>
+
+        </TouchableOpacity>
+
+
+        <TouchableOpacity
+          style={[
+            styles.confirmAnnulButton,
+            (
+              loading ||
+              !motivoAnulacion.trim()
+            ) &&
+              styles.disabledButton
+          ]}
+          disabled={
+            loading ||
+            !motivoAnulacion.trim()
+          }
+          onPress={
+            confirmarAnulacion
+          }
+        >
+
+          <Text style={styles.confirmAnnulButtonText}>
+            {
+              loading
+                ? 'Procesando...'
+                : 'Anular registro'
+            }
+          </Text>
+
+        </TouchableOpacity>
+
+      </View>
+
+    </View>
+
+  </View>
+
+</Modal>
     </View>
 
   );
@@ -1201,5 +1413,49 @@ backButtonText: {
       marginTop: 3,
 
     },
+    annulButton: {
+  height: 46,
+  borderRadius: 10,
+  borderWidth: 1,
+  borderColor: '#C62828',
+  backgroundColor: '#FFFFFF',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginTop: 10,
+},
 
+annulButtonText: {
+  color: '#C62828',
+  fontSize: 14,
+  fontWeight: '700',
+},
+
+warningText: {
+  fontSize: 13,
+  color: '#B91C1C',
+  fontWeight: '700',
+  marginBottom: 16,
+},
+
+confirmAnnulButton: {
+  flex: 1,
+  height: 44,
+  borderRadius: 10,
+  backgroundColor: '#B91C1C',
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+
+confirmAnnulButtonText: {
+  color: '#FFFFFF',
+  fontWeight: '700',
+  fontSize: 13,
+},
+statusRejectedBadge: {
+  backgroundColor: '#FDECEC',
+},
+
+statusRejectedText: {
+  color: '#B91C1C',
+},
   });

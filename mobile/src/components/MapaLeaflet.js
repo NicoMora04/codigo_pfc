@@ -1086,6 +1086,12 @@ export default function MapaLeaflet({
 
           }
 
+          #map {
+
+            opacity: 0;
+
+          }
+
 
           .leaflet-popup-content {
 
@@ -1119,7 +1125,25 @@ export default function MapaLeaflet({
         >
         </script>
 
+        // ==============================================
+            // ICONOS PREDETERMINADOS DE LEAFLET
+            // ==============================================
 
+            delete L.Icon.Default.prototype._getIconUrl;
+
+
+            L.Icon.Default.mergeOptions({
+
+              iconRetinaUrl:
+                'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+
+              iconUrl:
+                'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+
+              shadowUrl:
+                'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+
+            });
         <script>
 
           // ==============================================
@@ -1158,44 +1182,68 @@ export default function MapaLeaflet({
 
 
           // ==============================================
-          // CREACIÓN DEL MAPA
-          // ==============================================
+              // CREACIÓN DEL MAPA
+              // ==============================================
 
-          /*
-            IMPORTANTE:
+              /*
+                Leaflet recibe una vista de respaldo para poder
+                inicializar correctamente el mapa.
 
-            Leaflet recibe una vista inicial inmediatamente.
+                El mapa permanece oculto hasta calcular el
+                encuadre definitivo.
+              */
 
-            De esta manera los tiles ya tienen coordenadas y
-            zoom válidos desde el primer render.
-          */
+              const map =
+              L.map(
+                'map',
+                {
+                  zoomControl:
+                    true,
 
-          const map =
-            L.map(
-              'map',
-              {
+                  dragging:
+                    true,
 
-                zoomControl:
-                  true,
+                  touchZoom:
+                    true,
 
-                dragging:
-                  true,
+                  doubleClickZoom:
+                    true,
 
-                touchZoom:
-                  true,
+                  zoomAnimation:
+                    false,
 
-                doubleClickZoom:
-                  true
+                  fadeAnimation:
+                    false,
 
-              }
-            )
-            .setView(
-              [
-                ${centroLatitud},
-                ${centroLongitud}
-              ],
-              ${zoom}
-            );
+                  markerZoomAnimation:
+                    false
+                }
+              )
+                .setView(
+                  [
+                    ${centroLatitud},
+                    ${centroLongitud}
+                  ],
+                  ${zoom},
+                  {
+                    animate:
+                      false
+                  }
+                );
+
+
+              // ==============================================
+              // PUNTOS DE ENCUADRE
+              // ==============================================
+
+              const puntosEncuadre =
+                ${JSON.stringify(
+                  puntosEncuadreValidos
+                )};
+
+             
+
+             
 
 
           // ==============================================
@@ -1234,26 +1282,32 @@ export default function MapaLeaflet({
 
           ${rutaHtml}
 
-
-          // ==============================================
-          // PUNTOS DE ENCUADRE
-          // ==============================================
-
-          const puntosEncuadre =
-            ${JSON.stringify(
-              puntosEncuadreValidos
-            )};
-
-
-          // ==============================================
-          // AJUSTAR VISTA
+        // ==============================================
+          // ENCUADRE DEFINITIVO
           // ==============================================
 
-          function ajustarVista() {
+          function ajustarVistaFinal() {
+
+            const contenedorMapa =
+              document.getElementById(
+                'map'
+              );
+
 
             try {
 
-              map.invalidateSize();
+              /*
+                Primero se informa a Leaflet el tamaño real
+                que finalmente tiene el WebView.
+              */
+
+              map.invalidateSize({
+                pan:
+                  false,
+
+                animate:
+                  false
+              });
 
 
               if (
@@ -1261,12 +1315,20 @@ export default function MapaLeaflet({
                 0
               ) {
 
-                return;
+                map.setView(
+                  [
+                    ${centroLatitud},
+                    ${centroLongitud}
+                  ],
+                  ${zoom},
+                  {
+                    animate:
+                      false
+                  }
+                );
 
               }
-
-
-              if (
+              else if (
                 puntosEncuadre.length ===
                 1
               ) {
@@ -1280,43 +1342,41 @@ export default function MapaLeaflet({
                   }
                 );
 
-
-                return;
-
               }
+              else {
+
+                const limites =
+                  L.latLngBounds(
+                    puntosEncuadre
+                  );
 
 
-              const limites =
-                L.latLngBounds(
-                  puntosEncuadre
-                );
+                if (
+                  limites.isValid()
+                ) {
 
+                  map.fitBounds(
+                    limites,
+                    {
+                      paddingTopLeft:
+                        [35, 35],
 
-              if (
-                limites.isValid()
-              ) {
+                      paddingBottomRight:
+                        [35, 35],
 
-                map.fitBounds(
-                  limites,
-                  {
+                      /*
+                        Evita acercamientos excesivos cuando
+                        origen y destino están muy próximos.
+                      */
+                      maxZoom:
+                        16,
 
-                    paddingTopLeft:
-                      [35, 35],
+                      animate:
+                        false
+                    }
+                  );
 
-                    paddingBottomRight:
-                      [35, 35],
-
-                    /*
-                      Con oportunidades alejadas permitimos
-                      que Leaflet reduzca el zoom todo lo
-                      necesario.
-                    */
-
-                    animate:
-                      false
-
-                  }
-                );
+                }
 
               }
 
@@ -1325,16 +1385,26 @@ export default function MapaLeaflet({
               error
             ) {
 
-              /*
-                Si por algún motivo falla el fitBounds,
-                NO dejamos el mapa sin vista.
+              console.log(
+                'Error ajustando vista final:',
+                error
+              );
 
-                Conserva el setView inicial.
+            }
+            finally {
+
+              /*
+                El usuario solamente ve el mapa después de que
+                centro y zoom quedaron determinados.
               */
 
-              console.log(
-                'Error ajustando vista:',
-                error
+              requestAnimationFrame(
+                () => {
+
+                  contenedorMapa.style.opacity =
+                    '1';
+
+                }
               );
 
             }
@@ -1342,20 +1412,14 @@ export default function MapaLeaflet({
           }
 
 
-          // ==============================================
-          // AJUSTE DESPUÉS DEL MONTAJE
-          // ==============================================
+          // Esperamos a que el WebView tenga sus dimensiones reales.
 
           setTimeout(
-            ajustarVista,
+            ajustarVistaFinal,
             250
           );
 
-
-          setTimeout(
-            ajustarVista,
-            700
-          );
+        
 
         </script>
 

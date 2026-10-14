@@ -16,6 +16,8 @@ export default function AdminBottomNav({
   opcionActiva,
   onInicio,
   onOrganizaciones,
+  onUsuarios,
+  onTiposActividad
 }) {
 
   const insets =
@@ -106,6 +108,65 @@ export default function AdminBottomNav({
         </Text>
 
       </TouchableOpacity>
+
+      <TouchableOpacity
+  style={styles.item}
+  onPress={
+    onUsuarios
+  }
+>
+
+  <Text
+    style={[
+      styles.icon,
+
+      opcionActiva ===
+        'USUARIOS' &&
+        styles.activeText
+    ]}
+  >
+    👥
+  </Text>
+
+
+  <Text
+    style={[
+      styles.label,
+
+      opcionActiva ===
+        'USUARIOS' &&
+        styles.activeText
+    ]}
+  >
+    Usuarios
+  </Text>
+
+</TouchableOpacity>
+
+<TouchableOpacity
+  style={styles.item}
+  onPress={onTiposActividad}
+>
+  <Text
+    style={[
+      styles.icon,
+      opcionActiva === 'TIPOS_ACTIVIDAD' &&
+        styles.activeText
+    ]}
+  >
+    🏷️
+  </Text>
+
+  <Text
+    style={[
+      styles.label,
+      opcionActiva === 'TIPOS_ACTIVIDAD' &&
+        styles.activeText
+    ]}
+  >
+    Tipos
+  </Text>
+</TouchableOpacity>
 
     </View>
 

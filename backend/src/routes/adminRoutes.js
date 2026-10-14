@@ -20,6 +20,17 @@ router.get(
   adminController.listarOrganizacionesPendientes
 );
 
+// ======================================================
+// LISTAR USUARIOS
+// ======================================================
+
+router.get(
+  '/usuarios',
+  verificarToken,
+  verificarRol('ADMIN'),
+  adminController.listarUsuarios
+);
+
 router.patch(
   '/organizaciones/:idOrganizacion/aprobar',
   verificarToken,
@@ -48,5 +59,15 @@ router.patch(
   adminController.rehabilitarUsuario
 );
 
+// ======================================================
+// ANULAR REGISTRO INVÁLIDO DE ORGANIZACIÓN
+// ======================================================
+
+router.delete(
+  '/organizaciones/:idOrganizacion/anular',
+  verificarToken,
+  verificarRol('ADMIN'),
+  adminController.anularRegistroOrganizacion
+);
 
 module.exports = router;

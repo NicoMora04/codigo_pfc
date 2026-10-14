@@ -890,7 +890,18 @@ const obtenerTextoEstadoInscripcion = (estado) => {
 
 };
 
+const hayFiltrosAplicados =
+  Object.keys(
+    filtrosGuardados || {}
+  ).length > 0;
 
+const hayZonasAproximadas =
+  oportunidades.some(
+    (oportunidad) =>
+      Number(
+        oportunidad.radio_km
+      ) > 0
+  );
   // =====================================================
   // RENDER
   // =====================================================
@@ -1625,15 +1636,19 @@ const obtenerTextoEstadoInscripcion = (estado) => {
               </View>
 
 
-              <View style={styles.legendItem}>
+            {hayZonasAproximadas && (
 
-                <View style={styles.approximateMarker} />
+            <View style={styles.legendItem}>
 
-                <Text style={styles.legendText}>
-                  Zona aproximada
-                </Text>
+              <View style={styles.approximateMarker} />
 
-              </View>
+              <Text style={styles.legendText}>
+                Zona aproximada
+              </Text>
+
+            </View>
+
+            )}
 
             </View>
 
@@ -1664,16 +1679,42 @@ const obtenerTextoEstadoInscripcion = (estado) => {
 
         <View style={styles.emptyCard}>
 
-          <Text style={styles.emptyTitle}>
-            No hay oportunidades disponibles
-          </Text>
+        <Text style={styles.emptyTitle}>
+
+          {hayFiltrosAplicados
+            ? 'No encontramos oportunidades'
+            : 'No hay oportunidades disponibles'}
+
+        </Text>
 
 
-          <Text style={styles.emptyText}>
-            Actualmente no hay oportunidades publicadas y vigentes.
-          </Text>
+        <Text style={styles.emptyText}>
 
-        </View>
+          {hayFiltrosAplicados
+            ? 'No hay oportunidades que coincidan con los filtros seleccionados.'
+            : 'Actualmente no hay oportunidades publicadas y vigentes.'}
+
+        </Text>
+
+
+        {hayFiltrosAplicados && (
+
+          <TouchableOpacity
+            style={styles.emptyClearButton}
+            onPress={
+              limpiarFiltros
+            }
+          >
+
+            <Text style={styles.emptyClearButtonText}>
+              Limpiar filtros
+            </Text>
+
+          </TouchableOpacity>
+
+        )}
+
+      </View>
 
       ) : (
 
@@ -1867,9 +1908,32 @@ const styles =
 
 
     header: {
-      marginBottom: 20,
-    },
 
+  backgroundColor: '#FFFFFF',
+
+  borderRadius: 16,
+
+  padding: 18,
+
+  marginBottom: 20,
+
+  borderWidth: 1,
+  borderColor: '#DDE5E2',
+
+  elevation: 2,
+
+  shadowColor: '#164C40',
+
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+
+  shadowOpacity: 0.08,
+
+  shadowRadius: 5,
+
+},
 
     title: {
       fontSize: 24,
@@ -2605,6 +2669,28 @@ applyFiltersButtonText: {
   color: '#FFFFFF',
   fontSize: 13,
   fontWeight: '700',
+},
+emptyClearButton: {
+
+  marginTop: 14,
+
+  backgroundColor: '#1F6F5C',
+
+  borderRadius: 10,
+
+  paddingVertical: 9,
+  paddingHorizontal: 14,
+
+},
+
+
+emptyClearButtonText: {
+
+  color: '#FFFFFF',
+
+  fontSize: 12,
+  fontWeight: '700',
+
 },
 
   });

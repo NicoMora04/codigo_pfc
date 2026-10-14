@@ -178,3 +178,146 @@ exports.rehabilitarUsuario =
     return usuario;
 
   };
+
+  // ======================================================
+// LISTAR USUARIOS
+// ======================================================
+
+exports.listarUsuarios = async () => {
+
+  return await adminRepository
+    .listarUsuarios();
+
+};
+
+
+// ======================================================
+// ANULAR REGISTRO INVÁLIDO DE ORGANIZACIÓN
+// ======================================================
+
+exports.anularRegistroOrganizacion =
+  async (
+    idOrganizacion,
+    motivo
+  ) => {
+
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+
+    // --------------------------------------------------
+    // VALIDAR ID
+    // --------------------------------------------------
+
+    if (
+      typeof idOrganizacion !== 'string' ||
+      !uuidRegex.test(idOrganizacion)
+    ) {
+
+      const error = new Error(
+        'El identificador de la organización no es válido'
+      );
+
+      error.status = 400;
+
+      throw error;
+
+    }
+
+
+    // --------------------------------------------------
+    // VALIDAR MOTIVO
+    // --------------------------------------------------
+
+    if (
+      typeof motivo !== 'string' ||
+      !motivo.trim()
+    ) {
+
+      const error = new Error(
+        'El motivo de la anulación es obligatorio'
+      );
+
+      error.status = 400;
+
+      throw error;
+
+    }
+
+
+    const resultado =
+      await adminRepository
+        .anularRegistroOrganizacion(
+          idOrganizacion
+        );
+
+
+    // --------------------------------------------------
+    // ORGANIZACIÓN INEXISTENTE
+    // --------------------------------------------------
+
+    if (
+      resultado.resultado ===
+      'NO_EXISTE'
+    ) {
+
+      const error = new Error(
+        'La organización no existe'
+      );
+
+      error.status = 404;
+
+      throw error;
+
+    }
+
+
+    // --------------------------------------------------
+    // ESTADO NO PERMITIDO
+    // --------------------------------------------------
+
+    if (
+      resultado.resultado ===
+      'ESTADO_NO_PERMITIDO'
+    ) {
+
+      const error = new Error(
+        'Solo se pueden anular organizaciones pendientes o rechazadas'
+      );
+
+      error.status = 409;
+
+      throw error;
+
+    }
+
+
+    // --------------------------------------------------
+    // EXISTEN REFERENCIAS
+    // --------------------------------------------------
+
+    if (
+      resultado.resultado ===
+      'TIENE_REFERENCIAS'
+    ) {
+
+      const error = new Error(
+        'La organización posee información asociada y no puede ser anulada'
+      );
+
+      error.status = 409;
+
+      throw error;
+
+    }
+
+
+    return {
+      organizacion:
+        resultado.organizacion,
+
+      motivo:
+        motivo.trim()
+    };
+
+  };

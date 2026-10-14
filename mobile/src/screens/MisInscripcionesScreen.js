@@ -163,14 +163,17 @@ const puedeCancelarInscripcion = (
 
     <View style={styles.container}>
 
+      <View style={styles.header}>
+
       <Text style={styles.title}>
         Mis inscripciones
       </Text>
 
-
       <Text style={styles.subtitle}>
         Consultá las actividades en las que te inscribiste y el estado de cada solicitud.
       </Text>
+
+    </View>
 
       <View style={styles.filtersContainer}>
 
@@ -435,7 +438,6 @@ const styles =
       fontSize: 13,
       color: '#5F6B76',
       marginTop: 4,
-      marginBottom: 20,
       lineHeight: 18,
     },
 
@@ -632,6 +634,33 @@ cancelledActivityInfo: {
   color: '#5F6B76',
   marginTop: 6,
   lineHeight: 17,
+},
+header: {
+
+  backgroundColor: '#FFFFFF',
+
+  borderRadius: 16,
+
+  padding: 18,
+
+  marginBottom: 20,
+
+  borderWidth: 1,
+  borderColor: '#DDE5E2',
+
+  elevation: 2,
+
+  shadowColor: '#164C40',
+
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+
+  shadowOpacity: 0.08,
+
+  shadowRadius: 5,
+
 },
 
   });

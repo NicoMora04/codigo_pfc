@@ -72,8 +72,15 @@ import DetalleOrganizacionPendienteScreen
 import {
   obtenerOrganizacionesPendientes,
   aprobarOrganizacion,
-  rechazarOrganizacion
-} from './src/services/adminService';  
+  rechazarOrganizacion,
+  obtenerUsuarios,
+  bloquearUsuario,
+  rehabilitarUsuario,
+  obtenerTiposActividadAdmin,
+crearTipoActividadAdmin,
+actualizarTipoActividadAdmin,
+anularRegistroOrganizacion
+} from './src/services/adminService'; 
 
 import MiOrganizacionScreen
   from './src/screens/MiOrganizacionScreen';
@@ -160,6 +167,12 @@ import DonacionesRecibidasScreen
 
 import DetalleDonacionRecibidaScreen
   from './src/screens/DetalleDonacionRecibidaScreen';  
+
+import UsuariosAdminScreen
+  from './src/screens/UsuariosAdminScreen';  
+
+import TiposActividadAdminScreen
+  from './src/screens/TiposActividadAdminScreen';  
 
 export default function App() {
 
@@ -501,6 +514,15 @@ const [
   setOrganizacionesPendientes
 ] = useState([]);
 
+const [
+  usuariosAdmin,
+  setUsuariosAdmin
+] = useState([]);
+
+const [
+  loadingUsuariosAdmin,
+  setLoadingUsuariosAdmin
+] = useState(false);
 
 const [
   loadingAdmin,
@@ -516,6 +538,16 @@ const [
 const [
   loadingAccionAdmin,
   setLoadingAccionAdmin
+] = useState(false);
+
+const [
+  tiposActividadAdmin,
+  setTiposActividadAdmin
+] = useState([]);
+
+const [
+  loadingTiposActividadAdmin,
+  setLoadingTiposActividadAdmin
 ] = useState(false);
 
   // ======================================================
@@ -1882,6 +1914,733 @@ const cargarOrganizacionesPendientes =
 
   };
 
+// ======================================================
+// ADMIN - USUARIOS
+// ======================================================
+
+const cargarUsuariosAdmin =
+  async () => {
+
+    setLoadingUsuariosAdmin(
+      true
+    );
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setUsuariosAdmin(
+          []
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+        await obtenerUsuarios(
+          token
+        );
+
+
+      const usuarios =
+        data?.usuarios;
+
+
+      if (
+        !Array.isArray(
+          usuarios
+        )
+      ) {
+
+        setUsuariosAdmin(
+          []
+        );
+
+
+        showAlert(
+          'error',
+          'Error',
+          'La respuesta de usuarios no es válida.'
+        );
+
+
+        return false;
+
+      }
+
+
+      setUsuariosAdmin(
+        usuarios
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status ===
+        401
+      ) {
+
+        await eliminarToken();
+
+        setUsuariosAdmin(
+          []
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      if (
+        error.response?.status ===
+        403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'Error',
+        error.response
+          ?.data
+          ?.error ||
+        'No se pudieron obtener los usuarios.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingUsuariosAdmin(
+        false
+      );
+
+    }
+
+  };
+
+
+  const cargarTiposActividadAdmin =
+  async () => {
+
+    setLoadingTiposActividadAdmin(true);
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+        return;
+      }
+
+
+      const data =
+        await obtenerTiposActividadAdmin(
+          token
+        );
+
+
+      setTiposActividadAdmin(
+        Array.isArray(data.tiposActividad)
+          ? data.tiposActividad
+          : []
+      );
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return;
+      }
+
+
+      if (
+        error.response?.status === 403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+        return;
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudieron cargar los tipos',
+        error.response?.data?.error ||
+          'No se pudo obtener el catálogo de tipos de actividad.'
+      );
+
+    }
+    finally {
+
+      setLoadingTiposActividadAdmin(false);
+
+    }
+
+  };
+
+
+  // ======================================================
+// CREAR TIPO DE ACTIVIDAD - ADMIN
+// ======================================================
+
+const handleCrearTipoActividadAdmin =
+  async (nombre) => {
+
+    setLoadingAccionAdmin(true);
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+        return false;
+      }
+
+
+      const data =
+        await crearTipoActividadAdmin(
+          token,
+          nombre
+        );
+
+
+      showAlert(
+        'success',
+        'Tipo creado',
+        data.message ||
+          'El tipo de actividad fue creado correctamente.'
+      );
+
+
+      await cargarTiposActividadAdmin();
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return false;
+      }
+
+
+      if (
+        error.response?.status === 403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+        return false;
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudo crear',
+        error.response?.data?.error ||
+          'No se pudo crear el tipo de actividad.'
+      );
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingAccionAdmin(false);
+
+    }
+
+  };
+
+
+// ======================================================
+// ACTUALIZAR TIPO DE ACTIVIDAD - ADMIN
+// ======================================================
+
+const handleActualizarTipoActividadAdmin =
+  async (
+    idTipoActividad,
+    nombre
+  ) => {
+
+    setLoadingAccionAdmin(true);
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+        return false;
+      }
+
+
+      const data =
+        await actualizarTipoActividadAdmin(
+          token,
+          idTipoActividad,
+          nombre
+        );
+
+
+      showAlert(
+        'success',
+        'Tipo actualizado',
+        data.message ||
+          'El tipo de actividad fue actualizado correctamente.'
+      );
+
+
+      await cargarTiposActividadAdmin();
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return false;
+      }
+
+
+      if (
+        error.response?.status === 403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+        return false;
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudo actualizar',
+        error.response?.data?.error ||
+          'No se pudo actualizar el tipo de actividad.'
+      );
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingAccionAdmin(false);
+
+    }
+
+  };
+
+// ======================================================
+// ADMIN - BLOQUEAR USUARIO
+// ======================================================
+
+const handleBloquearUsuarioAdmin =
+  async (
+    idUsuario,
+    motivo
+  ) => {
+
+    if (
+      !motivo ||
+      !motivo.trim()
+    ) {
+
+      showAlert(
+        'error',
+        'Motivo obligatorio',
+        'Ingresá un motivo para bloquear la cuenta.'
+      );
+
+      return false;
+
+    }
+
+
+    setLoadingAccionAdmin(
+      true
+    );
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+        await bloquearUsuario(
+          token,
+          idUsuario,
+          motivo.trim()
+        );
+
+
+      showAlert(
+        'success',
+        'Cuenta bloqueada',
+        data.message ||
+        'El usuario fue bloqueado correctamente.'
+      );
+
+
+      await cargarUsuariosAdmin();
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status ===
+        401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      if (
+        error.response?.status ===
+        403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudo bloquear',
+        error.response
+          ?.data
+          ?.error ||
+        'No se pudo bloquear la cuenta.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingAccionAdmin(
+        false
+      );
+
+    }
+
+  };
+
+  // ======================================================
+// ADMIN - REHABILITAR USUARIO
+// ======================================================
+
+const handleRehabilitarUsuarioAdmin =
+  async (
+    idUsuario
+  ) => {
+
+    setLoadingAccionAdmin(
+      true
+    );
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+        await rehabilitarUsuario(
+          token,
+          idUsuario
+        );
+
+
+      showAlert(
+        'success',
+        'Cuenta rehabilitada',
+        data.message ||
+        'El usuario fue rehabilitado correctamente.'
+      );
+
+
+      await cargarUsuariosAdmin();
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status ===
+        401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      if (
+        error.response?.status ===
+        403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudo rehabilitar',
+        error.response
+          ?.data
+          ?.error ||
+        'No se pudo rehabilitar la cuenta.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingAccionAdmin(
+        false
+      );
+
+    }
+
+  };
 
   // ======================================================
 // ADMIN - APROBAR ORGANIZACIÓN
@@ -2019,6 +2778,158 @@ const handleAprobarOrganizacion =
 
   };
 
+  // ======================================================
+// ADMIN - ANULAR REGISTRO DE ORGANIZACIÓN
+// ======================================================
+
+const handleAnularRegistroOrganizacion =
+  async (motivo) => {
+
+    if (
+      !organizacionAdminSeleccionada
+        ?.id_organizacion
+    ) {
+
+      showAlert(
+        'error',
+        'Error',
+        'No se pudo identificar la organización.'
+      );
+
+      return false;
+
+    }
+
+
+    if (
+      !motivo ||
+      !motivo.trim()
+    ) {
+
+      showAlert(
+        'error',
+        'Motivo obligatorio',
+        'Ingresá un motivo para anular el registro.'
+      );
+
+      return false;
+
+    }
+
+
+    setLoadingAccionAdmin(true);
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+        return false;
+
+      }
+
+
+      const data =
+        await anularRegistroOrganizacion(
+          token,
+          organizacionAdminSeleccionada
+            .id_organizacion,
+          motivo.trim()
+        );
+
+
+      await cargarOrganizacionesPendientes();
+
+
+      setOrganizacionAdminSeleccionada(
+        null
+      );
+
+
+      setCurrentScreen(
+        'ADMIN_ORGANIZACIONES'
+      );
+
+
+      showAlert(
+        'success',
+        'Registro anulado',
+        data.message ||
+          'El registro de la organización fue anulado correctamente.'
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return false;
+
+      }
+
+
+      if (
+        error.response?.status === 403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudo anular',
+        error.response?.data?.error ||
+          'No se pudo anular el registro de la organización.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingAccionAdmin(false);
+
+    }
+
+  };
 
   // ======================================================
 // ADMIN - RECHAZAR ORGANIZACIÓN
@@ -5004,10 +5915,12 @@ const cargarDetalleDonacionPropia =
       <ImageBackground
 
         source={
-          require(
-            './assets/fondo.png'
-          )
-        }
+  currentScreen === 'A01'
+    ? require(
+        './assets/fondo.png'
+      )
+    : null
+}
 
         style={
           styles.backgroundImage
@@ -7460,9 +8373,63 @@ const cargarDetalleDonacionPropia =
             handleRechazarOrganizacion
           }
 
+          onAnular={
+            handleAnularRegistroOrganizacion
+          }
+
         />
 
       )}
+
+      {/* ==================================================
+    ADMIN - USUARIOS
+================================================== */}
+
+{currentScreen ===
+  'ADMIN_USUARIOS' && (
+
+  <UsuariosAdminScreen
+  usuarios={
+    usuariosAdmin
+  }
+
+  loading={
+    loadingUsuariosAdmin
+  }
+
+  loadingAccion={
+    loadingAccionAdmin
+  }
+
+  onBloquear={
+    handleBloquearUsuarioAdmin
+  }
+
+  onRehabilitar={
+    handleRehabilitarUsuarioAdmin
+  }
+  
+/>
+
+)}
+
+{currentScreen ===
+  'ADMIN_TIPOS_ACTIVIDAD' && (
+  <TiposActividadAdminScreen
+    tiposActividad={
+      tiposActividadAdmin
+    }
+    loading={
+      loadingTiposActividadAdmin
+    }
+    onNuevo={
+      handleCrearTipoActividadAdmin
+    }
+    onEditar={
+      handleActualizarTipoActividadAdmin
+    }
+  />
+)}
 
 
         </ScrollView>
@@ -7754,22 +8721,38 @@ const cargarDetalleDonacionPropia =
               'ADMIN_HOME' ||
 
             currentScreen ===
-              'ADMIN_ORGANIZACIONES'
+              'ADMIN_ORGANIZACIONES' ||
+              currentScreen ===
+              'ADMIN_USUARIOS' ||
+               currentScreen === 'ADMIN_TIPOS_ACTIVIDAD'
           ) && (
 
             <AdminBottomNav
 
               opcionActiva={
+  currentScreen === 'ADMIN_HOME'
+    ? 'INICIO'
+    : currentScreen === 'ADMIN_ORGANIZACIONES' ||
+      currentScreen === 'ADMIN_ORGANIZACION_DETALLE'
+      ? 'ORGANIZACIONES'
+      : currentScreen === 'ADMIN_USUARIOS'
+        ? 'USUARIOS'
+        : currentScreen === 'ADMIN_TIPOS_ACTIVIDAD'
+          ? 'TIPOS_ACTIVIDAD'
+          : 'INICIO'
+}
 
-                currentScreen ===
-                  'ADMIN_HOME'
+              onTiposActividad={async () => {
 
-                  ? 'INICIO'
+                setCurrentScreen(
+                  'ADMIN_TIPOS_ACTIVIDAD'
+                );
 
-                  : 'ORGANIZACIONES'
+                await cargarTiposActividadAdmin();
 
-              }
+                scrollToTop?.();
 
+              }}
 
               onInicio={() => {
 
@@ -7802,6 +8785,31 @@ const cargarDetalleDonacionPropia =
 
 
                 await cargarOrganizacionesPendientes();
+
+
+                setTimeout(
+                  () => {
+
+                    scrollRef.current
+                      ?.scrollTo({
+                        y: 0,
+                        animated: false
+                      });
+
+                  },
+                  0.1
+                );
+
+              }}
+
+              onUsuarios={async () => {
+
+                setCurrentScreen(
+                  'ADMIN_USUARIOS'
+                );
+
+
+                await cargarUsuariosAdmin();
 
 
                 setTimeout(

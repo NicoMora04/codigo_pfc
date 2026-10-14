@@ -56,6 +56,36 @@ export default function GestionInscripcionesScreen({
       .join(' ');
   };
 
+  const obtenerEstadoMostrado =
+  (estado) => {
+
+    switch (estado) {
+
+      case 'PENDIENTE':
+        return 'Pendiente';
+
+      case 'ACEPTADA':
+        return 'Aceptada';
+
+      case 'RECHAZADA':
+        return 'Rechazada';
+
+      case 'COMPLETADA':
+        return 'Completada';
+
+      case 'AUSENTE':
+        return 'Ausente';
+
+      case 'CANCELADA':
+        return 'Cancelada';
+
+      default:
+        return estado || 'Sin estado';
+
+    }
+
+  };
+
   return (
     <View style={styles.container}>
 
@@ -68,15 +98,19 @@ export default function GestionInscripcionesScreen({
         </Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>
-        Gestionar inscripciones
-      </Text>
+      <View style={styles.header}>
 
-      {oportunidad && (
-        <Text style={styles.subtitle}>
-          {oportunidad.titulo}
-        </Text>
-      )}
+          <Text style={styles.title}>
+            Gestionar inscripciones
+          </Text>
+
+          {oportunidad && (
+            <Text style={styles.subtitle}>
+              {oportunidad.titulo}
+            </Text>
+          )}
+
+        </View>
 
       {oportunidad && (
         <View style={styles.summaryCard}>
@@ -149,9 +183,13 @@ export default function GestionInscripcionesScreen({
             </Text>
 
             <Text style={styles.info}>
-              Estado: {inscripcion.estado}
-            </Text>
 
+              Estado:{' '}
+              {obtenerEstadoMostrado(
+                inscripcion.estado
+              )}
+
+            </Text>
             <Text style={styles.info}>
               Inscripto:{' '}
               {new Date(
@@ -347,7 +385,6 @@ backButtonText: {
     fontSize: 15,
     color: '#5F6B76',
     marginTop: 4,
-    marginBottom: 18,
   },
 
   summaryCard: {
@@ -473,6 +510,34 @@ absentButton: {
   alignItems: 'center',
   justifyContent: 'center',
   paddingHorizontal: 8,
+},
+
+header: {
+
+  backgroundColor: '#FFFFFF',
+
+  borderRadius: 16,
+
+  padding: 18,
+
+  marginBottom: 18,
+
+  borderWidth: 1,
+  borderColor: '#DDE5E2',
+
+  elevation: 2,
+
+  shadowColor: '#164C40',
+
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+
+  shadowOpacity: 0.08,
+
+  shadowRadius: 5,
+
 },
 
 });

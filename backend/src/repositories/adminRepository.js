@@ -34,11 +34,19 @@ exports.listarOrganizacionesPendientes = async () => {
         o.id_ubicacion
 
     WHERE
-      o.estado_verificacion =
-        'PENDIENTE'
+  o.estado_verificacion IN (
+    'PENDIENTE',
+    'RECHAZADA'
+  )
 
     ORDER BY
-      o.creado_en ASC
+  CASE
+    WHEN o.estado_verificacion = 'PENDIENTE'
+      THEN 1
+    WHEN o.estado_verificacion = 'RECHAZADA'
+      THEN 2
+  END,
+  o.creado_en ASC
     `
   );
 
@@ -177,3 +185,247 @@ exports.rehabilitarUsuario = async (idUsuario) => {
   return result.rows[0];
 
 };
+
+
+// ======================================================
+// LISTAR USUARIOS
+// ======================================================
+
+exports.listarUsuarios = async () => {
+
+  const result = await pool.query(
+    `
+    SELECT
+      id_usuario,
+      email,
+      rol,
+      estado_cuenta,
+      motivo_bloqueo,
+      creado_en,
+      actualizado_en
+
+    FROM usuario
+
+    WHERE rol <> 'ADMIN'
+
+    ORDER BY
+      creado_en DESC
+    `
+  );
+
+  return result.rows;
+
+};
+
+
+// ======================================================
+// ANULAR REGISTRO INVÁLIDO DE ORGANIZACIÓN
+// ======================================================
+
+exports.anularRegistroOrganizacion =
+  async (idOrganizacion) => {
+
+    const client =
+      await pool.connect();
+
+    try {
+
+      await client.query('BEGIN');
+
+
+      // --------------------------------------------------
+      // 1. BLOQUEAR Y OBTENER ORGANIZACIÓN
+      // --------------------------------------------------
+
+      const organizacionResult =
+        await client.query(
+          `
+          SELECT
+            o.id_organizacion,
+            o.id_usuario,
+            o.razon_social,
+            o.cuit,
+            o.estado_verificacion,
+            u.email
+
+          FROM organizacion o
+
+          INNER JOIN usuario u
+            ON u.id_usuario = o.id_usuario
+
+          WHERE o.id_organizacion = $1
+
+          FOR UPDATE
+          `,
+          [idOrganizacion]
+        );
+
+
+      if (
+        organizacionResult.rows.length === 0
+      ) {
+
+        await client.query('ROLLBACK');
+
+        return {
+          resultado: 'NO_EXISTE'
+        };
+
+      }
+
+
+      const organizacion =
+        organizacionResult.rows[0];
+
+
+      // --------------------------------------------------
+      // 2. VALIDAR ESTADO
+      // --------------------------------------------------
+
+      if (
+        ![
+          'PENDIENTE',
+          'RECHAZADA'
+        ].includes(
+          organizacion.estado_verificacion
+        )
+      ) {
+
+        await client.query('ROLLBACK');
+
+        return {
+          resultado:
+            'ESTADO_NO_PERMITIDO',
+
+          organizacion
+        };
+
+      }
+
+
+      // --------------------------------------------------
+      // 3. COMPROBACIONES DEFENSIVAS
+      // --------------------------------------------------
+
+      const referenciasResult =
+        await client.query(
+          `
+          SELECT
+
+            EXISTS (
+              SELECT 1
+              FROM oportunidad
+              WHERE id_organizacion = $1
+            ) AS tiene_oportunidades,
+
+            EXISTS (
+              SELECT 1
+              FROM donacion
+              WHERE id_organizacion = $1
+            ) AS tiene_donaciones,
+
+            EXISTS (
+              SELECT 1
+              FROM perfil_publico_organizacion
+              WHERE id_organizacion = $1
+            ) AS tiene_perfil_publico
+          `,
+          [idOrganizacion]
+        );
+
+
+      const referencias =
+        referenciasResult.rows[0];
+
+
+      if (
+        referencias.tiene_oportunidades ||
+        referencias.tiene_donaciones ||
+        referencias.tiene_perfil_publico
+      ) {
+
+        await client.query('ROLLBACK');
+
+        return {
+          resultado:
+            'TIENE_REFERENCIAS'
+        };
+
+      }
+
+
+      // --------------------------------------------------
+      // 4. ELIMINAR RELACIONES DEL REGISTRO
+      // --------------------------------------------------
+
+      await client.query(
+        `
+        DELETE FROM organizacion_tipo_actividad
+        WHERE id_organizacion = $1
+        `,
+        [idOrganizacion]
+      );
+
+
+      // --------------------------------------------------
+      // 5. ELIMINAR ORGANIZACIÓN
+      // --------------------------------------------------
+
+      await client.query(
+        `
+        DELETE FROM organizacion
+        WHERE id_organizacion = $1
+        `,
+        [idOrganizacion]
+      );
+
+
+      // --------------------------------------------------
+      // 6. ELIMINAR TOKENS DE RECUPERACIÓN
+      // --------------------------------------------------
+
+      await client.query(
+        `
+        DELETE FROM token_recuperacion_contrasena
+        WHERE id_usuario = $1
+        `,
+        [organizacion.id_usuario]
+      );
+
+
+      // --------------------------------------------------
+      // 7. ELIMINAR USUARIO
+      // --------------------------------------------------
+
+      await client.query(
+        `
+        DELETE FROM usuario
+        WHERE id_usuario = $1
+        `,
+        [organizacion.id_usuario]
+      );
+
+
+      await client.query('COMMIT');
+
+
+      return {
+        resultado: 'ANULADA',
+        organizacion
+      };
+
+    }
+    catch (error) {
+
+      await client.query('ROLLBACK');
+
+      throw error;
+
+    }
+    finally {
+
+      client.release();
+
+    }
+
+  };

@@ -55,7 +55,7 @@ export default function OrganizacionesPendientesScreen({
 
 
           <Text style={styles.subtitle}>
-            Revisá las solicitudes pendientes de verificación.
+            Revisá las solicitudes pendientes y los registros rechazados.
           </Text>
 
         </View>
@@ -83,7 +83,7 @@ export default function OrganizacionesPendientesScreen({
       <View style={styles.sectionHeader}>
 
         <Text style={styles.sectionTitle}>
-          Pendientes de verificación
+          Solicitudes de organizaciones
         </Text>
 
 
@@ -178,13 +178,25 @@ export default function OrganizacionesPendientesScreen({
                   </Text>
 
 
-                  <View style={styles.statusBadge}>
+                 <View
+                  style={[
+                    styles.statusBadge,
+                    organizacion.estado_verificacion === 'RECHAZADA' &&
+                      styles.statusRejectedBadge
+                  ]}
+                >
 
-                    <Text style={styles.statusText}>
-                      PENDIENTE
-                    </Text>
+                  <Text
+                    style={[
+                      styles.statusText,
+                      organizacion.estado_verificacion === 'RECHAZADA' &&
+                        styles.statusRejectedText
+                    ]}
+                  >
+                    {organizacion.estado_verificacion}
+                  </Text>
 
-                  </View>
+                </View>
 
                 </View>
 
@@ -303,9 +315,31 @@ const styles =
 
     header: {
 
-      marginBottom: 24,
+  backgroundColor: '#FFFFFF',
 
-    },
+  borderRadius: 16,
+
+  padding: 18,
+
+  marginBottom: 24,
+
+  borderWidth: 1,
+  borderColor: '#DDE5E2',
+
+  elevation: 2,
+
+  shadowColor: '#164C40',
+
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+
+  shadowOpacity: 0.08,
+
+  shadowRadius: 5,
+
+},
 
 
     headerText: {
@@ -668,5 +702,12 @@ counterText: {
       fontWeight: '700',
 
     },
+    statusRejectedBadge: {
+  backgroundColor: '#FDECEC',
+},
+
+statusRejectedText: {
+  color: '#B91C1C',
+},
 
   });
