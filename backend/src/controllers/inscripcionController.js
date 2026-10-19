@@ -343,6 +343,77 @@ const marcarResultadoParticipacion = async (
   }
 
 };
+
+// ======================================================
+// CONSULTAR PERFIL DEL VOLUNTARIO DESDE UNA INSCRIPCIÓN
+// MEJORA 10 - ACTIVIDAD 3.2
+// ======================================================
+
+const obtenerPerfilVoluntarioDeInscripcion = async (
+  req,
+  res
+) => {
+
+  try {
+
+    // ==================================================
+    // 1. OBTENER IDENTIFICADOR DE INSCRIPCIÓN
+    // ==================================================
+
+    const { idInscripcion } = req.params;
+
+
+    // ==================================================
+    // 2. OBTENER ORGANIZACIÓN AUTENTICADA
+    // ==================================================
+
+    const idOrganizacion =
+      req.organizacion.id_organizacion;
+
+
+    // ==================================================
+    // 3. CONSULTAR PERFIL Y REPUTACIÓN
+    // ==================================================
+
+    const perfil =
+      await inscripcionService
+        .obtenerPerfilVoluntarioDeInscripcion(
+          idInscripcion,
+          idOrganizacion
+        );
+
+
+    // ==================================================
+    // 4. DEVOLVER INFORMACIÓN
+    // ==================================================
+
+    return res.status(200).json({
+      perfil
+    });
+
+  }
+  catch (error) {
+
+    console.error(
+      'Error al consultar perfil del voluntario:',
+      error
+    );
+
+    return res.status(
+      error.status || 500
+    ).json({
+
+      mensaje:
+        error.status
+          ? error.message
+          : 'No se pudo obtener el perfil del voluntario'
+
+    });
+
+  }
+
+};
+
 module.exports = {
   inscribirse,
   listarMisInscripciones,
@@ -351,5 +422,6 @@ module.exports = {
   rechazarInscripcion,
   ocultarInscripcionVoluntario,
   cancelarInscripcionVoluntario,
-  marcarResultadoParticipacion
+  marcarResultadoParticipacion,
+  obtenerPerfilVoluntarioDeInscripcion
 };

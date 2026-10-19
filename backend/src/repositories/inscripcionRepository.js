@@ -33,26 +33,53 @@ const crear = async (idOportunidad, idVoluntario) => {
   return rows[0];
 };
 
+// ======================================================
+// LISTAR INSCRIPCIONES DEL VOLUNTARIO
+// INCLUYE ESTADO DE CALIFICACIÓN - ACTIVIDAD 3.2.2
+// ======================================================
+
 const listarPorVoluntario = async (idVoluntario) => {
+
   const query = `
     SELECT
       i.*,
+
       o.titulo AS oportunidad_titulo,
       o.descripcion AS oportunidad_descripcion,
       o.fecha_inicio,
       o.fecha_fin,
-      o.estado AS oportunidad_estado
+      o.estado AS oportunidad_estado,
+
+      org.razon_social AS organizacion_nombre,
+
+      EXISTS (
+        SELECT 1
+        FROM calificacion c
+        WHERE c.id_inscripcion = i.id_inscripcion
+          AND c.autor_rol = 'VOLUNTARIO'
+      ) AS calificada_por_voluntario
+
     FROM inscripcion i
+
     INNER JOIN oportunidad o
       ON o.id_oportunidad = i.id_oportunidad
+
+    INNER JOIN organizacion org
+      ON org.id_organizacion = o.id_organizacion
+
     WHERE i.id_voluntario = $1
-    AND i.ocultada_en IS NULL
+      AND i.ocultada_en IS NULL
+
     ORDER BY i.inscrita_en DESC;
   `;
 
-  const { rows } = await pool.query(query, [idVoluntario]);
+  const { rows } = await pool.query(
+    query,
+    [idVoluntario]
+  );
 
   return rows;
+
 };
 
 // ======================================================
@@ -73,7 +100,14 @@ const listarPorOportunidad = async (
       i.respondida_en,
       i.actualizada_en,
       pv.nombre AS voluntario_nombre,
-      pv.apellido AS voluntario_apellido
+      pv.apellido AS voluntario_apellido,
+      EXISTS (
+        SELECT 1
+        FROM calificacion c
+        WHERE c.id_inscripcion = i.id_inscripcion
+          AND c.autor_rol = 'ORGANIZACION'
+      ) AS calificada_por_organizacion
+
     FROM inscripcion i
     INNER JOIN perfil_voluntario pv
       ON pv.id_usuario = i.id_voluntario
@@ -429,6 +463,96 @@ const ocultarParaVoluntario = async (
 
 };
 
+// ======================================================
+// OBTENER PERFIL DE VOLUNTARIO DESDE UNA INSCRIPCIÓN
+// MEJORA 10 - ACTIVIDAD 3.2
+// ======================================================
+
+const obtenerPerfilVoluntarioPorInscripcion = async (
+  idInscripcion,
+  idOrganizacion
+) => {
+
+  const query = `
+    SELECT
+
+      -- INSCRIPCIÓN
+      i.id_inscripcion,
+      i.estado AS estado_inscripcion,
+
+      -- VOLUNTARIO
+      pv.id_usuario AS id_voluntario,
+      pv.nombre,
+      pv.apellido,
+      pv.telefono,
+
+      -- CUENTA
+      u.email,
+
+      -- REPUTACIÓN
+      reputacion.promedio,
+      reputacion.cantidad
+
+    FROM inscripcion i
+
+    -- Oportunidad asociada a la inscripción
+    INNER JOIN oportunidad o
+      ON o.id_oportunidad = i.id_oportunidad
+
+    -- Perfil del voluntario
+    INNER JOIN perfil_voluntario pv
+      ON pv.id_usuario = i.id_voluntario
+
+    -- Datos de la cuenta
+    INNER JOIN usuario u
+      ON u.id_usuario = i.id_voluntario
+
+    -- Calificaciones históricas recibidas
+    LEFT JOIN LATERAL (
+
+      SELECT
+
+        ROUND(
+          AVG(c.puntuacion)::numeric,
+          1
+        ) AS promedio,
+
+        COUNT(c.id_calificacion)::integer
+          AS cantidad
+
+      FROM inscripcion historial
+
+      INNER JOIN calificacion c
+        ON c.id_inscripcion =
+          historial.id_inscripcion
+
+      WHERE historial.id_voluntario =
+        i.id_voluntario
+
+        AND historial.estado = 'COMPLETADA'
+
+        AND c.autor_rol = 'ORGANIZACION'
+
+    ) reputacion ON TRUE
+
+    -- CONTROLES DE ACCESO
+    WHERE i.id_inscripcion = $1
+
+      AND o.id_organizacion = $2;
+  `;
+
+  const { rows } = await pool.query(
+    query,
+    [
+      idInscripcion,
+      idOrganizacion
+    ]
+  );
+
+  return rows[0] || null;
+
+};
+
 module.exports = {
   buscarPorOportunidadYVoluntario,
   crear,
@@ -440,6 +564,7 @@ module.exports = {
   contarAceptadasPorOportunidad,
   ocultarParaVoluntario,
   cancelarPorVoluntario,
-  marcarResultadoParticipacion
+  marcarResultadoParticipacion,
+  obtenerPerfilVoluntarioPorInscripcion
 };
 

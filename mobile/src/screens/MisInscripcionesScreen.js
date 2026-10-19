@@ -1,5 +1,6 @@
 import React from 'react';
 import ConfirmModal from '../components/ConfirmModal';
+import CalificacionModal from '../components/CalificacionModal';
 
 import {
   View,
@@ -18,6 +19,8 @@ export default function MisInscripcionesScreen({
   onCancelar,
   filtroEstado,
   onCambiarFiltroEstado,
+  onCalificarOrganizacion,
+  loadingCalificacion=false
 }) {
 
  const obtenerEstadoMostrado = (inscripcion) => {
@@ -76,7 +79,74 @@ const [
   setConfirmacion
 ] = React.useState(null);
 
+const [
+  inscripcionACalificar,
+  setInscripcionACalificar
+] = React.useState(null);
 
+// ======================================================
+// ABRIR MODAL DE CALIFICACIÓN
+// ======================================================
+
+const abrirCalificacion = (inscripcion) => {
+
+  if (loadingCalificacion) {
+    return;
+  }
+
+  setInscripcionACalificar(
+    inscripcion
+  );
+
+};
+
+
+// ======================================================
+// CERRAR MODAL DE CALIFICACIÓN
+// ======================================================
+
+const cerrarCalificacion = () => {
+
+  if (loadingCalificacion) {
+    return;
+  }
+
+  setInscripcionACalificar(null);
+
+};
+
+
+// ======================================================
+// ENVIAR CALIFICACIÓN
+// ======================================================
+
+const enviarCalificacion = async (
+  puntuacion,
+  comentario
+) => {
+
+  if (
+    !inscripcionACalificar ||
+    loadingCalificacion ||
+    !onCalificarOrganizacion
+  ) {
+    return;
+  }
+
+  const resultado =
+    await onCalificarOrganizacion(
+      inscripcionACalificar.id_inscripcion,
+      puntuacion,
+      comentario
+    );
+
+  if (resultado === true) {
+
+    setInscripcionACalificar(null);
+
+  }
+
+};
 
 const cerrarConfirmacion = () => {
   setConfirmacion(null);
@@ -320,6 +390,50 @@ const puedeCancelarInscripcion = (
 
               </TouchableOpacity>
 
+              {/* ====================================================== */}
+                {/* CALIFICAR ORGANIZACIÓN - ACTIVIDAD 3.2.2 */}
+                {/* ====================================================== */}
+
+                {inscripcion.estado === 'COMPLETADA' && (
+
+                  inscripcion.calificada_por_voluntario ? (
+
+                    // ORGANIZACIÓN YA CALIFICADA
+
+                    <View style={styles.calificadoBadge}>
+
+                      <Text style={styles.calificadoText}>
+                        ★ Calificado
+                      </Text>
+
+                    </View>
+
+                  ) : (
+
+                    // ORGANIZACIÓN PENDIENTE DE CALIFICACIÓN
+
+                    <TouchableOpacity
+                      style={styles.ratingButton}
+
+                      onPress={() =>
+                        abrirCalificacion(inscripcion)
+                      }
+
+                      disabled={
+                        loading || loadingCalificacion
+                      }
+                    >
+
+                      <Text style={styles.ratingButtonText}>
+                        ★ Calificar organización
+                      </Text>
+
+                    </TouchableOpacity>
+
+                  )
+
+                )}
+
               {puedeCancelarInscripcion(
                   inscripcion
                 ) && (
@@ -408,6 +522,39 @@ const puedeCancelarInscripcion = (
   onConfirm={confirmarAccion}
   loading={loading}
   />
+
+  {/* ====================================================== */}
+{/* MODAL PARA CALIFICAR ORGANIZACIÓN */}
+{/* ACTIVIDAD 3.2.2 */}
+{/* ====================================================== */}
+
+<CalificacionModal
+
+  visible={
+    inscripcionACalificar !== null
+  }
+
+  nombre={
+    inscripcionACalificar
+      ?.organizacion_nombre ||
+    'la organización'
+  }
+
+  pregunta="¿Cómo evaluarías la organización de esta actividad?"
+
+  onCancelar={
+    cerrarCalificacion
+  }
+
+  onEnviar={
+    enviarCalificacion
+  }
+
+  loading={
+    loadingCalificacion
+  }
+
+/>
 
     </View>
 
@@ -661,6 +808,41 @@ header: {
 
   shadowRadius: 5,
 
+},
+// ======================================================
+// CALIFICACIONES - ACTIVIDAD 3.2.2
+// ======================================================
+
+ratingButton: {
+  backgroundColor: '#1F6F5C',
+  borderRadius: 10,
+  paddingVertical: 12,
+  paddingHorizontal: 14,
+  alignItems: 'center',
+  marginTop: 10
+},
+
+ratingButtonText: {
+  color: '#FFFFFF',
+  fontSize: 13,
+  fontWeight: '700'
+},
+
+calificadoBadge: {
+  backgroundColor: '#EAF5F2',
+  borderWidth: 1,
+  borderColor: '#CFE4DE',
+  borderRadius: 10,
+  paddingVertical: 11,
+  paddingHorizontal: 14,
+  alignItems: 'center',
+  marginTop: 10
+},
+
+calificadoText: {
+  color: '#1F6F5C',
+  fontSize: 13,
+  fontWeight: '700'
 },
 
   });

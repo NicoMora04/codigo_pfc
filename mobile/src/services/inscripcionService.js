@@ -116,3 +116,22 @@ export const marcarResultadoParticipacion = async (
   return response.data;
 
 };
+
+// ======================================================
+// CONSULTAR PERFIL DEL VOLUNTARIO DESDE UNA INSCRIPCIÓN
+// MEJORA 10 - ACTIVIDAD 3.2
+// ======================================================
+
+export const obtenerPerfilVoluntarioDeInscripcion = async (
+  token,
+  idInscripcion
+) => {
+
+  const response = await axios.get(
+    `${BASE_URL}/inscripciones/${idInscripcion}/perfil-voluntario`,
+    authHeaders(token)
+  );
+
+  return response.data;
+
+};
