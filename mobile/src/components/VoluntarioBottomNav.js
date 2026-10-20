@@ -15,6 +15,7 @@ export default function VoluntarioBottomNav({
   onBuscar,
   onDonar,
   onMisInscripciones,
+  onPerfil,
 }) {
 
 const insets = useSafeAreaInsets();
@@ -137,10 +138,39 @@ const insets = useSafeAreaInsets();
               styles.activeText
           ]}
         >
-          Mis inscripciones
+          Inscripciones
         </Text>
 
       </TouchableOpacity>
+
+      {/* ====================================================== */}
+{/* PERFIL DEL VOLUNTARIO - ACTIVIDAD 3.2.1 */}
+{/* ====================================================== */}
+
+<TouchableOpacity
+  style={styles.item}
+  onPress={onPerfil}
+>
+  <Text
+    style={[
+      styles.icon,
+      opcionActiva === 'PERFIL' &&
+        styles.activeText
+    ]}
+  >
+    👤
+  </Text>
+
+  <Text
+    style={[
+      styles.label,
+      opcionActiva === 'PERFIL' &&
+        styles.activeText
+    ]}
+  >
+    Perfil
+  </Text>
+</TouchableOpacity>
 
     </View>
 
@@ -184,7 +214,7 @@ const styles =
       alignItems: 'center',
       justifyContent: 'center',
 
-      paddingHorizontal: 4,
+      paddingHorizontal: 2,
     },
 
 

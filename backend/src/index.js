@@ -11,7 +11,8 @@ const ubicacionRoutes =require('./routes/ubicacionRoutes');
 const tipoActividadRoutes =require('./routes/tipoActividadRoutes');
 const inscripcionRoutes = require('./routes/inscripcionRoutes');
 const publicRoutes = require('./routes/publicRoutes');
-const donacionRoutes =require('./routes/donacionRoutes');
+const donacionRoutes = require('./routes/donacionRoutes');
+const calificacionRoutes = require('./routes/calificacionRoutes');
 const path = require('path');
 const voluntarioRoutes = require('./routes/voluntarioRoutes');
 
@@ -65,7 +66,8 @@ app.use('/api/tipos-actividad',tipoActividadRoutes);
 app.use('/api/inscripciones', inscripcionRoutes);
 app.use('/api/donaciones',donacionRoutes);
 app.use('/api/public', publicRoutes);
-app.use('/api/voluntarios',voluntarioRoutes);
+app.use('/api/voluntarios', voluntarioRoutes);
+app.use('/api/calificaciones', calificacionRoutes);
 // Ruta de diagnóstico (Health Check)
 app.get('/api/health', async (req, res) => {
   try {

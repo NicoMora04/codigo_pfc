@@ -71,4 +71,23 @@ router.patch(
   verificarOrganizacionVerificada,
   inscripcionController.marcarResultadoParticipacion
 );
+
+// ======================================================
+// CONSULTAR PERFIL DE VOLUNTARIO DESDE UNA INSCRIPCIÓN
+// MEJORA 10 - ACTIVIDAD 3.2
+// ======================================================
+
+router.get(
+  '/:idInscripcion/perfil-voluntario',
+
+  authMiddleware,
+
+  verificarRol('ORGANIZACION'),
+
+  verificarOrganizacionVerificada,
+
+  inscripcionController.obtenerPerfilVoluntarioDeInscripcion
+);
+
+
 module.exports = router;

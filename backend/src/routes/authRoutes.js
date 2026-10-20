@@ -31,5 +31,19 @@ router.get(
   authController.obtenerMiOrganizacion
 );
 
+// ======================================================
+// CONSULTAR MI PERFIL DE VOLUNTARIO
+// ACTIVIDAD 3.2.1
+// ======================================================
+
+router.get(
+  '/mi-voluntario',
+
+  verificarToken,
+
+  verificarRol('VOLUNTARIO'),
+
+  authController.obtenerMiVoluntario
+);
 
 module.exports = router;

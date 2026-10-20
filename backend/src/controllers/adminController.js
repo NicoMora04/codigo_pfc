@@ -265,3 +265,100 @@ exports.rehabilitarUsuario =
     }
 
   };
+
+  // ======================================================
+// LISTAR USUARIOS
+// ======================================================
+
+exports.listarUsuarios =
+  async (req, res) => {
+
+    try {
+
+      const usuarios =
+        await adminService
+          .listarUsuarios();
+
+
+      return res.status(200).json({
+        usuarios
+      });
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL LISTAR USUARIOS:',
+        error
+      );
+
+
+      return res.status(500).json({
+        error:
+          'No se pudieron obtener los usuarios'
+      });
+
+    }
+
+  };
+
+
+  // ======================================================
+// 6. ANULAR REGISTRO INVÁLIDO DE ORGANIZACIÓN
+// ======================================================
+
+exports.anularRegistroOrganizacion =
+  async (req, res) => {
+
+    const {
+      idOrganizacion
+    } = req.params;
+
+    const {
+      motivo
+    } = req.body;
+
+
+    try {
+
+      const resultado =
+        await adminService
+          .anularRegistroOrganizacion(
+            idOrganizacion,
+            motivo
+          );
+
+
+      return res.status(200).json({
+
+        message:
+          'Registro de organización anulado correctamente',
+
+        organizacion:
+          resultado.organizacion
+
+      });
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL ANULAR REGISTRO DE ORGANIZACIÓN:',
+        error
+      );
+
+
+      return res.status(
+        error.status || 500
+      ).json({
+
+        error:
+          error.status
+            ? error.message
+            : 'No se pudo anular el registro de la organización'
+
+      });
+
+    }
+
+  };

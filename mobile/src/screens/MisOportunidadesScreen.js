@@ -41,6 +41,33 @@ export default function MisOportunidadesScreen({
 
   accion();
   };
+
+  const obtenerEstadoMostrado =
+  (estado) => {
+
+    switch (estado) {
+
+      case 'BORRADOR':
+        return 'Borrador';
+
+      case 'PUBLICADA':
+        return 'Publicada';
+
+      case 'CERRADA':
+        return 'Cerrada';
+
+      case 'FINALIZADA':
+        return 'Finalizada';
+
+      case 'CANCELADA':
+        return 'Cancelada';
+
+      default:
+        return estado || 'Sin estado';
+
+    }
+
+  };
   
   const oportunidadesFiltradas = oportunidades.filter((oportunidad) => {
   const coincideEstado =
@@ -54,6 +81,10 @@ export default function MisOportunidadesScreen({
 
   return coincideEstado && coincideBusqueda;
   });
+
+  
+
+  
 
   return (
     <View style={styles.container}>
@@ -70,11 +101,7 @@ export default function MisOportunidadesScreen({
           </Text>
         </View>
 
-        <TouchableOpacity onPress={onLogout}>
-          <Text style={styles.logoutText}>
-            Cerrar sesión
-          </Text>
-        </TouchableOpacity>
+        
       </View>
 
 
@@ -184,7 +211,12 @@ export default function MisOportunidadesScreen({
             </Text>
 
             <Text style={styles.cardState}>
-              Estado: {oportunidad.estado}
+
+              Estado:{' '}
+              {obtenerEstadoMostrado(
+                oportunidad.estado
+              )}
+
             </Text>
 
             <Text style={styles.cardInfo}>
@@ -445,9 +477,32 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    marginBottom: 20
+
+  backgroundColor: '#FFFFFF',
+
+  borderRadius: 16,
+
+  padding: 18,
+
+  marginBottom: 20,
+
+  borderWidth: 1,
+  borderColor: '#DDE5E2',
+
+  elevation: 2,
+
+  shadowColor: '#164C40',
+
+  shadowOffset: {
+    width: 0,
+    height: 2,
   },
 
+  shadowOpacity: 0.08,
+
+  shadowRadius: 5,
+
+},
   title: {
     fontSize: 24,
     fontWeight: 'bold',

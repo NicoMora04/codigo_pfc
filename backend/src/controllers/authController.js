@@ -1158,3 +1158,94 @@ exports.resetPassword = async (req, res) => {
       }
 
     };
+
+    // ======================================================
+// OBTENER MI PERFIL DE VOLUNTARIO
+// ACTIVIDAD 3.2.1
+// ======================================================
+
+exports.obtenerMiVoluntario = async (
+  req,
+  res
+) => {
+
+  try {
+
+    // ==================================================
+    // 1. OBTENER USUARIO AUTENTICADO
+    // ==================================================
+
+    const idUsuario =
+      req.user.id;
+
+
+    // ==================================================
+    // 2. CONSULTAR DATOS DEL VOLUNTARIO
+    // ==================================================
+
+    const resultado =
+      await pool.query(
+        `
+        SELECT
+          u.id_usuario,
+          u.email,
+          u.estado_cuenta,
+
+          pv.nombre,
+          pv.apellido,
+          pv.telefono
+
+        FROM usuario u
+
+        INNER JOIN perfil_voluntario pv
+          ON pv.id_usuario = u.id_usuario
+
+        WHERE u.id_usuario = $1;
+        `,
+        [idUsuario]
+      );
+
+
+    // ==================================================
+    // 3. VERIFICAR EXISTENCIA
+    // ==================================================
+
+    if (
+      resultado.rows.length === 0
+    ) {
+
+      return res.status(404).json({
+        mensaje:
+          'No se encontró el perfil del voluntario'
+      });
+
+    }
+
+
+    // ==================================================
+    // 4. DEVOLVER PERFIL
+    // ==================================================
+
+    return res.status(200).json({
+
+      voluntario:
+        resultado.rows[0]
+
+    });
+
+  }
+  catch (error) {
+
+    console.error(
+      'Error al obtener perfil del voluntario:',
+      error
+    );
+
+    return res.status(500).json({
+      mensaje:
+        'No se pudo obtener la información del voluntario'
+    });
+
+  }
+
+};

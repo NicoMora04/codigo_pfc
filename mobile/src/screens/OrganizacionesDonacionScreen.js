@@ -510,23 +510,25 @@ const obtenerUbicacionActual =
       }
     >
 
-      <Text
-        style={
-          styles.title
-        }
-      >
-        Donar
-      </Text>
+      <View style={styles.header}>
 
+  <Text
+    style={
+      styles.title
+    }
+  >
+    Donar
+  </Text>
 
-      <Text
-        style={
-          styles.subtitle
-        }
-      >
-        Elegí una organización para ofrecer una donación material.
-      </Text>
-      
+  <Text
+    style={
+      styles.subtitle
+    }
+  >
+    Elegí una organización para ofrecer una donación material.
+  </Text>
+
+</View>
       {/* ==================================================
             ACCESO A MIS DONACIONES
         ================================================== */}
@@ -1371,7 +1373,6 @@ const styles =
 
       lineHeight: 20,
 
-      marginBottom: 20,
 
     },
 
@@ -1964,6 +1965,33 @@ myDonationsArrow: {
 
   marginTop:
     -2,
+
+},
+header: {
+
+  backgroundColor: '#FFFFFF',
+
+  borderRadius: 16,
+
+  padding: 18,
+
+  marginBottom: 20,
+
+  borderWidth: 1,
+  borderColor: '#DDE5E2',
+
+  elevation: 2,
+
+  shadowColor: '#164C40',
+
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+
+  shadowOpacity: 0.08,
+
+  shadowRadius: 5,
 
 },
 

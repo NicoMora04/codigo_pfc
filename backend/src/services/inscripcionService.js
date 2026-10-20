@@ -687,7 +687,72 @@ const marcarResultadoParticipacion = async (
 
 };
 
+// ======================================================
+// CONSULTAR PERFIL DE VOLUNTARIO DESDE UNA INSCRIPCIÓN
+// MEJORA 10 - ACTIVIDAD 3.2
+// ======================================================
 
+const obtenerPerfilVoluntarioDeInscripcion = async (
+  idInscripcion,
+  idOrganizacion
+) => {
+
+  // ====================================================
+  // 1. VALIDAR IDENTIFICADOR
+  // ====================================================
+
+  if (
+    typeof idInscripcion !== 'string' ||
+    !uuidRegex.test(idInscripcion)
+  ) {
+
+    const error = new Error(
+      'El identificador de inscripción no es válido'
+    );
+
+    error.status = 400;
+
+    throw error;
+
+  }
+
+
+  // ====================================================
+  // 2. CONSULTAR PERFIL AUTORIZADO
+  // ====================================================
+
+  const perfil =
+    await inscripcionRepository
+      .obtenerPerfilVoluntarioPorInscripcion(
+        idInscripcion,
+        idOrganizacion
+      );
+
+
+  // ====================================================
+  // 3. VERIFICAR RESULTADO
+  // ====================================================
+
+  if (!perfil) {
+
+    const error = new Error(
+      'No se encontró el perfil para esta inscripción'
+    );
+
+    error.status = 404;
+
+    throw error;
+
+  }
+
+
+  // ====================================================
+  // 4. DEVOLVER PERFIL
+  // ====================================================
+
+  return perfil;
+
+};
 
 
 module.exports = {
@@ -698,5 +763,6 @@ module.exports = {
   rechazarInscripcion,
   ocultarInscripcionVoluntario,
   cancelarInscripcionVoluntario,
-  marcarResultadoParticipacion
+  marcarResultadoParticipacion,
+  obtenerPerfilVoluntarioDeInscripcion
 };

@@ -48,6 +48,9 @@ import MisInscripcionesScreen from './src/screens/MisInscripcionesScreen';
 import GestionInscripcionesScreen
   from './src/screens/GestionInscripcionesScreen';
 
+  import PerfilVoluntarioOrganizacionScreen
+  from './src/screens/PerfilVoluntarioOrganizacionScreen';
+
 import VoluntarioBottomNav
   from './src/components/VoluntarioBottomNav';
 
@@ -72,12 +75,28 @@ import DetalleOrganizacionPendienteScreen
 import {
   obtenerOrganizacionesPendientes,
   aprobarOrganizacion,
-  rechazarOrganizacion
-} from './src/services/adminService';  
+  rechazarOrganizacion,
+  obtenerUsuarios,
+  bloquearUsuario,
+  rehabilitarUsuario,
+  obtenerTiposActividadAdmin,
+crearTipoActividadAdmin,
+actualizarTipoActividadAdmin,
+anularRegistroOrganizacion
+} from './src/services/adminService'; 
 
 import MiOrganizacionScreen
   from './src/screens/MiOrganizacionScreen';
 
+import MiReputacionOrganizacionScreen
+  from './src/screens/MiReputacionOrganizacionScreen';  
+
+
+import MiPerfilVoluntarioScreen
+  from './src/screens/MiPerfilVoluntarioScreen';
+
+  import MiReputacionScreen
+  from './src/screens/MiReputacionScreen';
 
 import {
   inscribirseOportunidad,
@@ -87,9 +106,20 @@ import {
   rechazarInscripcion,
   ocultarInscripcion,
   cancelarInscripcion,
-  marcarResultadoParticipacion
+  marcarResultadoParticipacion,
+  obtenerPerfilVoluntarioDeInscripcion
 } from './src/services/inscripcionService';
 
+// ======================================================
+// CALIFICACIONES - ACTIVIDAD 3.2
+// ======================================================
+
+import {
+  calificarVoluntario,
+  obtenerMiReputacionVoluntario,
+  calificarOrganizacion,
+  obtenerMiReputacionOrganizacion
+} from './src/services/calificacionService';
 
 import {
   guardarToken,
@@ -103,7 +133,8 @@ import {
   registrarUsuario,
   recuperarPassword,
   obtenerPerfilProtegido,
-  obtenerMiOrganizacion
+  obtenerMiOrganizacion,
+  obtenerMiVoluntario
 } from './src/services/authService';
 
 import {
@@ -165,10 +196,16 @@ import * as Location
   from 'expo-location';
 
 import {
-    obtenerRecomendacionesVoluntario,
-    obtenerInteresesVoluntario,
-    actualizarInteresesVoluntario
-  } from './src/services/voluntarioService';
+  obtenerRecomendacionesVoluntario,
+  obtenerInteresesVoluntario,
+  actualizarInteresesVoluntario
+} from './src/services/voluntarioService';
+
+import UsuariosAdminScreen
+  from './src/screens/UsuariosAdminScreen';
+
+import TiposActividadAdminScreen
+  from './src/screens/TiposActividadAdminScreen';
 
 export default function App() {
 
@@ -255,6 +292,30 @@ export default function App() {
   setInscripcionesOrganizacion
 ] = useState([]);
 
+const [
+  perfilVoluntarioOrganizacion,
+  setPerfilVoluntarioOrganizacion
+] = useState(null);
+
+const [
+  loadingPerfilVoluntarioOrganizacion,
+  setLoadingPerfilVoluntarioOrganizacion
+] = useState(false);
+
+// ======================================================
+// ESTADO DE CALIFICACIONES
+// ACTIVIDAD 3.2.1
+// ======================================================
+
+const [
+  loadingCalificacion,
+  setLoadingCalificacion
+] = useState(false);
+
+const [
+  loadingCalificacionOrganizacion,
+  setLoadingCalificacionOrganizacion
+] = useState(false);
 const [
   oportunidadGestionando,
   setOportunidadGestionando
@@ -401,12 +462,45 @@ const [
   setDatosOrganizacion
 ] = useState(null);
 
+// ======================================================
+// DATOS DEL PERFIL DEL VOLUNTARIO
+// ACTIVIDAD 3.2.1
+// ======================================================
+
+const [
+  datosVoluntario,
+  setDatosVoluntario
+] = useState(null);
+
+const [
+  loadingDatosVoluntario,
+  setLoadingDatosVoluntario
+] = useState(false);
+
+const [
+  reputacionVoluntario,
+  setReputacionVoluntario
+] = useState(null);
+
+const [
+  loadingReputacionVoluntario,
+  setLoadingReputacionVoluntario
+] = useState(false);
 
 const [
   loadingDatosOrganizacion,
   setLoadingDatosOrganizacion
 ] = useState(false);
 
+const [
+  reputacionOrganizacion,
+  setReputacionOrganizacion
+] = useState(null);
+
+const [
+  loadingReputacionOrganizacion,
+  setLoadingReputacionOrganizacion
+] = useState(false);
 
   const [
   organizacionesDonacion,
@@ -550,6 +644,15 @@ const [
   setOrganizacionesPendientes
 ] = useState([]);
 
+const [
+  usuariosAdmin,
+  setUsuariosAdmin
+] = useState([]);
+
+const [
+  loadingUsuariosAdmin,
+  setLoadingUsuariosAdmin
+] = useState(false);
 
 const [
   loadingAdmin,
@@ -565,6 +668,16 @@ const [
 const [
   loadingAccionAdmin,
   setLoadingAccionAdmin
+] = useState(false);
+
+const [
+  tiposActividadAdmin,
+  setTiposActividadAdmin
+] = useState([]);
+
+const [
+  loadingTiposActividadAdmin,
+  setLoadingTiposActividadAdmin
 ] = useState(false);
 
   // ======================================================
@@ -1488,6 +1601,171 @@ const abrirGestionInscripciones =
   };  
 
   // ======================================================
+// CONSULTAR PERFIL DE VOLUNTARIO DESDE UNA INSCRIPCIÓN
+// MEJORA 10 - ACTIVIDAD 3.2
+// ======================================================
+
+const cargarPerfilVoluntarioOrganizacion = async (
+  idInscripcion
+) => {
+
+  // ====================================================
+  // 1. PREPARAR LA PANTALLA
+  // ====================================================
+
+  setPerfilVoluntarioOrganizacion(null);
+
+  setLoadingPerfilVoluntarioOrganizacion(true);
+
+  setCurrentScreen(
+    'PERFIL_VOLUNTARIO_ORGANIZACION'
+  );
+
+
+  setTimeout(() => {
+
+    scrollRef.current?.scrollTo({
+      y: 0,
+      animated: false
+    });
+
+  }, 0);
+
+
+  try {
+
+    // ==================================================
+    // 2. RECUPERAR TOKEN
+    // ==================================================
+
+    const token =
+      await obtenerToken();
+
+
+    if (!token) {
+
+      await eliminarToken();
+
+      setPerfilVoluntarioOrganizacion(null);
+
+      setInscripcionesOrganizacion([]);
+
+      setOportunidadGestionando(null);
+
+      setCurrentScreen('A01');
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión no es válida. Iniciá sesión nuevamente.'
+      );
+
+      return false;
+
+    }
+
+
+    // ==================================================
+    // 3. CONSULTAR PERFIL AUTORIZADO
+    // ==================================================
+
+    const data =
+      await obtenerPerfilVoluntarioDeInscripcion(
+        token,
+        idInscripcion
+      );
+
+
+    // ==================================================
+    // 4. VALIDAR RESPUESTA
+    // ==================================================
+
+    if (!data?.perfil) {
+
+      throw new Error(
+        'El servidor no devolvió los datos del perfil.'
+      );
+
+    }
+
+
+    // ==================================================
+    // 5. GUARDAR INFORMACIÓN
+    // ==================================================
+
+    setPerfilVoluntarioOrganizacion(
+      data.perfil
+    );
+
+
+    return true;
+
+  }
+  catch (error) {
+
+    // ==================================================
+    // 6. CONTROLAR SESIÓN VENCIDA
+    // ==================================================
+
+    if (
+      error.response?.status === 401
+    ) {
+
+      await eliminarToken();
+
+      setPerfilVoluntarioOrganizacion(null);
+
+      setInscripcionesOrganizacion([]);
+
+      setOportunidadGestionando(null);
+
+      setCurrentScreen('A01');
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión venció. Iniciá sesión nuevamente.'
+      );
+
+      return false;
+
+    }
+
+
+    // ==================================================
+    // 7. MANEJAR OTROS ERRORES
+    // ==================================================
+
+    setPerfilVoluntarioOrganizacion(null);
+
+    setCurrentScreen(
+      'GESTION_INSCRIPCIONES'
+    );
+
+
+    showAlert(
+      'error',
+      'No se pudo consultar el perfil',
+
+      error.response?.data?.mensaje ||
+      error.response?.data?.error ||
+      error.message ||
+      'Ocurrió un error al consultar el perfil del voluntario.'
+    );
+
+
+    return false;
+
+  }
+  finally {
+
+    setLoadingPerfilVoluntarioOrganizacion(false);
+
+  }
+
+};
+
+  // ======================================================
 // ACEPTAR INSCRIPCIÓN - ORGANIZACIÓN
 // ======================================================
 
@@ -1786,6 +2064,273 @@ const handleMarcarResultadoParticipacion = async (
 };
 
 // ======================================================
+// CALIFICAR VOLUNTARIO POR ORGANIZACIÓN
+// ACTIVIDAD 3.2.1
+// ======================================================
+
+const handleCalificarVoluntario = async (
+  idInscripcion,
+  puntuacion,
+  comentario
+) => {
+
+  setLoadingCalificacion(true);
+
+  try {
+
+    // ==================================================
+    // 1. OBTENER TOKEN
+    // ==================================================
+
+    const token =
+      await obtenerToken();
+
+    if (!token) {
+
+      await eliminarToken();
+
+      setCurrentScreen('A01');
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión no es válida. Iniciá sesión nuevamente.'
+      );
+
+      return false;
+
+    }
+
+
+    // ==================================================
+    // 2. ENVIAR CALIFICACIÓN AL BACKEND
+    // ==================================================
+
+    await calificarVoluntario(
+      token,
+      idInscripcion,
+      puntuacion,
+      comentario
+    );
+
+
+    // ==================================================
+    // 3. ACTUALIZAR ESTADO LOCAL DE LA INSCRIPCIÓN
+    // ==================================================
+
+    setInscripcionesOrganizacion(
+      (inscripcionesActuales) =>
+
+        inscripcionesActuales.map(
+          (inscripcion) => {
+
+            if (
+              inscripcion.id_inscripcion ===
+              idInscripcion
+            ) {
+
+              return {
+                ...inscripcion,
+
+                calificada_por_organizacion: true
+              };
+
+            }
+
+            return inscripcion;
+
+          }
+        )
+    );
+
+
+    // ==================================================
+    // 4. CONFIRMAR OPERACIÓN
+    // ==================================================
+
+    return true;
+
+  }
+  catch (error) {
+
+    // ==================================================
+    // 5. MANEJAR SESIÓN VENCIDA
+    // ==================================================
+
+    if (
+      error.response?.status === 401
+    ) {
+
+      await eliminarToken();
+
+      setCurrentScreen('A01');
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión venció. Iniciá sesión nuevamente.'
+      );
+
+      return false;
+
+    }
+
+
+    // ==================================================
+    // 6. MOSTRAR ERROR DEL BACKEND
+    // ==================================================
+
+    showAlert(
+      'error',
+      'No se pudo calificar',
+      error.response?.data?.mensaje ||
+      error.response?.data?.error ||
+      'Ocurrió un error al registrar la calificación.'
+    );
+
+    return false;
+
+  }
+  finally {
+
+    setLoadingCalificacion(false);
+
+  }
+
+};
+
+// ======================================================
+// CALIFICAR ORGANIZACIÓN COMO VOLUNTARIO
+// ACTIVIDAD 3.2.2
+// ======================================================
+
+const handleCalificarOrganizacion = async (
+  idInscripcion,
+  puntuacion,
+  comentario
+) => {
+
+  setLoadingCalificacionOrganizacion(true);
+
+  try {
+
+    // ==================================================
+    // 1. OBTENER TOKEN DEL VOLUNTARIO
+    // ==================================================
+
+    const token = await obtenerToken();
+
+    if (!token) {
+
+      await eliminarToken();
+
+      setInscripcionesVoluntario([]);
+
+      setCurrentScreen('A01');
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión no es válida. Iniciá sesión nuevamente.'
+      );
+
+      return false;
+
+    }
+
+
+    // ==================================================
+    // 2. REGISTRAR CALIFICACIÓN EN EL BACKEND
+    // ==================================================
+
+    await calificarOrganizacion(
+      token,
+      idInscripcion,
+      puntuacion,
+      comentario
+    );
+
+
+    // ==================================================
+    // 3. ACTUALIZAR ESTADO LOCAL DE LA INSCRIPCIÓN
+    // ==================================================
+
+    setInscripcionesVoluntario(
+      (actuales) =>
+        actuales.map(
+          (inscripcion) =>
+
+            inscripcion.id_inscripcion === idInscripcion
+
+              ? {
+                  ...inscripcion,
+                  calificada_por_voluntario: true
+                }
+
+              : inscripcion
+
+        )
+    );
+
+
+    // ==================================================
+    // 4. CONFIRMAR OPERACIÓN
+    // ==================================================
+
+    return true;
+
+  }
+  catch (error) {
+
+    // ==================================================
+    // 5. MANEJAR SESIÓN VENCIDA
+    // ==================================================
+
+    if (
+      error.response?.status === 401
+    ) {
+
+      await eliminarToken();
+
+      setInscripcionesVoluntario([]);
+
+      setCurrentScreen('A01');
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión venció. Iniciá sesión nuevamente.'
+      );
+
+      return false;
+
+    }
+
+
+    // ==================================================
+    // 6. MOSTRAR ERRORES DEL BACKEND
+    // ==================================================
+
+    showAlert(
+      'error',
+      'No se pudo calificar la organización',
+      error.response?.data?.mensaje ||
+      error.response?.data?.error ||
+      'Ocurrió un error al registrar la calificación.'
+    );
+
+    return false;
+
+  }
+  finally {
+
+    setLoadingCalificacionOrganizacion(false);
+
+  }
+
+};
+
+// ======================================================
 // ADMIN - ORGANIZACIONES PENDIENTES
 // ======================================================
 
@@ -1939,6 +2484,733 @@ const cargarOrganizacionesPendientes =
 
   };
 
+// ======================================================
+// ADMIN - USUARIOS
+// ======================================================
+
+const cargarUsuariosAdmin =
+  async () => {
+
+    setLoadingUsuariosAdmin(
+      true
+    );
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setUsuariosAdmin(
+          []
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+        await obtenerUsuarios(
+          token
+        );
+
+
+      const usuarios =
+        data?.usuarios;
+
+
+      if (
+        !Array.isArray(
+          usuarios
+        )
+      ) {
+
+        setUsuariosAdmin(
+          []
+        );
+
+
+        showAlert(
+          'error',
+          'Error',
+          'La respuesta de usuarios no es válida.'
+        );
+
+
+        return false;
+
+      }
+
+
+      setUsuariosAdmin(
+        usuarios
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status ===
+        401
+      ) {
+
+        await eliminarToken();
+
+        setUsuariosAdmin(
+          []
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      if (
+        error.response?.status ===
+        403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'Error',
+        error.response
+          ?.data
+          ?.error ||
+        'No se pudieron obtener los usuarios.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingUsuariosAdmin(
+        false
+      );
+
+    }
+
+  };
+
+
+  const cargarTiposActividadAdmin =
+  async () => {
+
+    setLoadingTiposActividadAdmin(true);
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+        return;
+      }
+
+
+      const data =
+        await obtenerTiposActividadAdmin(
+          token
+        );
+
+
+      setTiposActividadAdmin(
+        Array.isArray(data.tiposActividad)
+          ? data.tiposActividad
+          : []
+      );
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return;
+      }
+
+
+      if (
+        error.response?.status === 403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+        return;
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudieron cargar los tipos',
+        error.response?.data?.error ||
+          'No se pudo obtener el catálogo de tipos de actividad.'
+      );
+
+    }
+    finally {
+
+      setLoadingTiposActividadAdmin(false);
+
+    }
+
+  };
+
+
+  // ======================================================
+// CREAR TIPO DE ACTIVIDAD - ADMIN
+// ======================================================
+
+const handleCrearTipoActividadAdmin =
+  async (nombre) => {
+
+    setLoadingAccionAdmin(true);
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+        return false;
+      }
+
+
+      const data =
+        await crearTipoActividadAdmin(
+          token,
+          nombre
+        );
+
+
+      showAlert(
+        'success',
+        'Tipo creado',
+        data.message ||
+          'El tipo de actividad fue creado correctamente.'
+      );
+
+
+      await cargarTiposActividadAdmin();
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return false;
+      }
+
+
+      if (
+        error.response?.status === 403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+        return false;
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudo crear',
+        error.response?.data?.error ||
+          'No se pudo crear el tipo de actividad.'
+      );
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingAccionAdmin(false);
+
+    }
+
+  };
+
+
+// ======================================================
+// ACTUALIZAR TIPO DE ACTIVIDAD - ADMIN
+// ======================================================
+
+const handleActualizarTipoActividadAdmin =
+  async (
+    idTipoActividad,
+    nombre
+  ) => {
+
+    setLoadingAccionAdmin(true);
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+        return false;
+      }
+
+
+      const data =
+        await actualizarTipoActividadAdmin(
+          token,
+          idTipoActividad,
+          nombre
+        );
+
+
+      showAlert(
+        'success',
+        'Tipo actualizado',
+        data.message ||
+          'El tipo de actividad fue actualizado correctamente.'
+      );
+
+
+      await cargarTiposActividadAdmin();
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return false;
+      }
+
+
+      if (
+        error.response?.status === 403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+        return false;
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudo actualizar',
+        error.response?.data?.error ||
+          'No se pudo actualizar el tipo de actividad.'
+      );
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingAccionAdmin(false);
+
+    }
+
+  };
+
+// ======================================================
+// ADMIN - BLOQUEAR USUARIO
+// ======================================================
+
+const handleBloquearUsuarioAdmin =
+  async (
+    idUsuario,
+    motivo
+  ) => {
+
+    if (
+      !motivo ||
+      !motivo.trim()
+    ) {
+
+      showAlert(
+        'error',
+        'Motivo obligatorio',
+        'Ingresá un motivo para bloquear la cuenta.'
+      );
+
+      return false;
+
+    }
+
+
+    setLoadingAccionAdmin(
+      true
+    );
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+        await bloquearUsuario(
+          token,
+          idUsuario,
+          motivo.trim()
+        );
+
+
+      showAlert(
+        'success',
+        'Cuenta bloqueada',
+        data.message ||
+        'El usuario fue bloqueado correctamente.'
+      );
+
+
+      await cargarUsuariosAdmin();
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status ===
+        401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      if (
+        error.response?.status ===
+        403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudo bloquear',
+        error.response
+          ?.data
+          ?.error ||
+        'No se pudo bloquear la cuenta.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingAccionAdmin(
+        false
+      );
+
+    }
+
+  };
+
+  // ======================================================
+// ADMIN - REHABILITAR USUARIO
+// ======================================================
+
+const handleRehabilitarUsuarioAdmin =
+  async (
+    idUsuario
+  ) => {
+
+    setLoadingAccionAdmin(
+      true
+    );
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+        await rehabilitarUsuario(
+          token,
+          idUsuario
+        );
+
+
+      showAlert(
+        'success',
+        'Cuenta rehabilitada',
+        data.message ||
+        'El usuario fue rehabilitado correctamente.'
+      );
+
+
+      await cargarUsuariosAdmin();
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status ===
+        401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      if (
+        error.response?.status ===
+        403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudo rehabilitar',
+        error.response
+          ?.data
+          ?.error ||
+        'No se pudo rehabilitar la cuenta.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingAccionAdmin(
+        false
+      );
+
+    }
+
+  };
 
   // ======================================================
 // ADMIN - APROBAR ORGANIZACIÓN
@@ -2076,6 +3348,158 @@ const handleAprobarOrganizacion =
 
   };
 
+  // ======================================================
+// ADMIN - ANULAR REGISTRO DE ORGANIZACIÓN
+// ======================================================
+
+const handleAnularRegistroOrganizacion =
+  async (motivo) => {
+
+    if (
+      !organizacionAdminSeleccionada
+        ?.id_organizacion
+    ) {
+
+      showAlert(
+        'error',
+        'Error',
+        'No se pudo identificar la organización.'
+      );
+
+      return false;
+
+    }
+
+
+    if (
+      !motivo ||
+      !motivo.trim()
+    ) {
+
+      showAlert(
+        'error',
+        'Motivo obligatorio',
+        'Ingresá un motivo para anular el registro.'
+      );
+
+      return false;
+
+    }
+
+
+    setLoadingAccionAdmin(true);
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+        return false;
+
+      }
+
+
+      const data =
+        await anularRegistroOrganizacion(
+          token,
+          organizacionAdminSeleccionada
+            .id_organizacion,
+          motivo.trim()
+        );
+
+
+      await cargarOrganizacionesPendientes();
+
+
+      setOrganizacionAdminSeleccionada(
+        null
+      );
+
+
+      setCurrentScreen(
+        'ADMIN_ORGANIZACIONES'
+      );
+
+
+      showAlert(
+        'success',
+        'Registro anulado',
+        data.message ||
+          'El registro de la organización fue anulado correctamente.'
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setCurrentScreen('A01');
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return false;
+
+      }
+
+
+      if (
+        error.response?.status === 403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'No se pudo anular',
+        error.response?.data?.error ||
+          'No se pudo anular el registro de la organización.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingAccionAdmin(false);
+
+    }
+
+  };
 
   // ======================================================
 // ADMIN - RECHAZAR ORGANIZACIÓN
@@ -2301,14 +3725,31 @@ const handleRechazarOrganizacion =
         null
       );
 
+      setPerfilVoluntarioOrganizacion(null);
+
+      setLoadingPerfilVoluntarioOrganizacion(false);
 
       setLoadingDetalle(
         false
       );
+    
+      setDatosVoluntario(null);
 
+    setLoadingDatosVoluntario(false);
+
+    setReputacionVoluntario(null);
+    setLoadingCalificacionOrganizacion(false);
+
+setLoadingReputacionVoluntario(false);
+
+setReputacionOrganizacion(null);
+
+setLoadingReputacionOrganizacion(false);
 
       setFiltrosVoluntario(
         {}
+
+     
       );
 
 
@@ -4069,6 +5510,230 @@ const handleCancelarInscripcion =
 
   };
 
+
+  // ======================================================
+// CARGAR DATOS DEL PERFIL DEL VOLUNTARIO
+// ACTIVIDAD 3.2.1
+// ======================================================
+
+const cargarDatosVoluntario = async () => {
+
+  setLoadingDatosVoluntario(true);
+
+  try {
+
+    // ==================================================
+    // 1. OBTENER TOKEN
+    // ==================================================
+
+    const token =
+      await obtenerToken();
+
+    if (!token) {
+
+      await eliminarToken();
+
+      setDatosVoluntario(null);
+
+      setCurrentScreen('A01');
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión no es válida. Iniciá sesión nuevamente.'
+      );
+
+      return false;
+
+    }
+
+
+    // ==================================================
+    // 2. CONSULTAR PERFIL
+    // ==================================================
+
+    const data =
+      await obtenerMiVoluntario(token);
+
+
+    // ==================================================
+    // 3. ALMACENAR DATOS
+    // ==================================================
+
+    setDatosVoluntario(
+      data.voluntario
+    );
+
+    return true;
+
+  }
+  catch (error) {
+
+    // ==================================================
+    // 4. MANEJAR SESIÓN VENCIDA
+    // ==================================================
+
+    if (
+      error.response?.status === 401
+    ) {
+
+      await eliminarToken();
+
+      setDatosVoluntario(null);
+
+      setCurrentScreen('A01');
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión venció. Iniciá sesión nuevamente.'
+      );
+
+      return false;
+
+    }
+
+
+    // ==================================================
+    // 5. MANEJAR OTROS ERRORES
+    // ==================================================
+
+    setDatosVoluntario(null);
+
+    showAlert(
+      'error',
+      'No se pudo cargar el perfil',
+      error.response?.data?.mensaje ||
+      error.response?.data?.error ||
+      'Ocurrió un error al consultar los datos del voluntario.'
+    );
+
+    return false;
+
+  }
+  finally {
+
+    setLoadingDatosVoluntario(false);
+
+  }
+
+};
+
+// ======================================================
+// CARGAR REPUTACIÓN DEL VOLUNTARIO
+// ACTIVIDAD 3.2.1
+// ======================================================
+
+const cargarReputacionVoluntario = async () => {
+
+  setLoadingReputacionVoluntario(true);
+
+  setReputacionVoluntario(null);
+
+  try {
+
+    // ==================================================
+    // 1. OBTENER TOKEN
+    // ==================================================
+
+    const token =
+      await obtenerToken();
+
+    if (!token) {
+
+      await eliminarToken();
+
+      setDatosVoluntario(null);
+
+      setReputacionVoluntario(null);
+
+      setCurrentScreen('A01');
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión no es válida. Iniciá sesión nuevamente.'
+      );
+
+      return false;
+
+    }
+
+
+    // ==================================================
+    // 2. CONSULTAR REPUTACIÓN
+    // ==================================================
+
+    const data =
+      await obtenerMiReputacionVoluntario(
+        token
+      );
+
+
+    // ==================================================
+    // 3. ALMACENAR RESULTADOS
+    // ==================================================
+
+    setReputacionVoluntario(data);
+
+    return true;
+
+  }
+  catch (error) {
+
+    // ==================================================
+    // 4. MANEJAR SESIÓN VENCIDA
+    // ==================================================
+
+    if (
+      error.response?.status === 401
+    ) {
+
+      await eliminarToken();
+
+      setDatosVoluntario(null);
+
+      setReputacionVoluntario(null);
+
+      setCurrentScreen('A01');
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión venció. Iniciá sesión nuevamente.'
+      );
+
+      return false;
+
+    }
+
+
+    // ==================================================
+    // 5. MANEJAR ERRORES DE CONSULTA
+    // ==================================================
+
+    setReputacionVoluntario(null);
+
+    setCurrentScreen('VOLUNTARIO_PERFIL');
+
+    showAlert(
+      'error',
+      'No se pudo cargar la reputación',
+      error.response?.data?.mensaje ||
+      error.response?.data?.error ||
+      'Ocurrió un error al consultar tus valoraciones.'
+    );
+
+    return false;
+
+  }
+  finally {
+
+    setLoadingReputacionVoluntario(false);
+
+  }
+
+};
    // ======================================================
 // CARGAR DATOS DE LA ORGANIZACIÓN - ORGANIZACIÓN
 // ======================================================
@@ -4138,6 +5803,122 @@ const handleCancelarInscripcion =
 
   };
 
+  // ======================================================
+// CARGAR REPUTACIÓN DE LA ORGANIZACIÓN
+// ACTIVIDAD 3.2.2
+// ======================================================
+
+const cargarReputacionOrganizacion = async () => {
+
+  setLoadingReputacionOrganizacion(true);
+
+  setReputacionOrganizacion(null);
+
+  try {
+
+    // ==================================================
+    // 1. OBTENER TOKEN DE AUTENTICACIÓN
+    // ==================================================
+
+    const token =
+      await obtenerToken();
+
+
+    if (!token) {
+
+      await eliminarToken();
+
+      setDatosOrganizacion(null);
+
+      setReputacionOrganizacion(null);
+
+      setCurrentScreen('A01');
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión no es válida. Iniciá sesión nuevamente.'
+      );
+
+      return false;
+
+    }
+
+
+    // ==================================================
+    // 2. CONSULTAR REPUTACIÓN EN EL BACKEND
+    // ==================================================
+
+    const data =
+      await obtenerMiReputacionOrganizacion(
+        token
+      );
+
+
+    // ==================================================
+    // 3. ALMACENAR RESULTADOS
+    // ==================================================
+
+    setReputacionOrganizacion(data);
+
+    return true;
+
+  }
+  catch (error) {
+
+    // ==================================================
+    // 4. MANEJAR SESIÓN VENCIDA
+    // ==================================================
+
+    if (
+      error.response?.status === 401
+    ) {
+
+      await eliminarToken();
+
+      setDatosOrganizacion(null);
+
+      setReputacionOrganizacion(null);
+
+      setCurrentScreen('A01');
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión venció. Iniciá sesión nuevamente.'
+      );
+
+      return false;
+
+    }
+
+
+    // ==================================================
+    // 5. MANEJAR OTROS ERRORES
+    // ==================================================
+
+    setReputacionOrganizacion(null);
+
+    setCurrentScreen('ORGANIZACION_PERFIL');
+
+    showAlert(
+      'error',
+      'No se pudo cargar la reputación',
+      error.response?.data?.mensaje ||
+      error.response?.data?.error ||
+      'Ocurrió un error al consultar las valoraciones.'
+    );
+
+    return false;
+
+  }
+  finally {
+
+    setLoadingReputacionOrganizacion(false);
+
+  }
+
+};
 
   const cargarOrganizacionesDonacion =
   async (filtros = {}) => {
@@ -5494,10 +7275,12 @@ const cargarDetalleDonacionPropia =
       <ImageBackground
 
         source={
-          require(
-            './assets/fondo.png'
-          )
-        }
+  currentScreen === 'A01'
+    ? require(
+        './assets/fondo.png'
+      )
+    : null
+}
 
         style={
           styles.backgroundImage
@@ -5792,6 +7575,97 @@ const cargarDetalleDonacionPropia =
 
           )}
 
+        {/* ==================================================
+    MI PERFIL - VOLUNTARIO
+    ACTIVIDAD 3.2.1
+================================================== */}
+
+{currentScreen === 'VOLUNTARIO_PERFIL' && (
+
+  <MiPerfilVoluntarioScreen
+
+    voluntario={
+      datosVoluntario
+    }
+
+    loading={
+      loadingDatosVoluntario
+    }
+
+    onLogout={
+      handleLogout
+    }
+
+    onVerReputacion={async () => {
+
+      // Abrir pantalla de reputación
+
+      setCurrentScreen(
+        'VOLUNTARIO_REPUTACION'
+      );
+
+
+      // Volver al inicio del contenido
+
+      setTimeout(() => {
+
+        scrollRef.current?.scrollTo({
+          y: 0,
+          animated: false
+        });
+
+      }, 0);
+
+
+      // Consultar calificaciones recibidas
+
+      await cargarReputacionVoluntario();
+
+    }}
+
+  />
+
+)}
+
+{/* ==================================================
+    MI REPUTACIÓN - VOLUNTARIO
+    ACTIVIDAD 3.2.1
+================================================== */}
+
+{currentScreen === 'VOLUNTARIO_REPUTACION' && (
+
+  <MiReputacionScreen
+
+    reputacion={
+      reputacionVoluntario
+    }
+
+    loading={
+      loadingReputacionVoluntario
+    }
+
+    onVolver={() => {
+
+      setCurrentScreen(
+        'VOLUNTARIO_PERFIL'
+      );
+
+
+      setTimeout(() => {
+
+        scrollRef.current?.scrollTo({
+          y: 0,
+          animated: false
+        });
+
+      }, 0);
+
+    }}
+
+  />
+
+)}
+
 
           {/* ==================================================
               VOLUNTARIO
@@ -6074,6 +7948,13 @@ const cargarDetalleDonacionPropia =
 
               onCambiarFiltroEstado={
                 setFiltroEstadoInscripciones
+              }
+              onCalificarOrganizacion={
+                handleCalificarOrganizacion
+              }
+
+              loadingCalificacion={
+                loadingCalificacionOrganizacion
               }
 
               onVerDetalle={async (
@@ -7491,30 +9372,101 @@ const cargarDetalleDonacionPropia =
 
           )}
 
-          {/* ==================================================
-              MI ORGANIZACIÓN
-          ================================================== */}
+         {/* ==================================================
+    MI ORGANIZACIÓN
+================================================== */}
 
-          {currentScreen ===
-            'ORGANIZACION_PERFIL' && (
+{currentScreen ===
+  'ORGANIZACION_PERFIL' && (
 
-            <MiOrganizacionScreen
+  <MiOrganizacionScreen
 
-              organizacion={
-                datosOrganizacion
-              }
+    organizacion={
+      datosOrganizacion
+    }
 
-              loading={
-                loadingDatosOrganizacion
-              }
+    loading={
+      loadingDatosOrganizacion
+    }
 
-              onLogout={
-                handleLogout
-              }
+    onLogout={
+      handleLogout
+    }
 
-            />
+    onVerReputacion={async () => {
 
-          )}
+      // Abrir pantalla de reputación
+
+      setCurrentScreen(
+        'ORGANIZACION_REPUTACION'
+      );
+
+
+      // Posicionar el contenido al inicio
+
+      setTimeout(() => {
+
+        scrollRef.current?.scrollTo({
+          y: 0,
+          animated: false
+        });
+
+      }, 0);
+
+
+      // Consultar valoraciones recibidas
+
+      await cargarReputacionOrganizacion();
+
+    }}
+
+  />
+
+)}
+
+{/* ==================================================
+    MI REPUTACIÓN - ORGANIZACIÓN
+    ACTIVIDAD 3.2.2
+================================================== */}
+
+{currentScreen ===
+  'ORGANIZACION_REPUTACION' && (
+
+  <MiReputacionOrganizacionScreen
+
+    reputacion={
+      reputacionOrganizacion
+    }
+
+    loading={
+      loadingReputacionOrganizacion
+    }
+
+    onVolver={() => {
+
+      // Regresar al perfil institucional
+
+      setCurrentScreen(
+        'ORGANIZACION_PERFIL'
+      );
+
+
+      // Posicionar al inicio
+
+      setTimeout(() => {
+
+        scrollRef.current?.scrollTo({
+          y: 0,
+          animated: false
+        });
+
+      }, 0);
+
+    }}
+
+  />
+
+)}
 
           {/* ==================================================
                 DONACIONES RECIBIDAS - ORGANIZACIÓN
@@ -7658,6 +9610,14 @@ const cargarDetalleDonacionPropia =
                   loading
                 }
 
+                onCalificarVoluntario={
+                  handleCalificarVoluntario
+                }
+
+                loadingCalificacion={
+                  loadingCalificacion
+                }
+
                 onAceptar={
                   handleAceptarInscripcion
                 }
@@ -7665,6 +9625,7 @@ const cargarDetalleDonacionPropia =
                 onRechazar={
                   handleRechazarInscripcion
                 }
+                onVerPerfil={cargarPerfilVoluntarioOrganizacion}
 
                 onVolver={() => {
 
@@ -7698,7 +9659,54 @@ const cargarDetalleDonacionPropia =
               />
 
             )}
+          {/* ==================================================
+    PERFIL DEL VOLUNTARIO - VISTA ORGANIZACIÓN
+    MEJORA 10 - ACTIVIDAD 3.2
+================================================== */}
 
+{currentScreen ===
+  'PERFIL_VOLUNTARIO_ORGANIZACION' && (
+
+  <PerfilVoluntarioOrganizacionScreen
+
+    perfil={
+      perfilVoluntarioOrganizacion
+    }
+
+    loading={
+      loadingPerfilVoluntarioOrganizacion
+    }
+
+    onVolver={() => {
+
+      // Limpiar los datos del perfil consultado
+
+      setPerfilVoluntarioOrganizacion(null);
+
+
+      // Regresar a la gestión de inscripciones
+
+      setCurrentScreen(
+        'GESTION_INSCRIPCIONES'
+      );
+
+
+      // Posicionar la pantalla al inicio
+
+      setTimeout(() => {
+
+        scrollRef.current?.scrollTo({
+          y: 0,
+          animated: false
+        });
+
+      }, 0);
+
+    }}
+
+  />
+
+)}
 
           {/* ==================================================
               FORMULARIO
@@ -7973,9 +9981,63 @@ const cargarDetalleDonacionPropia =
             handleRechazarOrganizacion
           }
 
+          onAnular={
+            handleAnularRegistroOrganizacion
+          }
+
         />
 
       )}
+
+      {/* ==================================================
+    ADMIN - USUARIOS
+================================================== */}
+
+{currentScreen ===
+  'ADMIN_USUARIOS' && (
+
+  <UsuariosAdminScreen
+  usuarios={
+    usuariosAdmin
+  }
+
+  loading={
+    loadingUsuariosAdmin
+  }
+
+  loadingAccion={
+    loadingAccionAdmin
+  }
+
+  onBloquear={
+    handleBloquearUsuarioAdmin
+  }
+
+  onRehabilitar={
+    handleRehabilitarUsuarioAdmin
+  }
+  
+/>
+
+)}
+
+{currentScreen ===
+  'ADMIN_TIPOS_ACTIVIDAD' && (
+  <TiposActividadAdminScreen
+    tiposActividad={
+      tiposActividadAdmin
+    }
+    loading={
+      loadingTiposActividadAdmin
+    }
+    onNuevo={
+      handleCrearTipoActividadAdmin
+    }
+    onEditar={
+      handleActualizarTipoActividadAdmin
+    }
+  />
+)}
 
 
         </ScrollView>
@@ -7988,35 +10050,36 @@ const cargarDetalleDonacionPropia =
         currentScreen === 'VOLUNTARIO_HOME' ||
         currentScreen === 'VOLUNTARIO_DONAR' ||
         currentScreen === 'MIS_DONACIONES'||
-        currentScreen === 'MIS_INSCRIPCIONES'
+        currentScreen === 'MIS_INSCRIPCIONES'||
+        currentScreen === 'VOLUNTARIO_PERFIL' ||
+        currentScreen === 'VOLUNTARIO_REPUTACION'
       ) && (
 
             <VoluntarioBottomNav
 
               opcionActiva={
 
-                currentScreen ===
-                  'VOLUNTARIO_INICIO'
+              currentScreen === 'VOLUNTARIO_INICIO'
+                ? 'INICIO'
 
-                  ? 'INICIO'
+                : currentScreen === 'VOLUNTARIO_HOME'
+                  ? 'BUSCAR'
 
-                  : currentScreen ===
-                      'VOLUNTARIO_HOME'
-
-                    ? 'BUSCAR'
-
-                    : (
-                      currentScreen ===
-                        'VOLUNTARIO_DONAR' ||
-                      currentScreen ===
-                        'MIS_DONACIONES'
-                    )
-
+                  : (
+                    currentScreen === 'VOLUNTARIO_DONAR' ||
+                    currentScreen === 'MIS_DONACIONES'
+                  )
                     ? 'DONAR'
 
-                    : 'INSCRIPCIONES'
+                    : (
+                          currentScreen === 'VOLUNTARIO_PERFIL' ||
+                          currentScreen === 'VOLUNTARIO_REPUTACION'
+                        )
+                          ? 'PERFIL'
 
-              }
+                      : 'INSCRIPCIONES'
+
+            }
 
 
               onInicio={async () => {
@@ -8144,6 +10207,33 @@ const cargarDetalleDonacionPropia =
 
               }}
 
+            onPerfil={async () => {
+
+              // Mostrar pantalla de perfil
+
+              setCurrentScreen(
+                'VOLUNTARIO_PERFIL'
+              );
+
+
+              // Posicionar pantalla al inicio
+
+              setTimeout(() => {
+
+                scrollRef.current?.scrollTo({
+                  y: 0,
+                  animated: false
+                });
+
+              }, 0);
+
+
+              // Recuperar datos del voluntario
+
+              await cargarDatosVoluntario();
+
+            }}
+
             />
 
             )}
@@ -8158,7 +10248,8 @@ const cargarDetalleDonacionPropia =
               currentScreen === 'ORGANIZACION_INICIO' ||
               currentScreen === 'ORGANIZACION_HOME' ||
               currentScreen === 'ORGANIZACION_DONACIONES' ||
-              currentScreen === 'ORGANIZACION_PERFIL'
+              currentScreen === 'ORGANIZACION_PERFIL'||
+              currentScreen === 'ORGANIZACION_REPUTACION'
             ) && (
 
               <OrganizacionBottomNav
@@ -8270,22 +10361,38 @@ const cargarDetalleDonacionPropia =
               'ADMIN_HOME' ||
 
             currentScreen ===
-              'ADMIN_ORGANIZACIONES'
+              'ADMIN_ORGANIZACIONES' ||
+              currentScreen ===
+              'ADMIN_USUARIOS' ||
+               currentScreen === 'ADMIN_TIPOS_ACTIVIDAD'
           ) && (
 
             <AdminBottomNav
 
               opcionActiva={
+  currentScreen === 'ADMIN_HOME'
+    ? 'INICIO'
+    : currentScreen === 'ADMIN_ORGANIZACIONES' ||
+      currentScreen === 'ADMIN_ORGANIZACION_DETALLE'
+      ? 'ORGANIZACIONES'
+      : currentScreen === 'ADMIN_USUARIOS'
+        ? 'USUARIOS'
+        : currentScreen === 'ADMIN_TIPOS_ACTIVIDAD'
+          ? 'TIPOS_ACTIVIDAD'
+          : 'INICIO'
+}
 
-                currentScreen ===
-                  'ADMIN_HOME'
+              onTiposActividad={async () => {
 
-                  ? 'INICIO'
+                setCurrentScreen(
+                  'ADMIN_TIPOS_ACTIVIDAD'
+                );
 
-                  : 'ORGANIZACIONES'
+                await cargarTiposActividadAdmin();
 
-              }
+                scrollToTop?.();
 
+              }}
 
               onInicio={() => {
 
@@ -8318,6 +10425,31 @@ const cargarDetalleDonacionPropia =
 
 
                 await cargarOrganizacionesPendientes();
+
+
+                setTimeout(
+                  () => {
+
+                    scrollRef.current
+                      ?.scrollTo({
+                        y: 0,
+                        animated: false
+                      });
+
+                  },
+                  0.1
+                );
+
+              }}
+
+              onUsuarios={async () => {
+
+                setCurrentScreen(
+                  'ADMIN_USUARIOS'
+                );
+
+
+                await cargarUsuariosAdmin();
 
 
                 setTimeout(

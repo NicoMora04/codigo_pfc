@@ -13,6 +13,7 @@ export default function MiOrganizacionScreen({
   organizacion,
   loading,
   onLogout,
+  onVerReputacion,
 }) {
 
   if (
@@ -231,7 +232,45 @@ export default function MiOrganizacionScreen({
         </View>
 
       </View>
+      
+      {/* ================================================= */}
+      {/* MI REPUTACIÓN - ACTIVIDAD 3.2.2 */}
+      {/* ================================================= */}
 
+      <View style={styles.reputationCard}>
+
+        <Text style={styles.sectionTitle}>
+          Mi reputación
+        </Text>
+
+        <Text style={styles.reputationIcon}>
+          ⭐
+        </Text>
+
+        <Text style={styles.reputationDescription}>
+          Consultá las calificaciones y comentarios
+          que recibiste de los voluntarios por las
+          actividades realizadas.
+        </Text>
+
+        <TouchableOpacity
+          style={[
+            styles.reputationButton,
+            !onVerReputacion && {
+              opacity: 0.5
+            }
+          ]}
+          onPress={onVerReputacion}
+          disabled={!onVerReputacion}
+        >
+
+          <Text style={styles.reputationButtonText}>
+            Ver mi reputación
+          </Text>
+
+        </TouchableOpacity>
+
+      </View>
 
       {/* ================================================= */}
       {/* ACLARACIÓN */}
@@ -277,9 +316,31 @@ const styles =
 
     header: {
 
-      marginBottom: 20,
+  backgroundColor: '#FFFFFF',
 
-    },
+  borderRadius: 16,
+
+  padding: 18,
+
+  marginBottom: 20,
+
+  borderWidth: 1,
+  borderColor: '#DDE5E2',
+
+  elevation: 2,
+
+  shadowColor: '#164C40',
+
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+
+  shadowOpacity: 0.08,
+
+  shadowRadius: 5,
+
+},
 
 
     title: {
@@ -504,5 +565,62 @@ const styles =
       marginTop: 5,
 
     },
+    // ======================================================
+// REPUTACIÓN DE ORGANIZACIÓN - ACTIVIDAD 3.2.2
+// ======================================================
+
+reputationCard: {
+  backgroundColor: '#FFFFFF',
+
+  borderRadius: 16,
+
+  padding: 20,
+
+  marginBottom: 18,
+
+  borderWidth: 1,
+  borderColor: '#DDE5E2',
+
+  alignItems: 'center',
+},
+
+reputationIcon: {
+  fontSize: 42,
+
+  marginBottom: 10,
+},
+
+reputationDescription: {
+  fontSize: 14,
+
+  color: '#5F6B76',
+
+  textAlign: 'center',
+
+  lineHeight: 21,
+
+  marginBottom: 20,
+},
+
+reputationButton: {
+  width: '100%',
+
+  minHeight: 46,
+
+  borderRadius: 10,
+
+  backgroundColor: '#1F6F5C',
+
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+
+reputationButtonText: {
+  color: '#FFFFFF',
+
+  fontWeight: '700',
+
+  fontSize: 14,
+},
 
   });

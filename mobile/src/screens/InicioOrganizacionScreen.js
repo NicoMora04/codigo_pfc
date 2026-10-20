@@ -20,7 +20,6 @@ export default function InicioOrganizacionScreen({
   onMisOportunidades,
   onNuevaOportunidad,
   onMiOrganizacion,
-  onLogout,
 }) {
 
 
@@ -32,7 +31,7 @@ export default function InicioOrganizacionScreen({
     filtroMapa,
     setFiltroMapa
   ] = useState(
-    'PUBLICADA'
+    'TODAS'
   );
 
 
@@ -188,18 +187,7 @@ export default function InicioOrganizacionScreen({
         </View>
 
 
-        <TouchableOpacity
-          onPress={
-            onLogout
-          }
-        >
-
-          <Text style={styles.logoutText}>
-            Cerrar sesión
-          </Text>
-
-        </TouchableOpacity>
-
+        
       </View>
 
 
@@ -668,9 +656,31 @@ const styles =
 
     header: {
 
-      marginBottom: 18,
+  backgroundColor: '#FFFFFF',
 
-    },
+  borderRadius: 16,
+
+  padding: 18,
+
+  marginBottom: 18,
+
+  borderWidth: 1,
+  borderColor: '#DDE5E2',
+
+  elevation: 2,
+
+  shadowColor: '#164C40',
+
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+
+  shadowOpacity: 0.08,
+
+  shadowRadius: 5,
+
+},
 
 
     title: {

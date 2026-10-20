@@ -69,3 +69,24 @@ export const obtenerMiOrganizacion =
     return response.data;
 
   };
+
+
+  // ======================================================
+// OBTENER MI PERFIL DE VOLUNTARIO
+// ACTIVIDAD 3.2.1
+// ======================================================
+
+export const obtenerMiVoluntario = async (token) => {
+
+  const response = await axios.get(
+    `${BASE_URL}/auth/mi-voluntario`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  );
+
+  return response.data;
+
+};
