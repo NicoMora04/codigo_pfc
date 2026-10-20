@@ -7584,47 +7584,62 @@ const cargarDetalleDonacionPropia =
 
   <MiPerfilVoluntarioScreen
 
-    voluntario={
-      datosVoluntario
-    }
+  voluntario={
+    datosVoluntario
+  }
 
-    loading={
-      loadingDatosVoluntario
-    }
+  loading={
+    loadingDatosVoluntario
+  }
 
-    onLogout={
-      handleLogout
-    }
+  onLogout={
+    handleLogout
+  }
 
-    onVerReputacion={async () => {
+  tiposActividad={
+    tiposActividad
+  }
 
-      // Abrir pantalla de reputación
+  intereses={
+    interesesVoluntario
+  }
 
-      setCurrentScreen(
-        'VOLUNTARIO_REPUTACION'
-      );
+  loadingIntereses={
+    loadingInteresesVoluntario
+  }
+
+  onGuardarIntereses={
+    guardarInteresesVoluntario
+  }
+
+  onVerReputacion={async () => {
+
+    // Abrir pantalla de reputación
+
+    setCurrentScreen(
+      'VOLUNTARIO_REPUTACION'
+    );
 
 
-      // Volver al inicio del contenido
+    // Volver al inicio del contenido
 
-      setTimeout(() => {
+    setTimeout(() => {
 
-        scrollRef.current?.scrollTo({
-          y: 0,
-          animated: false
-        });
+      scrollRef.current?.scrollTo({
+        y: 0,
+        animated: false
+      });
 
-      }, 0);
+    }, 0);
 
 
-      // Consultar calificaciones recibidas
+    // Consultar calificaciones recibidas
 
-      await cargarReputacionVoluntario();
+    await cargarReputacionVoluntario();
 
-    }}
+  }}
 
-  />
-
+/>
 )}
 
 {/* ==================================================
