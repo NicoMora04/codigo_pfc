@@ -15,18 +15,27 @@ import MapaLeaflet
 export default function InicioVoluntarioScreen({
   oportunidades = [],
   loading,
+
+  recomendaciones = [],
+  loadingRecomendaciones,
+  recomendacionesCargadas,
+  ubicacionRecomendaciones,
+  onUsarUbicacion,
+
   onBuscar,
-  onMisInscripciones,
   onVerDetalle,
   onLogout,
 }) {
 
-  const oportunidadesDestacadas =
-    oportunidades.slice(
-      0,
-      3
-    );
+  // ======================================================
+  // TOP DE RECOMENDACIONES
+  // ======================================================
 
+  const recomendacionesDestacadas =
+    recomendaciones.slice(
+      0,
+      5
+    );
 
   return (
 
@@ -189,84 +198,127 @@ export default function InicioVoluntarioScreen({
 
 
       {/* ================================================= */}
-      {/* ACCESOS RÁPIDOS */}
+      {/* RECOMENDACIONES */}
+      {/* ACTIVIDAD 3.1.2 */}
       {/* ================================================= */}
 
-      <Text style={styles.sectionTitle}>
-        Accesos rápidos
-      </Text>
+      <View style={styles.recommendationSection}>
+
+        <View style={styles.recommendationHeader}>
+
+          <View style={styles.recommendationHeaderText}>
+
+            <Text style={styles.sectionTitle}>
+              Recomendadas para vos
+            </Text>
 
 
-      <View style={styles.quickActions}>
+            <Text style={styles.sectionSubtitle}>
+              Ordenadas según tus intereses, participación previa, urgencia y disponibilidad.
+            </Text>
+
+          </View>
+
+        </View>
 
 
-        <TouchableOpacity
-          style={styles.quickCard}
-          onPress={
-            onBuscar
-          }
-        >
+        {/* =============================================== */}
+        {/* UBICACIÓN PARA RECOMENDACIONES */}
+        {/* =============================================== */}
 
-          <Text style={styles.quickIcon}>
-            🔍
-          </Text>
+        <View style={styles.locationCard}>
 
-          <Text style={styles.quickTitle}>
-            Buscar
-          </Text>
+          <View style={styles.locationInfo}>
 
-          <Text style={styles.quickText}>
-            Usá filtros, ubicación y radio de búsqueda.
-          </Text>
-
-        </TouchableOpacity>
+            <Text style={styles.locationIcon}>
+              📍
+            </Text>
 
 
-        <TouchableOpacity
-          style={styles.quickCard}
-          onPress={
-            onMisInscripciones
-          }
-        >
+            <View style={styles.locationTextContainer}>
 
-          <Text style={styles.quickIcon}>
-            📋
-          </Text>
+              <Text style={styles.locationTitle}>
 
-          <Text style={styles.quickTitle}>
-            Mis inscripciones
-          </Text>
+                {ubicacionRecomendaciones
 
-          <Text style={styles.quickText}>
-            Consultá las actividades en las que te inscribiste.
-          </Text>
+                  ? 'Ubicación activada'
 
-        </TouchableOpacity>
+                  : 'Mejorar recomendaciones'}
 
-      </View>
+              </Text>
 
 
-      {/* ================================================= */}
-      {/* DESTACADAS */}
-      {/* ================================================= */}
+              <Text style={styles.locationDescription}>
 
-      {oportunidadesDestacadas.length > 0 && (
+                {ubicacionRecomendaciones
 
-        <View style={styles.featuredSection}>
+                  ? 'También se tiene en cuenta la cercanía dentro de un radio de 25 km.'
 
-          <Text style={styles.sectionTitle}>
-            Algunas oportunidades
-          </Text>
+                  : 'Podés usar tu ubicación para priorizar oportunidades cercanas.'}
 
+              </Text>
 
-          <Text style={styles.sectionSubtitle}>
-            Explorá algunas de las actividades disponibles.
-          </Text>
+            </View>
+
+          </View>
 
 
-          {oportunidadesDestacadas.map(
+          {!ubicacionRecomendaciones && (
+
+            <TouchableOpacity
+              style={styles.locationButton}
+              onPress={
+                onUsarUbicacion
+              }
+              disabled={
+                loadingRecomendaciones
+              }
+            >
+
+              <Text style={styles.locationButtonText}>
+                Usar mi ubicación
+              </Text>
+
+            </TouchableOpacity>
+
+          )}
+
+        </View>
+
+
+        {/* =============================================== */}
+        {/* CARGANDO */}
+        {/* =============================================== */}
+
+        {(
+            loadingRecomendaciones ||
+            !recomendacionesCargadas
+          ) ? (
+
+          <View style={styles.recommendationLoading}>
+
+            <ActivityIndicator
+              size="small"
+              color="#1F6F5C"
+            />
+
+
+            <Text style={styles.loadingText}>
+              Actualizando recomendaciones...
+            </Text>
+
+          </View>
+
+        ) : recomendacionesDestacadas.length > 0 ? (
+
+          /* ============================================= */
+          /* TARJETAS DE RECOMENDACIONES */
+          /* ============================================= */
+
+          recomendacionesDestacadas.map(
             (
-              oportunidad
+              oportunidad,
+              index
             ) => (
 
               <View
@@ -275,6 +327,36 @@ export default function InicioVoluntarioScreen({
                 }
                 style={styles.opportunityCard}
               >
+
+                <View style={styles.cardTopRow}>
+
+                  <View style={styles.cardPositionBadge}>
+
+                    <Text style={styles.cardPositionText}>
+                      #{index + 1}
+                    </Text>
+
+                  </View>
+
+
+                  <View style={styles.scoreBadge}>
+
+                    <Text style={styles.scoreText}>
+                      {Math.round(
+                        Number(
+                          oportunidad.puntaje
+                        ) || 0
+                      )}%
+                    </Text>
+
+                    <Text style={styles.scoreLabel}>
+                      afinidad
+                    </Text>
+
+                  </View>
+
+                </View>
+
 
                 <Text style={styles.opportunityTitle}>
                   {oportunidad.titulo}
@@ -290,13 +372,34 @@ export default function InicioVoluntarioScreen({
                 )}
 
 
-                {!!oportunidad.tipo_actividad && (
+                <View style={styles.metaContainer}>
 
-                  <Text style={styles.infoText}>
-                    {oportunidad.tipo_actividad}
-                  </Text>
+                  {!!oportunidad.tipo_actividad && (
 
-                )}
+                    <View style={styles.metaChip}>
+
+                      <Text style={styles.metaChipText}>
+                        {oportunidad.tipo_actividad}
+                      </Text>
+
+                    </View>
+
+                  )}
+
+
+                  {!!oportunidad.urgencia && (
+
+                    <View style={styles.metaChip}>
+
+                      <Text style={styles.metaChipText}>
+                        Urgencia {oportunidad.urgencia.toLowerCase()}
+                      </Text>
+
+                    </View>
+
+                  )}
+
+                </View>
 
 
                 {(oportunidad.localidad ||
@@ -322,7 +425,7 @@ export default function InicioVoluntarioScreen({
 
                   <Text style={styles.infoText}>
 
-                    Inicio:{' '}
+                    📅 Inicio:{' '}
 
                     {new Date(
                       oportunidad.fecha_inicio
@@ -331,6 +434,67 @@ export default function InicioVoluntarioScreen({
                     )}
 
                   </Text>
+
+                )}
+
+
+                {oportunidad.cupos_disponibles != null && (
+
+                  <Text style={styles.infoText}>
+
+                    👥 Cupos disponibles:{' '}
+
+                    {oportunidad.cupos_disponibles}
+
+                  </Text>
+
+                )}
+
+
+                {/* ======================================= */}
+                {/* EXPLICACIÓN DEL ALGORITMO */}
+                {/* ======================================= */}
+
+                {Array.isArray(
+                  oportunidad.razones
+                ) &&
+                  oportunidad.razones.length > 0 && (
+
+                  <View style={styles.reasonsContainer}>
+
+                    <Text style={styles.reasonsTitle}>
+                      ¿Por qué te la recomendamos?
+                    </Text>
+
+
+                    {oportunidad.razones.map(
+                      (
+                        razon,
+                        razonIndex
+                      ) => (
+
+                        <View
+                          key={
+                            `${oportunidad.id_oportunidad}-${razonIndex}`
+                          }
+                          style={styles.reasonRow}
+                        >
+
+                          <Text style={styles.reasonCheck}>
+                            ✓
+                          </Text>
+
+
+                          <Text style={styles.reasonText}>
+                            {razon}
+                          </Text>
+
+                        </View>
+
+                      )
+                    )}
+
+                  </View>
 
                 )}
 
@@ -353,11 +517,49 @@ export default function InicioVoluntarioScreen({
               </View>
 
             )
-          )}
+          )
 
-        </View>
+        ) : (
 
-      )}
+          /* ============================================= */
+          /* SIN RECOMENDACIONES */
+          /* ============================================= */
+
+          <View style={styles.emptyRecommendationCard}>
+
+            <Text style={styles.emptyRecommendationIcon}>
+              🤝
+            </Text>
+
+
+            <Text style={styles.emptyTitle}>
+              No encontramos recomendaciones por ahora
+            </Text>
+
+
+            <Text style={styles.emptyText}>
+              Cuando haya nuevas oportunidades compatibles con tu perfil, aparecerán acá.
+            </Text>
+
+
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={
+                onBuscar
+              }
+            >
+
+              <Text style={styles.secondaryButtonText}>
+                Explorar oportunidades
+              </Text>
+
+            </TouchableOpacity>
+
+          </View>
+
+        )}
+
+      </View>
 
     </View>
 
@@ -365,6 +567,10 @@ export default function InicioVoluntarioScreen({
 
 }
 
+
+// ======================================================
+// ESTILOS
+// ======================================================
 
 const styles =
   StyleSheet.create({
@@ -379,7 +585,29 @@ const styles =
 
     header: {
 
+      backgroundColor: '#FFFFFF',
+
+      borderRadius: 16,
+
+      padding: 18,
+
       marginBottom: 18,
+
+      borderWidth: 1,
+      borderColor: '#DDE5E2',
+
+      elevation: 2,
+
+      shadowColor: '#164C40',
+
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+
+      shadowOpacity: 0.08,
+
+      shadowRadius: 5,
 
     },
 
@@ -586,67 +814,140 @@ const styles =
     },
 
 
-    quickActions: {
+    recommendationSection: {
 
-      flexDirection: 'row',
-
-      gap: 10,
-
-      marginTop: 8,
-      marginBottom: 22,
+      marginBottom: 26,
 
     },
 
 
-    quickCard: {
+    recommendationHeader: {
+
+      marginBottom: 4,
+
+    },
+
+
+    recommendationHeaderText: {
 
       flex: 1,
 
-      backgroundColor: '#FFFFFF',
+    },
+
+
+    locationCard: {
+
+      backgroundColor: '#F4F9F7',
 
       borderRadius: 14,
 
       padding: 14,
 
+      marginBottom: 12,
+
       borderWidth: 1,
-      borderColor: '#DDE5E2',
+      borderColor: '#CFE4DE',
 
     },
 
 
-    quickIcon: {
+    locationInfo: {
 
-      fontSize: 24,
+      flexDirection: 'row',
 
-      marginBottom: 8,
+      alignItems: 'flex-start',
 
     },
 
 
-    quickTitle: {
+    locationIcon: {
+
+      fontSize: 22,
+
+      marginRight: 10,
+
+    },
+
+
+    locationTextContainer: {
+
+      flex: 1,
+
+    },
+
+
+    locationTitle: {
 
       fontSize: 14,
       fontWeight: '700',
+
       color: '#164C40',
 
     },
 
 
-    quickText: {
+    locationDescription: {
 
-      fontSize: 11,
+      fontSize: 12,
       color: '#5F6B76',
 
-      lineHeight: 16,
+      lineHeight: 17,
 
-      marginTop: 4,
+      marginTop: 3,
 
     },
 
 
-    featuredSection: {
+    locationButton: {
 
-      marginBottom: 20,
+      backgroundColor: '#1F6F5C',
+
+      borderRadius: 10,
+
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+
+      alignItems: 'center',
+
+      marginTop: 12,
+
+    },
+
+
+    locationButtonText: {
+
+      color: '#FFFFFF',
+
+      fontWeight: '700',
+
+      fontSize: 12,
+
+    },
+
+
+    recommendationLoading: {
+
+      backgroundColor: '#FFFFFF',
+
+      borderRadius: 14,
+
+      padding: 20,
+
+      borderWidth: 1,
+      borderColor: '#DDE5E2',
+
+      alignItems: 'center',
+
+    },
+
+
+    loadingText: {
+
+      color: '#5F6B76',
+
+      fontSize: 12,
+
+      marginTop: 8,
 
     },
 
@@ -655,21 +956,101 @@ const styles =
 
       backgroundColor: '#FFFFFF',
 
-      borderRadius: 14,
+      borderRadius: 16,
 
-      padding: 15,
+      padding: 16,
 
-      marginTop: 10,
+      marginBottom: 12,
 
       borderWidth: 1,
       borderColor: '#DDE5E2',
+
+      elevation: 1,
+
+      shadowColor: '#164C40',
+
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+
+      shadowOpacity: 0.06,
+
+      shadowRadius: 4,
+
+    },
+
+
+    cardTopRow: {
+
+      flexDirection: 'row',
+
+      justifyContent: 'space-between',
+
+      alignItems: 'center',
+
+      marginBottom: 10,
+
+    },
+
+
+    cardPositionBadge: {
+
+      backgroundColor: '#EAF5F2',
+
+      borderRadius: 20,
+
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+
+    },
+
+
+    cardPositionText: {
+
+      fontSize: 12,
+
+      fontWeight: '700',
+
+      color: '#1F6F5C',
+
+    },
+
+
+    scoreBadge: {
+
+      flexDirection: 'row',
+
+      alignItems: 'baseline',
+
+      gap: 4,
+
+    },
+
+
+    scoreText: {
+
+      fontSize: 18,
+
+      fontWeight: '800',
+
+      color: '#1F6F5C',
+
+    },
+
+
+    scoreLabel: {
+
+      fontSize: 10,
+
+      color: '#5F6B76',
 
     },
 
 
     opportunityTitle: {
 
-      fontSize: 16,
+      fontSize: 17,
       fontWeight: '700',
       color: '#164C40',
 
@@ -687,12 +1068,111 @@ const styles =
     },
 
 
+    metaContainer: {
+
+      flexDirection: 'row',
+
+      flexWrap: 'wrap',
+
+      gap: 6,
+
+      marginTop: 10,
+
+      marginBottom: 2,
+
+    },
+
+
+    metaChip: {
+
+      backgroundColor: '#EAF5F2',
+
+      borderRadius: 14,
+
+      paddingHorizontal: 9,
+      paddingVertical: 5,
+
+    },
+
+
+    metaChipText: {
+
+      fontSize: 10,
+
+      color: '#164C40',
+
+      fontWeight: '600',
+
+    },
+
+
     infoText: {
 
       fontSize: 12,
       color: '#5F6B76',
 
-      marginTop: 5,
+      marginTop: 6,
+
+    },
+
+
+    reasonsContainer: {
+
+      backgroundColor: '#F7FAF9',
+
+      borderRadius: 12,
+
+      padding: 12,
+
+      marginTop: 14,
+
+    },
+
+
+    reasonsTitle: {
+
+      fontSize: 12,
+
+      fontWeight: '700',
+
+      color: '#164C40',
+
+      marginBottom: 7,
+
+    },
+
+
+    reasonRow: {
+
+      flexDirection: 'row',
+
+      alignItems: 'flex-start',
+
+      marginTop: 4,
+
+    },
+
+
+    reasonCheck: {
+
+      color: '#1F6F5C',
+
+      fontWeight: '700',
+
+      marginRight: 7,
+
+    },
+
+
+    reasonText: {
+
+      flex: 1,
+
+      fontSize: 11,
+
+      color: '#5F6B76',
+
+      lineHeight: 16,
 
     },
 
@@ -703,12 +1183,12 @@ const styles =
 
       borderRadius: 10,
 
-      paddingVertical: 9,
+      paddingVertical: 10,
       paddingHorizontal: 12,
 
       alignItems: 'center',
 
-      marginTop: 12,
+      marginTop: 14,
 
     },
 
@@ -739,6 +1219,8 @@ const styles =
       fontWeight: '700',
       color: '#164C40',
 
+      textAlign: 'center',
+
     },
 
 
@@ -752,6 +1234,57 @@ const styles =
       lineHeight: 17,
 
       marginTop: 5,
+
+    },
+
+
+    emptyRecommendationCard: {
+
+      backgroundColor: '#FFFFFF',
+
+      borderRadius: 16,
+
+      padding: 22,
+
+      borderWidth: 1,
+      borderColor: '#DDE5E2',
+
+      alignItems: 'center',
+
+    },
+
+
+    emptyRecommendationIcon: {
+
+      fontSize: 34,
+
+      marginBottom: 10,
+
+    },
+
+
+    secondaryButton: {
+
+      borderWidth: 1,
+      borderColor: '#1F6F5C',
+
+      borderRadius: 10,
+
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+
+      marginTop: 16,
+
+    },
+
+
+    secondaryButtonText: {
+
+      color: '#1F6F5C',
+
+      fontSize: 12,
+
+      fontWeight: '700',
 
     },
 

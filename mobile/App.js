@@ -161,6 +161,15 @@ import DonacionesRecibidasScreen
 import DetalleDonacionRecibidaScreen
   from './src/screens/DetalleDonacionRecibidaScreen';  
 
+import * as Location
+  from 'expo-location';
+
+import {
+    obtenerRecomendacionesVoluntario,
+    obtenerInteresesVoluntario,
+    actualizarInteresesVoluntario
+  } from './src/services/voluntarioService';
+
 export default function App() {
 
   const [
@@ -194,6 +203,46 @@ export default function App() {
   const [
   loadingInicioVoluntario,
   setLoadingInicioVoluntario
+  ] = useState(false);
+
+  // ======================================================
+  // RECOMENDACIONES - ACTIVIDAD 3.1.2
+  // ======================================================
+
+  const [
+    recomendacionesVoluntario,
+    setRecomendacionesVoluntario
+  ] = useState([]);
+
+
+  const [
+    loadingRecomendaciones,
+    setLoadingRecomendaciones
+  ] = useState(false);
+
+  const [
+    recomendacionesCargadas,
+    setRecomendacionesCargadas
+  ] = useState(false);
+
+  const [
+    ubicacionRecomendaciones,
+    setUbicacionRecomendaciones
+  ] = useState(null);
+
+  // ======================================================
+  // INTERESES DEL VOLUNTARIO
+  // ACTIVIDAD 3.1.2
+  // ======================================================
+
+  const [
+    interesesVoluntario,
+    setInteresesVoluntario
+  ] = useState([]);
+
+  const [
+    loadingInteresesVoluntario,
+    setLoadingInteresesVoluntario
   ] = useState(false);
 
   const [
@@ -560,8 +609,12 @@ const [
 
 
             await cargarTiposActividad();
+            
+            await cargarInteresesVoluntario();
 
             await cargarOportunidadesInicioVoluntario();
+
+            await cargarRecomendacionesVoluntario();
 
             await cargarOportunidadesVoluntario();
 
@@ -769,7 +822,11 @@ const [
 
           await cargarTiposActividad();
 
+          await cargarInteresesVoluntario();
+
           await cargarOportunidadesInicioVoluntario();
+
+          await cargarRecomendacionesVoluntario();
 
           await cargarOportunidadesVoluntario();
 
@@ -2206,9 +2263,32 @@ const handleRechazarOrganizacion =
         []
       );
 
+      setRecomendacionesVoluntario(
+        []
+      );
+
+      setRecomendacionesCargadas(
+        false
+      );
+
+      setLoadingRecomendaciones(
+        false
+      );
+
+      setUbicacionRecomendaciones(
+        null
+      );
 
       setTiposActividad(
         []
+      );
+
+      setInteresesVoluntario(
+        []
+      );
+
+      setLoadingInteresesVoluntario(
+        false
       );
 
 
@@ -2655,6 +2735,416 @@ const handleRechazarOrganizacion =
 
     };
 
+  // ======================================================
+  // CARGAR RECOMENDACIONES DEL VOLUNTARIO
+  // ACTIVIDAD 3.1.2
+  // ======================================================
+
+  const cargarRecomendacionesVoluntario =
+    async (
+      ubicacion = null
+    ) => {
+
+      setLoadingRecomendaciones(
+        true
+      );
+
+
+      try {
+
+        const token =
+          await obtenerToken();
+
+
+        if (!token) {
+
+          await eliminarToken();
+
+
+          setRecomendacionesVoluntario(
+            []
+          );
+
+
+          setCurrentScreen(
+            'A01'
+          );
+
+
+          showAlert(
+            'error',
+            'Sesión finalizada',
+            'Tu sesión no es válida. Iniciá sesión nuevamente.'
+          );
+
+
+          return false;
+
+        }
+
+
+        const data =
+          await obtenerRecomendacionesVoluntario(
+            token,
+            ubicacion
+          );
+
+
+        setRecomendacionesVoluntario(
+
+          Array.isArray(
+            data?.recomendaciones
+          )
+
+            ? data.recomendaciones
+
+            : []
+
+        );
+
+        setRecomendacionesCargadas(
+          true
+        );
+
+        return true;
+
+      }
+      catch (error) {
+
+        console.error(
+          'ERROR AL CARGAR RECOMENDACIONES:',
+          error
+        );
+
+
+        if (
+          error.response?.status === 401
+        ) {
+
+          await eliminarToken();
+
+
+          setRecomendacionesVoluntario(
+            []
+          );
+          
+          setRecomendacionesCargadas(
+            true
+          );
+
+          setCurrentScreen(
+            'A01'
+          );
+
+
+          showAlert(
+            'error',
+            'Sesión finalizada',
+            'Tu sesión venció. Iniciá sesión nuevamente.'
+          );
+
+
+          return false;
+
+        }
+
+
+        setRecomendacionesVoluntario(
+          []
+        );
+
+
+        showAlert(
+          'error',
+          'Recomendaciones no disponibles',
+          error.response
+            ?.data
+            ?.error ||
+          'No se pudieron obtener las recomendaciones.'
+        );
+
+
+        return false;
+
+      }
+      finally {
+
+        setLoadingRecomendaciones(
+          false
+        );
+
+      }
+
+    };
+
+    // ======================================================
+    // CARGAR INTERESES DEL VOLUNTARIO
+    // ACTIVIDAD 3.1.2
+    // ======================================================
+
+    const cargarInteresesVoluntario =
+      async () => {
+
+        setLoadingInteresesVoluntario(
+          true
+        );
+
+        try {
+
+          const token =
+            await obtenerToken();
+
+          if (!token) {
+
+            await eliminarToken();
+
+            setInteresesVoluntario(
+              []
+            );
+
+            setCurrentScreen(
+              'A01'
+            );
+
+            return false;
+
+          }
+
+
+          const data =
+            await obtenerInteresesVoluntario(
+              token
+            );
+
+
+          setInteresesVoluntario(
+
+            Array.isArray(
+              data?.intereses
+            )
+
+              ? data.intereses
+
+              : []
+
+          );
+
+
+          return true;
+
+        }
+        catch (error) {
+
+          console.error(
+            'ERROR AL CARGAR INTERESES:',
+            error
+          );
+
+
+          setInteresesVoluntario(
+            []
+          );
+
+
+          return false;
+
+        }
+        finally {
+
+          setLoadingInteresesVoluntario(
+            false
+          );
+
+        }
+
+      };
+
+  // ======================================================
+  // ACTUALIZAR INTERESES DEL VOLUNTARIO
+  // ACTIVIDAD 3.1.2
+  // ======================================================
+
+  const guardarInteresesVoluntario =
+    async (
+      idsIntereses
+    ) => {
+
+      setLoadingInteresesVoluntario(
+        true
+      );
+
+      try {
+
+        const token =
+          await obtenerToken();
+
+
+        if (!token) {
+
+          await eliminarToken();
+
+          setCurrentScreen(
+            'A01'
+          );
+
+          return false;
+
+        }
+
+
+        const data =
+          await actualizarInteresesVoluntario(
+            token,
+            idsIntereses
+          );
+
+
+        setInteresesVoluntario(
+
+          Array.isArray(
+            data?.intereses
+          )
+
+            ? data.intereses
+
+            : []
+
+        );
+
+
+        // Los intereses modifican el puntaje,
+        // por lo que recalculamos inmediatamente.
+
+        await cargarRecomendacionesVoluntario(
+          ubicacionRecomendaciones
+        );
+
+
+        return true;
+
+      }
+      catch (error) {
+
+        console.error(
+          'ERROR AL ACTUALIZAR INTERESES:',
+          error
+        );
+
+
+        showAlert(
+          'error',
+          'No se pudieron guardar los intereses',
+          error.response
+            ?.data
+            ?.error ||
+          'Ocurrió un error al actualizar tus intereses.'
+        );
+
+
+        return false;
+
+      }
+      finally {
+
+        setLoadingInteresesVoluntario(
+          false
+        );
+
+      }
+
+    };
+
+  // ======================================================
+  // USAR UBICACIÓN PARA RECOMENDACIONES
+  // ======================================================
+
+  const usarUbicacionRecomendaciones =
+    async () => {
+
+      try {
+
+        const permiso =
+          await Location
+            .requestForegroundPermissionsAsync();
+
+
+        if (
+          permiso.status !==
+          'granted'
+        ) {
+
+          showAlert(
+            'error',
+            'Ubicación no disponible',
+            'Podés seguir recibiendo recomendaciones según tus intereses e historial.'
+          );
+
+
+          return;
+
+        }
+
+
+        setLoadingRecomendaciones(
+          true
+        );
+
+
+        const posicion =
+          await Location
+            .getCurrentPositionAsync({
+              accuracy:
+                Location.Accuracy.Balanced
+            });
+
+
+        const ubicacion = {
+
+          latitud:
+            posicion.coords.latitude,
+
+          longitud:
+            posicion.coords.longitude,
+
+          radioKm: 25
+
+        };
+
+
+        setUbicacionRecomendaciones(
+          ubicacion
+        );
+
+
+        await cargarRecomendacionesVoluntario(
+          ubicacion
+        );
+
+      }
+      catch (error) {
+
+        console.error(
+          'ERROR AL OBTENER UBICACIÓN:',
+          error
+        );
+
+
+        showAlert(
+          'error',
+          'Ubicación no disponible',
+          'No se pudo obtener tu ubicación. Las recomendaciones pueden seguir calculándose sin este criterio.'
+        );
+
+      }
+      finally {
+
+        setLoadingRecomendaciones(
+          false
+        );
+
+      }
+
+    };
   // ======================================================
   // OPORTUNIDADES VOLUNTARIO
   // ======================================================
@@ -5324,6 +5814,26 @@ const cargarDetalleDonacionPropia =
                   loadingInicioVoluntario
                 }
 
+                recomendaciones={
+                  recomendacionesVoluntario
+                }
+
+                loadingRecomendaciones={
+                  loadingRecomendaciones
+                }
+
+                recomendacionesCargadas={
+                  recomendacionesCargadas
+                }
+
+                ubicacionRecomendaciones={
+                  ubicacionRecomendaciones
+                }
+
+                onUsarUbicacion={
+                  usarUbicacionRecomendaciones
+                }
+
                 onLogout={
                   handleLogout
                 }
@@ -5637,6 +6147,9 @@ const cargarDetalleDonacionPropia =
 
 
                   await cargarOportunidadesInicioVoluntario();
+                  await cargarRecomendacionesVoluntario(
+                    ubicacionRecomendaciones
+                  );
 
 
                   setTimeout(
@@ -7512,8 +8025,11 @@ const cargarDetalleDonacionPropia =
                   'VOLUNTARIO_INICIO'
                 );
 
+                  await cargarOportunidadesInicioVoluntario();
 
-                await cargarOportunidadesInicioVoluntario();
+                  await cargarRecomendacionesVoluntario(
+                    ubicacionRecomendaciones
+                  );;
 
 
                 setTimeout(

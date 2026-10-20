@@ -13,6 +13,7 @@ const inscripcionRoutes = require('./routes/inscripcionRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const donacionRoutes =require('./routes/donacionRoutes');
 const path = require('path');
+const voluntarioRoutes = require('./routes/voluntarioRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -64,6 +65,7 @@ app.use('/api/tipos-actividad',tipoActividadRoutes);
 app.use('/api/inscripciones', inscripcionRoutes);
 app.use('/api/donaciones',donacionRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/voluntarios',voluntarioRoutes);
 // Ruta de diagnóstico (Health Check)
 app.get('/api/health', async (req, res) => {
   try {
