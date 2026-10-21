@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
   View,
@@ -18,9 +18,60 @@ export default function MiPerfilVoluntarioScreen({
   voluntario,
   loading,
   onVerReputacion,
-  onLogout
+  onLogout,
+  tiposActividad = [],
+  intereses,
+  loadingIntereses = false,
+  onGuardarIntereses
 }) {
 
+  const [interesesSeleccionados, setInteresesSeleccionados] = useState([]);
+
+  useEffect(() => {
+
+  const listaIntereses =
+    Array.isArray(intereses)
+      ? intereses
+      : [];
+
+  const ids = listaIntereses.map((interes) => {
+
+    if (
+      typeof interes === 'object' &&
+      interes !== null
+    ) {
+      return Number(interes.id_tipo_actividad);
+    }
+
+    return Number(interes);
+
+  });
+
+  setInteresesSeleccionados(ids);
+
+}, [intereses]);
+
+
+  const alternarInteres = (idTipoActividad) => {
+    const id = Number(idTipoActividad);
+
+    setInteresesSeleccionados((actuales) => {
+      if (actuales.includes(id)) {
+        return actuales.filter((item) => item !== id);
+      }
+
+      return [...actuales, id];
+    });
+  };
+
+
+  const guardarIntereses = async () => {
+    if (!onGuardarIntereses) {
+      return;
+    }
+
+    await onGuardarIntereses(interesesSeleccionados);
+  };
   // ======================================================
   // ESTADO DE CARGA
   // ======================================================
@@ -196,6 +247,110 @@ export default function MiPerfilVoluntarioScreen({
 
       </View>
 
+      {/* ============================================ */}
+      {/* INTERESES DEL VOLUNTARIO */}
+      {/* ============================================ */}
+
+      <View style={styles.interestsCard}>
+
+        <Text style={styles.sectionTitle}>
+          Mis intereses
+        </Text>
+
+        <Text style={styles.interestsDescription}>
+          Seleccioná los tipos de actividades que más te interesan.
+          Esta información se utiliza para mejorar tus recomendaciones.
+        </Text>
+
+        {loadingIntereses ? (
+
+          <ActivityIndicator
+            size="small"
+            color="#1F6F5C"
+            style={styles.interestsLoader}
+          />
+
+        ) : tiposActividad.length === 0 ? (
+
+          <Text style={styles.emptyInterestsText}>
+            No hay tipos de actividad disponibles.
+          </Text>
+
+        ) : (
+
+          <View style={styles.interestsList}>
+
+            {tiposActividad.map((tipo) => {
+
+              const id = Number(tipo.id_tipo_actividad);
+
+              const seleccionado =
+                interesesSeleccionados.includes(id);
+
+              return (
+
+                <TouchableOpacity
+                  key={id}
+                  style={[
+                    styles.interestOption,
+                    seleccionado && styles.interestOptionSelected
+                  ]}
+                  onPress={() => alternarInteres(id)}
+                >
+
+                  <View
+                    style={[
+                      styles.checkbox,
+                      seleccionado && styles.checkboxSelected
+                    ]}
+                  >
+
+                    {seleccionado && (
+
+                      <Text style={styles.checkboxText}>
+                        ✓
+                      </Text>
+
+                    )}
+
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.interestText,
+                      seleccionado && styles.interestTextSelected
+                    ]}
+                  >
+                    {tipo.nombre}
+                  </Text>
+
+                </TouchableOpacity>
+
+              );
+
+            })}
+
+          </View>
+
+        )}
+
+        <TouchableOpacity
+          style={[
+            styles.saveInterestsButton,
+            loadingIntereses && styles.disabledButton
+          ]}
+          onPress={guardarIntereses}
+          disabled={loadingIntereses}
+        >
+
+          <Text style={styles.saveInterestsButtonText}>
+            Guardar intereses
+          </Text>
+
+        </TouchableOpacity>
+
+      </View>
+
 
       {/* ============================================ */}
       {/* REPUTACIÓN DEL VOLUNTARIO */}
@@ -367,6 +522,106 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#E6F2EF',
     marginVertical: 6
+  },
+
+  interestsCard: {
+  backgroundColor: '#FFFFFF',
+  borderRadius: 16,
+  padding: 18,
+  marginBottom: 18,
+  borderWidth: 1,
+  borderColor: '#DDE5E2'
+},
+
+  interestsDescription: {
+    fontSize: 14,
+    color: '#5F6B76',
+    lineHeight: 20,
+    marginBottom: 16
+  },
+
+  interestsLoader: {
+    marginVertical: 18
+  },
+
+  emptyInterestsText: {
+    fontSize: 14,
+    color: '#5F6B76',
+    marginBottom: 14
+  },
+
+  interestsList: {
+    marginBottom: 18
+  },
+
+  interestOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 46,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#DDE5E2',
+    paddingHorizontal: 12,
+    marginBottom: 10,
+    backgroundColor: '#FFFFFF'
+  },
+
+  interestOptionSelected: {
+    borderColor: '#1F6F5C',
+    backgroundColor: '#EAF5F2'
+  },
+
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#A9B7B3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    backgroundColor: '#FFFFFF'
+  },
+
+  checkboxSelected: {
+    backgroundColor: '#1F6F5C',
+    borderColor: '#1F6F5C'
+  },
+
+  checkboxText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700'
+  },
+
+  interestText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1F2937'
+  },
+
+  interestTextSelected: {
+    color: '#164C40',
+    fontWeight: '600'
+  },
+
+  saveInterestsButton: {
+    width: '100%',
+    minHeight: 46,
+    borderRadius: 10,
+    backgroundColor: '#1F6F5C',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+
+  saveInterestsButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14
+  },
+
+  disabledButton: {
+    opacity: 0.6
   },
 
   reputationCard: {

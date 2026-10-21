@@ -16,6 +16,7 @@ const calificacionRoutes =require('./routes/calificacionRoutes');
 const notificacionRoutes =
   require('./routes/notificacionRoutes');
 const path = require('path');
+const voluntarioRoutes = require('./routes/voluntarioRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -67,6 +68,7 @@ app.use('/api/tipos-actividad',tipoActividadRoutes);
 app.use('/api/inscripciones', inscripcionRoutes);
 app.use('/api/donaciones',donacionRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/voluntarios', voluntarioRoutes);
 app.use('/api/calificaciones', calificacionRoutes);
 app.use(
   '/api/notificaciones',
