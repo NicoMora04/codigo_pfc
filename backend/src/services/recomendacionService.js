@@ -160,8 +160,8 @@ const obtenerRecomendaciones = async (
   );
 
 
-  const tieneHistorial =
-    historialPorTipo.size > 0;
+  const tieneHistorial = [...historialPorTipo.values()]
+  .some((puntaje) => puntaje > 0);
 
 
   // ====================================================
