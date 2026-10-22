@@ -17,6 +17,7 @@ export default function OrganizacionBottomNav({
   onInicio,
   onMisOportunidades,
   onDonaciones,
+  onEstadisticas,
   onMiOrganizacion,
 }) {
 
@@ -104,7 +105,7 @@ export default function OrganizacionBottomNav({
               styles.activeText
           ]}
         >
-          Mis oportunidades
+          Mis Oportunidades
         </Text>
 
       </TouchableOpacity>
@@ -144,6 +145,39 @@ export default function OrganizacionBottomNav({
 
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={styles.item}
+        onPress={
+          onEstadisticas
+        }
+      >
+
+        <Text
+          style={[
+            styles.icon,
+
+            opcionActiva ===
+              'ESTADISTICAS' &&
+              styles.activeText
+          ]}
+        >
+          📊
+        </Text>
+
+
+        <Text
+          style={[
+            styles.label,
+
+            opcionActiva ===
+              'ESTADISTICAS' &&
+              styles.activeText
+          ]}
+        >
+          Estadísticas
+        </Text>
+
+      </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.item}
@@ -223,7 +257,7 @@ const styles =
       alignItems: 'center',
       justifyContent: 'center',
 
-      paddingHorizontal: 4,
+      paddingHorizontal: 2,
 
     },
 
@@ -239,7 +273,7 @@ const styles =
 
     label: {
 
-      fontSize: 11,
+      fontSize: 10,
 
       color: '#5F6B76',
 

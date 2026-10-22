@@ -48,7 +48,7 @@ import MisInscripcionesScreen from './src/screens/MisInscripcionesScreen';
 import GestionInscripcionesScreen
   from './src/screens/GestionInscripcionesScreen';
 
-  import PerfilVoluntarioOrganizacionScreen
+import PerfilVoluntarioOrganizacionScreen
   from './src/screens/PerfilVoluntarioOrganizacionScreen';
 
 import VoluntarioBottomNav
@@ -70,7 +70,7 @@ import OrganizacionesPendientesScreen
   from './src/screens/OrganizacionesPendientesScreen';
 
 import DetalleOrganizacionPendienteScreen
-  from './src/screens/DetalleOrganizacionPendienteScreen';  
+  from './src/screens/DetalleOrganizacionPendienteScreen';
 
 import {
   obtenerOrganizacionesPendientes,
@@ -95,7 +95,7 @@ import MiReputacionOrganizacionScreen
 import MiPerfilVoluntarioScreen
   from './src/screens/MiPerfilVoluntarioScreen';
 
-  import MiReputacionScreen
+import MiReputacionScreen
   from './src/screens/MiReputacionScreen';
 
 import {
@@ -206,6 +206,13 @@ import UsuariosAdminScreen
 
 import TiposActividadAdminScreen
   from './src/screens/TiposActividadAdminScreen';
+
+import EstadisticasOrganizacionScreen
+  from './src/screens/EstadisticasOrganizacionScreen';
+
+import {
+  obtenerEstadisticasOrganizacion
+} from './src/services/estadisticaService';
 
 export default function App() {
 
@@ -461,6 +468,22 @@ const [
   datosOrganizacion,
   setDatosOrganizacion
 ] = useState(null);
+
+// ======================================================
+// ESTADÍSTICAS - ORGANIZACIÓN
+// ACTIVIDAD 3.4.1
+// ======================================================
+
+const [
+  estadisticasOrganizacion,
+  setEstadisticasOrganizacion
+] = useState(null);
+
+
+const [
+  loadingEstadisticasOrganizacion,
+  setLoadingEstadisticasOrganizacion
+] = useState(false);
 
 // ======================================================
 // DATOS DEL PERFIL DEL VOLUNTARIO
@@ -2329,6 +2352,131 @@ const handleCalificarOrganizacion = async (
   }
 
 };
+
+// ======================================================
+// CARGAR ESTADÍSTICAS DE LA ORGANIZACIÓN
+// ACTIVIDAD 3.4.1
+// ======================================================
+
+const cargarEstadisticasOrganizacion =
+  async () => {
+
+    setLoadingEstadisticasOrganizacion(
+      true
+    );
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setEstadisticasOrganizacion(
+          null
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+        await obtenerEstadisticasOrganizacion(
+          token
+        );
+
+
+      setEstadisticasOrganizacion(
+        data?.estadisticas || null
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setEstadisticasOrganizacion(
+          null
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      if (
+        error.response?.status === 403
+      ) {
+
+        showAlert(
+          'error',
+          'Acceso no permitido',
+          error.response?.data?.error ||
+          'No tenés permisos para consultar estas estadísticas.'
+        );
+
+
+        return false;
+
+      }
+
+
+      showAlert(
+        'error',
+        'Error',
+        error.response?.data?.error ||
+        'No se pudieron cargar las estadísticas de la organización.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingEstadisticasOrganizacion(
+        false
+      );
+
+    }
+
+  };
 
 // ======================================================
 // ADMIN - ORGANIZACIONES PENDIENTES
@@ -9386,8 +9534,24 @@ const cargarDetalleDonacionPropia =
             />
 
           )}
+{/* ==================================================
+    Estadisticas de la organización
+================================================== */}
+{currentScreen ===
+  'ORGANIZACION_ESTADISTICAS' && (
 
-         {/* ==================================================
+  <EstadisticasOrganizacionScreen
+    estadisticas={
+      estadisticasOrganizacion
+    }
+    loading={
+      loadingEstadisticasOrganizacion
+    }
+  />
+
+)}
+
+{/* ==================================================
     MI ORGANIZACIÓN
 ================================================== */}
 
@@ -10263,6 +10427,7 @@ const cargarDetalleDonacionPropia =
               currentScreen === 'ORGANIZACION_INICIO' ||
               currentScreen === 'ORGANIZACION_HOME' ||
               currentScreen === 'ORGANIZACION_DONACIONES' ||
+              currentScreen === 'ORGANIZACION_ESTADISTICAS' ||
               currentScreen === 'ORGANIZACION_PERFIL'||
               currentScreen === 'ORGANIZACION_REPUTACION'
             ) && (
@@ -10286,7 +10451,12 @@ const cargarDetalleDonacionPropia =
 
                         ? 'DONACIONES'
 
-                        : 'ORGANIZACION'
+                        : currentScreen ===
+                            'ORGANIZACION_ESTADISTICAS'
+
+                          ? 'ESTADISTICAS'
+
+                          : 'ORGANIZACION'
 
                 }
 
@@ -10362,6 +10532,31 @@ const cargarDetalleDonacionPropia =
                   await cargarDatosOrganizacion();
 
                 }}
+
+              onEstadisticas={async () => {
+
+                setCurrentScreen(
+                  'ORGANIZACION_ESTADISTICAS'
+                );
+
+
+                await cargarEstadisticasOrganizacion();
+
+
+                setTimeout(
+                  () => {
+
+                    scrollRef.current
+                      ?.scrollTo({
+                        y: 0,
+                        animated: false
+                      });
+
+                  },
+                  0.1
+                );
+
+              }}
 
               />
 
