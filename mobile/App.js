@@ -3779,6 +3779,12 @@ const handleRechazarOrganizacion =
     // ==================================================
       await eliminarToken();
 
+      // Limpiar notificaciones de la sesión anterior
+        setNotificacionesVoluntario([]);
+
+        setCantidadNoLeidas(0);
+
+        setLoadingNotificaciones(false);
 
       setOportunidades(
         []
