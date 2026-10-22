@@ -1,7 +1,8 @@
 const notificacionService =
   require('../services/notificacionService');
 
-
+const tokenDispositivoService =
+  require('../services/tokenDispositivoService');
 // ======================================================
 // LISTAR MIS NOTIFICACIONES
 // ACTIVIDAD 3.3.1
@@ -174,7 +175,118 @@ const contarMisNoLeidas = async (
 
 };
 
+// ======================================================
+// REGISTRAR TOKEN DE DISPOSITIVO
+// ACTIVIDAD 3.3.1
+// ======================================================
 
+const registrarTokenDispositivo = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const idUsuario = req.user.id;
+
+    const {
+      token,
+      plataforma
+    } = req.body;
+
+
+    const dispositivo =
+      await tokenDispositivoService.registrarToken({
+        idUsuario,
+        token,
+        plataforma
+      });
+
+
+    return res.status(200).json({
+
+      mensaje:
+        'Dispositivo registrado correctamente',
+
+      dispositivo
+
+    });
+
+  }
+  catch (error) {
+
+    console.error(
+      'Error al registrar dispositivo:',
+      error
+    );
+
+    return res.status(
+      error.status || 500
+    ).json({
+
+      mensaje:
+        error.status
+          ? error.message
+          : 'No se pudo registrar el dispositivo'
+
+    });
+
+  }
+
+};
+
+
+// ======================================================
+// DESACTIVAR TOKEN DE DISPOSITIVO
+// ======================================================
+
+const desactivarTokenDispositivo = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const idUsuario = req.user.id;
+
+    const { token } = req.body;
+
+
+    await tokenDispositivoService.desactivarToken({
+      idUsuario,
+      token
+    });
+
+
+    return res.status(200).json({
+
+      mensaje:
+        'Dispositivo desactivado correctamente'
+
+    });
+
+  }
+  catch (error) {
+
+    console.error(
+      'Error al desactivar dispositivo:',
+      error
+    );
+
+    return res.status(
+      error.status || 500
+    ).json({
+
+      mensaje:
+        error.status
+          ? error.message
+          : 'No se pudo desactivar el dispositivo'
+
+    });
+
+  }
+
+};
 // ======================================================
 // EXPORTACIONES
 // ======================================================
@@ -182,5 +294,7 @@ const contarMisNoLeidas = async (
 module.exports = {
   listarMisNotificaciones,
   marcarComoLeida,
-  contarMisNoLeidas
+  contarMisNoLeidas,
+  registrarTokenDispositivo,
+  desactivarTokenDispositivo
 };

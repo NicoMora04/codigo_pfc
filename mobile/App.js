@@ -3,6 +3,13 @@ import React, {
   useEffect
 } from 'react';
 
+import * as Notifications from 'expo-notifications';
+
+import {
+  registrarDispositivoPush,
+  desactivarDispositivoPush
+} from './src/services/notificacionesPush';
+
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import {
@@ -207,7 +214,43 @@ import UsuariosAdminScreen
 import TiposActividadAdminScreen
   from './src/screens/TiposActividadAdminScreen';
 
-export default function App() {
+
+import NotificacionesVoluntarioScreen
+  from './src/screens/NotificacionesVoluntarioScreen';
+
+
+import {
+  obtenerMisNotificaciones,
+  obtenerCantidadNoLeidas,
+  marcarNotificacionLeida
+} from './src/services/notificacionService';
+// ======================================================
+// REGISTRAR PUSH SIN INTERRUMPIR LA SESIÓN
+// ======================================================
+
+const intentarRegistrarPush = async (jwt) => {
+
+  try {
+
+    await registrarDispositivoPush(jwt);
+
+  }
+  catch (error) {
+
+    console.warn(
+
+      'No se pudo registrar el dispositivo para push:',
+
+      error.response?.data?.mensaje ||
+      error.message
+
+    );
+
+  }
+
+};
+
+  export default function App() {
 
   const [
     currentScreen,
@@ -418,6 +461,22 @@ const [
   ] =
     useState('');
 
+  const [
+  notificacionesVoluntario,
+  setNotificacionesVoluntario
+] = useState([]);
+
+
+const [
+  cantidadNoLeidas,
+  setCantidadNoLeidas
+] = useState(0);
+
+
+const [
+  loadingNotificaciones,
+  setLoadingNotificaciones
+] = useState(false);  
 
   const [
     estadoUbicacionVoluntario,
@@ -732,6 +791,9 @@ const [
             await cargarOportunidadesVoluntario();
 
             await cargarMisInscripciones();
+            await intentarRegistrarPush(
+              token
+            );
 
           }
           else if (
@@ -944,6 +1006,9 @@ const [
           await cargarOportunidadesVoluntario();
 
           await cargarMisInscripciones();
+          await intentarRegistrarPush(
+            data.token
+          );
 
         }
         else if (
@@ -3670,7 +3735,48 @@ const handleRechazarOrganizacion =
 
   const confirmarLogout =
     async () => {
+      
+       // ==================================================
+    // DESACTIVAR NOTIFICACIONES PUSH
+    // ACTIVIDAD 3.3.1
+    // ==================================================
 
+    const jwt = await obtenerToken();
+
+    if (jwt) {
+
+      try {
+
+        await desactivarDispositivoPush(
+          jwt
+        );
+
+      }
+      catch (error) {
+
+        console.warn(
+
+          'No se pudo desactivar el dispositivo push:',
+
+          error.response?.data?.mensaje ||
+          error.message
+
+        );
+
+        showAlert(
+          'error',
+          'Advertencia de notificaciones',
+          'No se pudo desactivar el dispositivo. Podrías seguir recibiendo notificaciones de esta cuenta hasta que se regularice el registro.'
+        );
+
+      }
+
+    }
+
+
+    // ==================================================
+    // ELIMINAR JWT
+    // ==================================================
       await eliminarToken();
 
 
@@ -7259,6 +7365,217 @@ const cargarDetalleDonacionPropia =
   };
 
   // ======================================================
+// OBTENER CANTIDAD DE NOTIFICACIONES NO LEÍDAS
+// ======================================================
+
+const cargarCantidadNoLeidas = async () => {
+
+  try {
+
+    const token = await obtenerToken();
+
+    if (!token) {
+      return;
+    }
+
+
+    const data =
+      await obtenerCantidadNoLeidas(token);
+
+
+    setCantidadNoLeidas(
+      Number(data.cantidad) || 0
+    );
+
+  }
+  catch (error) {
+
+    console.warn(
+      'No se pudo consultar el contador de notificaciones:',
+      error.message
+    );
+
+  }
+
+};
+
+// ======================================================
+// CARGAR HISTORIAL DE NOTIFICACIONES
+// ======================================================
+
+const cargarNotificacionesVoluntario = async () => {
+
+  setLoadingNotificaciones(true);
+
+  try {
+
+    const token = await obtenerToken();
+
+    if (!token) {
+      return;
+    }
+
+
+    const data =
+      await obtenerMisNotificaciones(token);
+
+
+    setNotificacionesVoluntario(
+      data.notificaciones || []
+    );
+
+
+    await cargarCantidadNoLeidas();
+
+  }
+  catch (error) {
+
+    console.error(
+      'Error al obtener notificaciones:',
+      error.message
+    );
+
+
+    showAlert(
+      'error',
+      'Notificaciones',
+      'No se pudieron cargar las notificaciones.'
+    );
+
+  }
+  finally {
+
+    setLoadingNotificaciones(false);
+
+  }
+
+};
+
+// ======================================================
+// MARCAR NOTIFICACIÓN COMO LEÍDA
+// ======================================================
+
+const handleMarcarNotificacionLeida = async (
+  notificacion
+) => {
+
+  try {
+
+    const token = await obtenerToken();
+
+    if (!token) {
+      return false;
+    }
+
+
+    await marcarNotificacionLeida(
+      token,
+      notificacion.id_notificacion
+    );
+
+
+    // Actualizar estado local
+
+    setNotificacionesVoluntario(
+      anteriores =>
+        anteriores.map(item =>
+
+          item.id_notificacion ===
+          notificacion.id_notificacion
+
+            ? {
+                ...item,
+                leida_en:
+                  item.leida_en ||
+                  new Date().toISOString()
+              }
+
+            : item
+
+        )
+    );
+
+
+    await cargarCantidadNoLeidas();
+
+    return true;
+
+  }
+  catch (error) {
+
+    console.error(
+      'Error al marcar notificación:',
+      error.message
+    );
+
+
+    showAlert(
+      'error',
+      'Notificaciones',
+      'No se pudo marcar la notificación como leída.'
+    );
+
+    return false;
+
+  }
+
+};
+
+// ======================================================
+// ACTUALIZAR CONTADOR AL INGRESAR A INICIO
+// ACTIVIDAD 3.3.1
+// ======================================================
+
+useEffect(() => {
+
+  if (currentScreen === 'VOLUNTARIO_INICIO') {
+
+    cargarCantidadNoLeidas();
+
+  }
+
+}, [currentScreen]);
+
+
+// ======================================================
+// ACTUALIZAR NOTIFICACIONES AL RECIBIR PUSH
+// ACTIVIDAD 3.3.1
+// ======================================================
+
+useEffect(() => {
+
+  const suscripcion =
+    Notifications.addNotificationReceivedListener(
+      async () => {
+
+        if (
+          currentScreen === 'VOLUNTARIO_INICIO'
+        ) {
+
+          await cargarCantidadNoLeidas();
+
+        }
+
+        if (
+          currentScreen === 'VOLUNTARIO_NOTIFICACIONES'
+        ) {
+
+          await cargarNotificacionesVoluntario();
+
+        }
+
+      }
+    );
+
+  return () => {
+
+    suscripcion.remove();
+
+  };
+
+}, [currentScreen]);
+
+  // ======================================================
   // RENDER PRINCIPAL
   // ======================================================
 
@@ -7686,6 +8003,110 @@ const cargarDetalleDonacionPropia =
               VOLUNTARIO
           ================================================== */}
 
+          {/* ================================================== */}
+          {/* NOTIFICACIONES DEL VOLUNTARIO - ACTIVIDAD 3.3.1 */}
+          {/* ================================================== */}
+
+          {currentScreen ===
+            'VOLUNTARIO_NOTIFICACIONES' && (
+
+            <NotificacionesVoluntarioScreen
+
+              notificaciones={
+                notificacionesVoluntario
+              }
+
+              loading={
+                loadingNotificaciones
+              }
+
+              onRecargar={
+                cargarNotificacionesVoluntario
+              }
+
+              onMarcarLeida={
+                handleMarcarNotificacionLeida
+              }
+
+              onVolver={async () => {
+
+                setCurrentScreen(
+                  'VOLUNTARIO_INICIO'
+                );
+
+                await cargarCantidadNoLeidas();
+
+              }}
+
+              onVerOportunidad={async (notificacion) => {
+
+                // Actualizar estado de lectura
+
+                if (!notificacion.leida_en) {
+
+                  await handleMarcarNotificacionLeida(
+                    notificacion
+                  );
+
+                }
+
+
+                // Comprobar disponibilidad
+
+                if (
+                  !notificacion.oportunidad_disponible ||
+                  !notificacion.id_oportunidad
+                ) {
+
+                  showAlert(
+                    'error',
+                    'Oportunidad no disponible',
+                    'Esta oportunidad ya no se encuentra disponible.'
+                  );
+
+                  return;
+
+                }
+
+
+                // Recuperar inscripción existente
+
+                const inscripcionExistente =
+                  inscripcionesVoluntario.find(
+                    inscripcion =>
+                      String(inscripcion.id_oportunidad) ===
+                      String(notificacion.id_oportunidad)
+                  );
+
+
+                setEstadoInscripcionDetalle(
+
+                  inscripcionExistente
+                    ? inscripcionExistente.estado
+                    : null
+
+                );
+
+
+                // Registrar origen de navegación
+
+                setOrigenDetalleVoluntario(
+                  'NOTIFICACIONES'
+                );
+
+
+                // Abrir detalle actual de la oportunidad
+
+                await cargarDetalleOportunidadVoluntario(
+                  notificacion.id_oportunidad
+                );
+
+              }}
+
+            />
+
+          )}
+
           {/* ==================================================
                 INICIO VOLUNTARIO
             ================================================== */}
@@ -7723,10 +8144,24 @@ const cargarDetalleDonacionPropia =
                   usarUbicacionRecomendaciones
                 }
 
-                onLogout={
-                  handleLogout
+                cantidadNoLeidas={
+                cantidadNoLeidas
                 }
 
+                onNotificaciones={async () => {
+
+                  setCurrentScreen(
+                   'VOLUNTARIO_NOTIFICACIONES'
+                  );
+
+                  scrollRef.current?.scrollTo({
+                  y: 0,
+                  animated: false
+                  });
+
+                  await cargarNotificacionesVoluntario();
+
+                }}
 
                 onBuscar={async () => {
 
@@ -8031,6 +8466,30 @@ const cargarDetalleDonacionPropia =
                 setOportunidadSeleccionada(
                   null
                 );
+
+                // ======================================================
+                // VOLVER AL CENTRO DE NOTIFICACIONES
+                // ======================================================
+
+                if (
+                  origenDetalleVoluntario ===
+                  'NOTIFICACIONES'
+                ) {
+
+                  setCurrentScreen(
+                    'VOLUNTARIO_NOTIFICACIONES'
+                  );
+
+                  await cargarNotificacionesVoluntario();
+
+                  scrollRef.current?.scrollTo({
+                    y: 0,
+                    animated: false
+                  });
+
+                  return;
+
+                }
                 
                 if (
                   origenDetalleVoluntario ===

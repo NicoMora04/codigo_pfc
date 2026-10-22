@@ -212,23 +212,50 @@ exports.cancelarOportunidad = async (idOportunidad) => {
 // PUBLICAR OPORTUNIDAD
 // ======================================================
 
-exports.publicarOportunidad = async (idOportunidad) => {
+// ======================================================
+// PUBLICAR OPORTUNIDAD
+// ACTIVIDAD 3.3.1 - INTEGRACIÓN TRANSACCIONAL
+// ======================================================
 
-  const result = await pool.query(
-    `
+exports.publicarOportunidad = async (
+  idOportunidad,
+  idOrganizacion,
+  db = pool
+) => {
+
+  const query = `
     UPDATE oportunidad
+
     SET
       estado = 'PUBLICADA',
       actualizado_en = CURRENT_TIMESTAMP
+
     WHERE id_oportunidad = $1
-    RETURNING *
-    `,
-    [idOportunidad]
+
+      AND id_organizacion = $2
+
+      AND estado = 'BORRADOR'
+
+      AND eliminado_en IS NULL
+
+      AND id_ubicacion IS NOT NULL
+
+      AND tipo_ubicacion IS NOT NULL
+
+    RETURNING *;
+  `;
+
+  const { rows } = await db.query(
+    query,
+    [
+      idOportunidad,
+      idOrganizacion
+    ]
   );
 
-  return result.rows[0];
-};
+  return rows[0] || null;
 
+};
 
 exports.buscarOportunidadesPorOrganizacion = async (
   idOrganizacion

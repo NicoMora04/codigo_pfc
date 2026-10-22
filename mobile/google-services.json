@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "588434891658",
+    "project_id": "voluntariado-geolocalizado",
+    "storage_bucket": "voluntariado-geolocalizado.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:588434891658:android:c3a69f3032b53075e35e73",
+        "android_client_info": {
+          "package_name": "com.nicomora04.voluntariado"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIT6NzUnQ9VXPZi286jP_3qYV8MpTZH3Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

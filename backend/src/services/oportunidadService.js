@@ -1,6 +1,24 @@
 const oportunidadRepository =
   require('../repositories/oportunidadRepository');
 
+
+  // ======================================================
+// COLA PERSISTENTE DE NOTIFICACIONES PUSH
+// ACTIVIDAD 3.3.1
+// ======================================================
+
+const envioPushRepository =
+  require('../repositories/envioPushRepository');
+// ======================================================
+// NOTIFICACIONES - ACTIVIDAD 3.3.1
+// ======================================================
+
+const notificacionService =
+  require('./notificacionService');
+
+const pool =
+  require('../config/db');  
+
 const uuidRegex =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -697,12 +715,152 @@ exports.publicarOportunidad = async (
     throw error;
   }
 
-  const oportunidadPublicada =
-    await oportunidadRepository.publicarOportunidad(idOportunidad);
 
-  return oportunidadPublicada;
+// ======================================================
+// PUBLICAR OPORTUNIDAD Y REGISTRAR ENVÍOS PUSH
+// ACTIVIDAD 3.3.1
+// ======================================================
+
+const client = await pool.connect();
+
+let oportunidadPublicada = null;
+
+let cantidadNotificaciones = 0;
+
+let cantidadEnvios = 0;
+
+
+// ======================================================
+// 1. TRANSACCIÓN POSTGRESQL
+// ======================================================
+
+try {
+
+  await client.query('BEGIN');
+
+
+  // ==================================================
+  // 2. PUBLICAR OPORTUNIDAD
+  // ==================================================
+
+  oportunidadPublicada =
+    await oportunidadRepository.publicarOportunidad(
+      idOportunidad,
+      idOrganizacion,
+      client
+    );
+
+
+  if (!oportunidadPublicada) {
+
+    const error = new Error(
+      'La oportunidad ya no está disponible para su publicación'
+    );
+
+    error.status = 409;
+
+    throw error;
+
+  }
+
+
+  // ==================================================
+  // 3. GENERAR NOTIFICACIONES
+  // ==================================================
+
+  const notificaciones =
+    await notificacionService.generarPorNuevaOportunidad(
+      oportunidadPublicada.id_oportunidad,
+      client
+    );
+
+
+  cantidadNotificaciones =
+    notificaciones.length;
+
+
+  // ==================================================
+  // 4. REGISTRAR ENVÍOS PUSH PENDIENTES
+  // ==================================================
+
+  const enviosPendientes =
+    await envioPushRepository
+      .crearPendientesPorOportunidad(
+        oportunidadPublicada.id_oportunidad,
+        client
+      );
+
+
+  cantidadEnvios =
+    enviosPendientes.length;
+
+
+  // ==================================================
+  // 5. CONFIRMAR TRANSACCIÓN
+  // ==================================================
+
+  await client.query('COMMIT');
+
+}
+catch (error) {
+
+  // ==================================================
+  // REVERTIR CAMBIOS ANTE ERRORES
+  // ==================================================
+
+  try {
+
+    await client.query('ROLLBACK');
+
+  }
+  catch (rollbackError) {
+
+    console.error(
+      'Error al revertir la transacción:',
+      rollbackError
+    );
+
+  }
+
+  throw error;
+
+}
+finally {
+
+  // Liberar conexión PostgreSQL
+
+  client.release();
+
+}
+
+
+// ======================================================
+// 6. REGISTRAR RESULTADO
+// ======================================================
+
+console.log(
+  'Oportunidad publicada:',
+  oportunidadPublicada.id_oportunidad
+);
+
+console.log(
+  'Notificaciones generadas:',
+  cantidadNotificaciones
+);
+
+console.log(
+  'Envíos push pendientes creados:',
+  cantidadEnvios
+);
+
+
+// ======================================================
+// 7. DEVOLVER OPORTUNIDAD PUBLICADA
+// ======================================================
+
+return oportunidadPublicada;
+
 };
-
 // ======================================================
 // LISTAR OPORTUNIDADES DE LA ORGANIZACIÓN
 // ======================================================

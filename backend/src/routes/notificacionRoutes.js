@@ -52,7 +52,32 @@ router.patch(
   notificacionController.marcarComoLeida
 );
 
+// ======================================================
+// REGISTRAR DISPOSITIVO
+// POST /api/notificaciones/dispositivos
+// ======================================================
 
+router.post(
+  '/dispositivos',
+
+  verificarToken,
+
+  notificacionController.registrarTokenDispositivo
+);
+
+
+// ======================================================
+// DESACTIVAR DISPOSITIVO
+// DELETE /api/notificaciones/dispositivos
+// ======================================================
+
+router.delete(
+  '/dispositivos',
+
+  verificarToken,
+
+  notificacionController.desactivarTokenDispositivo
+);
 // ======================================================
 // EXPORTACIÓN
 // ======================================================

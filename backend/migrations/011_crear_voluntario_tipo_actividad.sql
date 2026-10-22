@@ -1,7 +1,7 @@
 BEGIN;
 
 -- ============================================================
--- Migración 010
+-- Migración 011
 -- Intereses de tipos de actividad del voluntario
 --
 -- Actividad 3.1.2 - Motor de recomendación basado en reglas

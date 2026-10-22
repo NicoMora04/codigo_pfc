@@ -24,7 +24,8 @@ export default function InicioVoluntarioScreen({
 
   onBuscar,
   onVerDetalle,
-  onLogout,
+    cantidadNoLeidas = 0,
+  onNotificaciones
 }) {
 
   // ======================================================
@@ -42,40 +43,65 @@ export default function InicioVoluntarioScreen({
     <View style={styles.container}>
 
 
-      {/* ================================================= */}
-      {/* ENCABEZADO */}
-      {/* ================================================= */}
+     {/* ================================================= */}
+{/* ENCABEZADO - ACTIVIDAD 3.3.1 */}
+{/* ================================================= */}
 
-      <View style={styles.header}>
+<View style={styles.header}>
 
-        <View style={styles.headerTextContainer}>
+  <View style={styles.headerTopRow}>
 
-          <Text style={styles.title}>
-            Inicio
-          </Text>
+    <Text style={styles.title}>
+      Inicio
+    </Text>
 
 
-          <Text style={styles.subtitle}>
-            Descubrí oportunidades de voluntariado y encontrá dónde podés ayudar.
+    <TouchableOpacity
+
+      style={styles.notificationButton}
+
+      onPress={onNotificaciones}
+
+      accessibilityRole="button"
+
+      accessibilityLabel={
+        `Notificaciones. ${cantidadNoLeidas} sin leer`
+      }
+
+    >
+
+      <Text style={styles.notificationIcon}>
+        🔔
+      </Text>
+
+
+      {cantidadNoLeidas > 0 && (
+
+        <View style={styles.notificationBadge}>
+
+          <Text style={styles.notificationBadgeText}>
+
+            {cantidadNoLeidas > 99
+              ? '99+'
+              : cantidadNoLeidas}
+
           </Text>
 
         </View>
 
+      )}
 
-        <TouchableOpacity
-          onPress={
-            onLogout
-          }
-        >
+    </TouchableOpacity>
 
-          <Text style={styles.logoutText}>
-            Cerrar sesión
-          </Text>
+  </View>
 
-        </TouchableOpacity>
 
-      </View>
+  <Text style={styles.subtitle}>
+    Descubrí oportunidades de voluntariado
+    y encontrá dónde podés ayudar.
+  </Text>
 
+</View>
 
       {/* ================================================= */}
       {/* BIENVENIDA */}
@@ -638,16 +664,6 @@ const styles =
       lineHeight: 20,
 
     },
-
-
-    logoutText: {
-
-      color: '#C62828',
-
-      fontWeight: '600',
-
-    },
-
 
     welcomeCard: {
 
@@ -1287,5 +1303,49 @@ const styles =
       fontWeight: '700',
 
     },
+
+    // ======================================================
+// ENCABEZADO Y CAMPANA DE NOTIFICACIONES
+// ======================================================
+
+headerTopRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginBottom: 8
+},
+
+notificationButton: {
+  width: 46,
+  height: 46,
+  borderRadius: 14,
+  backgroundColor: '#EAF5F2',
+  alignItems: 'center',
+  justifyContent: 'center',
+  position: 'relative'
+},
+
+notificationIcon: {
+  fontSize: 24
+},
+
+notificationBadge: {
+  position: 'absolute',
+  top: -4,
+  right: -5,
+  backgroundColor: '#D32F2F',
+  minWidth: 20,
+  height: 20,
+  borderRadius: 10,
+  paddingHorizontal: 4,
+  alignItems: 'center',
+  justifyContent: 'center'
+},
+
+notificationBadgeText: {
+  color: '#FFFFFF',
+  fontSize: 10,
+  fontWeight: 'bold'
+},
 
   });
