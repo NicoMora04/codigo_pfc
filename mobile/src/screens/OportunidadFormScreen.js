@@ -550,6 +550,16 @@ export default function OportunidadFormScreen({tiposActividad,
 
     <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent}>
     <View style={styles.formContainer}>   
+
+        <TouchableOpacity
+            style={styles.backButton}
+            onPress={onVolver}
+        >
+            <Text style={styles.backButtonText}>
+            ← Volver
+            </Text>
+        </TouchableOpacity>
+
         <View style={styles.titleContainer}>
         <Text style={styles.title}>
         {oportunidadEditando
@@ -573,6 +583,7 @@ export default function OportunidadFormScreen({tiposActividad,
         <TextInput
         style={styles.input}
         placeholder="Ej. Colecta de alimentos"
+        placeholderTextColor="#6B7280"
         value={titulo}
         onChangeText={setTitulo}
         />
@@ -584,6 +595,7 @@ export default function OportunidadFormScreen({tiposActividad,
         <TextInput
         style={[styles.input, styles.textArea]}
         placeholder="Describí la actividad"
+        placeholderTextColor="#6B7280"
         value={descripcion}
         onChangeText={setDescripcion}
         multiline
@@ -661,6 +673,7 @@ export default function OportunidadFormScreen({tiposActividad,
         <TextInput
         style={[styles.input, styles.textArea]}
         placeholder="Ej. Ser mayor de 18 años"
+        placeholderTextColor="#6B7280"
         value={requisitos}
         onChangeText={setRequisitos}
         multiline
@@ -673,6 +686,7 @@ export default function OportunidadFormScreen({tiposActividad,
         <TextInput
         style={styles.input}
         placeholder="Ej. 20"
+        placeholderTextColor="#6B7280"
         value={cupo}
         onChangeText={setCupo}
         keyboardType="numeric"
@@ -874,6 +888,7 @@ export default function OportunidadFormScreen({tiposActividad,
         <TextInput
         style={styles.input}
         placeholder="Ej. 5"
+        placeholderTextColor="#6B7280"
         value={radioKm}
         onChangeText={setRadioKm}
         keyboardType="decimal-pad"
@@ -890,6 +905,7 @@ export default function OportunidadFormScreen({tiposActividad,
     <TextInput
         style={styles.input}
         placeholder="Buscar dirección o lugar..."
+        placeholderTextColor="#6B7280"
         value={busquedaUbicacion}
         onChangeText={(texto) => {
         setBusquedaUbicacion(texto);
@@ -978,14 +994,6 @@ export default function OportunidadFormScreen({tiposActividad,
             </Text>
         </TouchableOpacity>
         )}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={onVolver}
-      >
-        <Text style={styles.backButtonText}>
-          Volver
-        </Text>
-      </TouchableOpacity>
 
         <ConfirmModal
         visible={confirmacionPublicar}
@@ -1019,11 +1027,28 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
 
-  formContainer: {
-    backgroundColor: '#F5F7F8',
-    borderRadius: 24,
-    padding: 18,
+ formContainer: {
+  backgroundColor: '#FFFFFF',
+
+  borderRadius: 20,
+  padding: 10,
+
+  // Borde para diferenciar del fondo
+  borderWidth: 1.5,
+  borderColor: '#B8D3C8',
+
+  // Sombra para dar profundidad
+  shadowColor: '#000000',
+  shadowOffset: {
+    width: 0,
+    height: 3,
   },
+  shadowOpacity: 0.10,
+  shadowRadius: 6,
+
+  // Sombra en Android
+  elevation: 3,
+},
 
   titleContainer: {
   backgroundColor:  '#1F6F5C',
@@ -1053,15 +1078,15 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
 
-  input: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D9DEE3',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    fontSize: 14,
-  },
+ input: {
+  backgroundColor: '#F8FAF9',
+  borderWidth: 1,
+  borderColor: '#C8D6D0',
+  borderRadius: 10,
+  paddingHorizontal: 14,
+  paddingVertical: 11,
+  fontSize: 14,
+},
 
   textArea: {
     minHeight: 90,
@@ -1069,24 +1094,25 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
-    backgroundColor: '#1F6F5C',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 20,
-  },
+  alignSelf: 'flex-start',
+  backgroundColor: '#1F6F5C',
+  borderRadius: 9,
+  paddingVertical: 10,
+  paddingHorizontal: 16,
+  marginBottom: 16,
+},
 
-  backButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+backButtonText: {
+  color: '#FFFFFF',
+  fontSize: 14,
+  fontWeight: '700',
+},
 
     typeContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent:'space-between',
-    rowgap: 10,
+    rowGap: 10,
     marginTop: 4,
     },
 

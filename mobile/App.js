@@ -493,7 +493,7 @@ const [
 
     textoUbicacion: '',
 
-    radioBusquedaKm: '10',
+    radioBusquedaKm: '',
 
   });
 
@@ -512,7 +512,7 @@ const [
 
   textoUbicacion: '',
 
-  radioBusquedaKm: '10',
+  radioBusquedaKm:'',
 
 });
 
@@ -806,7 +806,9 @@ const [
 
 
             await cargarOportunidades();
-
+            await intentarRegistrarPush(
+              token
+            );
           }
           else if (
             rol === 'ADMIN'
@@ -1021,6 +1023,9 @@ const [
 
 
           await cargarOportunidades();
+          await intentarRegistrarPush(
+              data.token
+            )
 
         }
         else if (
@@ -1626,6 +1631,8 @@ const abrirGestionInscripciones =
         'GESTION_INSCRIPCIONES'
       );
 
+      return true;
+
     }
     catch (error) {
 
@@ -1646,7 +1653,7 @@ const abrirGestionInscripciones =
           'Tu sesión venció. Iniciá sesión nuevamente.'
         );
 
-        return;
+        return false;
       }
 
       showAlert(
@@ -3790,6 +3797,20 @@ const handleRechazarOrganizacion =
         []
       );
 
+      setInscripcionesVoluntario([]);
+
+        setInscripcionesOrganizacion([]);
+
+        setOportunidadGestionando(null);
+
+        setFiltroEstadoInscripciones('TODAS');
+
+        setDatosOrganizacion(null);
+
+        // Limpiar información de administración.
+        setUsuariosAdmin([]);
+
+        setTiposActividadAdmin([]);
 
       setOportunidadesVoluntario(
         []
@@ -3883,9 +3904,52 @@ setLoadingReputacionOrganizacion(false);
           '',
 
         radioBusquedaKm:
-          '10',
+          '',
 
       });
+
+  setBusquedaOrganizacion('');
+
+// Restablecer filtro de estado.
+setFiltroEstadoOrganizacion('TODAS');
+
+      // ======================================================
+        // LIMPIAR BÚSQUEDA DE ORGANIZACIONES AL CERRAR SESIÓN
+        // MEJORA UX - ACTIVIDAD 3.3.2
+        // ======================================================
+
+        // Limpiar filtros de búsqueda:
+        // nombre, tipo de actividad y ubicación.
+        setFiltrosDonacion({});
+
+        // Limpiar resultados de la sesión anterior.
+        setOrganizacionesDonacion([]);
+
+        // Limpiar organización seleccionada.
+        setOrganizacionDonacionSeleccionada(null);
+
+        // Restablecer estado de carga.
+        setLoadingDonacion(false);
+
+        // Restablecer filtros y datos de ubicación.
+        setEstadoUbicacionDonacion({
+
+          modoUbicacion: null,
+
+          ubicacionActual: null,
+
+          ubicacionManualSeleccionada: null,
+
+          direccionActual: '',
+
+          textoUbicacion: '',
+
+          radioBusquedaKm: '',
+
+        });
+
+        // Restablecer posición de desplazamiento.
+        setScrollYDonacion(0);
 
 
       setScrollYVoluntario(
@@ -4627,10 +4691,11 @@ setLoadingReputacionOrganizacion(false);
         ) {
 
           showAlert(
-            'error',
-            'Ubicación no disponible',
-            'Podés seguir recibiendo recomendaciones según tus intereses e historial.'
-          );
+          'error',
+          'Permiso de ubicación',
+          'No fue posible acceder a tu ubicación actual. Verificá el permiso de ubicación de la aplicación en la configuración del dispositivo. Podés seguir recibiendo recomendaciones según tus intereses e historial.'
+        );
+
 
 
           return;
@@ -4638,66 +4703,96 @@ setLoadingReputacionOrganizacion(false);
         }
 
 
-        setLoadingRecomendaciones(
-          true
-        );
+        // ==================================================
+      // 2. VERIFICAR QUE EL GPS ESTÉ ACTIVADO
+      // ==================================================
+
+      const serviciosActivos =
+        await Location
+          .hasServicesEnabledAsync();
 
 
-        const posicion =
-          await Location
-            .getCurrentPositionAsync({
-              accuracy:
-                Location.Accuracy.Balanced
-            });
-
-
-        const ubicacion = {
-
-          latitud:
-            posicion.coords.latitude,
-
-          longitud:
-            posicion.coords.longitude,
-
-          radioKm: 25
-
-        };
-
-
-        setUbicacionRecomendaciones(
-          ubicacion
-        );
-
-
-        await cargarRecomendacionesVoluntario(
-          ubicacion
-        );
-
-      }
-      catch (error) {
-
-        console.error(
-          'ERROR AL OBTENER UBICACIÓN:',
-          error
-        );
-
+      if (!serviciosActivos) {
 
         showAlert(
           'error',
-          'Ubicación no disponible',
-          'No se pudo obtener tu ubicación. Las recomendaciones pueden seguir calculándose sin este criterio.'
+          'Ubicación desactivada',
+          'La ubicación de tu dispositivo está desactivada. Activala desde la configuración del celular e intentá nuevamente.'
         );
 
-      }
-      finally {
-
-        setLoadingRecomendaciones(
-          false
-        );
+        return;
 
       }
 
-    };
+
+      // ==================================================
+      // 3. OBTENER UBICACIÓN ACTUAL
+      // ==================================================
+
+      setLoadingRecomendaciones(
+        true
+      );
+
+
+      const posicion =
+        await Location
+          .getCurrentPositionAsync({
+            accuracy:
+              Location.Accuracy.Balanced
+          });
+
+
+      const ubicacion = {
+
+        latitud:
+          posicion.coords.latitude,
+
+        longitud:
+          posicion.coords.longitude,
+
+        radioKm: 25
+
+      };
+
+
+      // ==================================================
+      // 4. ACTUALIZAR RECOMENDACIONES
+      // ==================================================
+
+      setUbicacionRecomendaciones(
+        ubicacion
+      );
+
+
+      await cargarRecomendacionesVoluntario(
+        ubicacion
+      );
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL OBTENER UBICACIÓN:',
+        error
+      );
+
+
+      showAlert(
+        'error',
+        'Ubicación no disponible',
+        'No se pudo obtener tu ubicación actual. Verificá que la ubicación esté activada en tu celular e intentá nuevamente.'
+      );
+
+    }
+    finally {
+
+      setLoadingRecomendaciones(
+        false
+      );
+
+    }
+
+  };
   // ======================================================
   // OPORTUNIDADES VOLUNTARIO
   // ======================================================
@@ -6257,6 +6352,7 @@ const cargarDetalleDonacionRecibida =
       setCurrentScreen(
         'ORGANIZACION_DONACION_DETALLE'
       );
+      return true
 
     }
     catch (error) {
@@ -6285,7 +6381,7 @@ const cargarDetalleDonacionRecibida =
           'Tu sesión venció. Iniciá sesión nuevamente.'
         );
 
-        return;
+        return false;
 
       }
 
@@ -6366,7 +6462,7 @@ const handleAceptarDonacionRecibida =
       showAlert(
         'success',
         'Donación aceptada',
-        'La donación fue aceptada correctamente.'
+        'La donación fue aceptada correctamente. El siguiente paso es coordinar la entrega con el voluntario desde esta misma pantalla.'
       );
 
     }
@@ -7528,13 +7624,17 @@ const handleMarcarNotificacionLeida = async (
 };
 
 // ======================================================
-// ACTUALIZAR CONTADOR AL INGRESAR A INICIO
-// ACTIVIDAD 3.3.1
+// ACTUALIZAR CONTADOR DE NOTIFICACIONES
+// VOLUNTARIOS Y ORGANIZACIONES
+// ACTIVIDAD 3.3.2
 // ======================================================
 
 useEffect(() => {
 
-  if (currentScreen === 'VOLUNTARIO_INICIO') {
+  if (
+    currentScreen === 'VOLUNTARIO_INICIO' ||
+    currentScreen === 'ORGANIZACION_INICIO'
+  ) {
 
     cargarCantidadNoLeidas();
 
@@ -7552,25 +7652,31 @@ useEffect(() => {
 
   const suscripcion =
     Notifications.addNotificationReceivedListener(
-      async () => {
+          async () => {
 
-        if (
-          currentScreen === 'VOLUNTARIO_INICIO'
-        ) {
+      // Actualizar contador de ambos roles.
 
-          await cargarCantidadNoLeidas();
+      if (
+        currentScreen === 'VOLUNTARIO_INICIO' ||
+        currentScreen === 'ORGANIZACION_INICIO'
+      ) {
 
-        }
-
-        if (
-          currentScreen === 'VOLUNTARIO_NOTIFICACIONES'
-        ) {
-
-          await cargarNotificacionesVoluntario();
-
-        }
+        await cargarCantidadNoLeidas();
 
       }
+
+      // Actualizar historial de ambos roles.
+
+      if (
+        currentScreen === 'VOLUNTARIO_NOTIFICACIONES' ||
+        currentScreen === 'ORGANIZACION_NOTIFICACIONES'
+      ) {
+
+        await cargarNotificacionesVoluntario();
+
+      }
+
+    }
     );
 
   return () => {
@@ -8041,6 +8147,53 @@ useEffect(() => {
                 );
 
                 await cargarCantidadNoLeidas();
+
+              }}
+
+              onVerDonaciones={async (notificacion) => {
+
+                
+                // Cargar donaciones actualizadas.
+                const cargadas = await cargarMisDonaciones(null);
+
+                if (!cargadas) {
+                  return;
+                }
+
+                // Restablecer filtro.
+                setFiltroEstadoDonaciones(null);
+
+                // Abrir pantalla.
+                setCurrentScreen('MIS_DONACIONES');
+
+                // Marcar como leída.
+                if (!notificacion.leida_en) {
+                  await handleMarcarNotificacionLeida(
+                    notificacion
+                  );
+                }
+
+              }}
+
+              onVerInscripciones={async (notificacion) => {
+
+              
+                // Cargar inscripciones actualizadas.
+                const cargadas = await cargarMisInscripciones();
+
+                if (!cargadas) {
+                  return;
+                }
+
+                // Abrir pantalla.
+                setCurrentScreen('MIS_INSCRIPCIONES');
+
+                // Marcar como leída.
+                if (!notificacion.leida_en) {
+                  await handleMarcarNotificacionLeida(
+                    notificacion
+                  );
+                }
 
               }}
 
@@ -8921,6 +9074,171 @@ useEffect(() => {
       />
 
     )}  
+    
+    {/* ==================================================
+    NOTIFICACIONES DE ORGANIZACIÓN
+    ACTIVIDAD 3.3.2
+================================================== */}
+
+{currentScreen ===
+  'ORGANIZACION_NOTIFICACIONES' && (
+
+  <NotificacionesVoluntarioScreen
+
+    modoOrganizacion={true}
+
+    notificaciones={
+      notificacionesVoluntario
+    }
+
+    loading={
+      loadingNotificaciones
+    }
+
+    onRecargar={
+      cargarNotificacionesVoluntario
+    }
+
+    onMarcarLeida={
+      handleMarcarNotificacionLeida
+    }
+
+    onVolver={async () => {
+
+      setCurrentScreen(
+        'ORGANIZACION_INICIO'
+      );
+
+      await cargarCantidadNoLeidas();
+
+      scrollRef.current?.scrollTo({
+        y: 0,
+        animated: false
+      });
+
+    }}
+
+    onVerDonacion={async (notificacion) => {
+
+       
+
+        if (!notificacion.id_donacion) {
+          showAlert(
+            'error',
+            'Donación no disponible',
+            'No se pudo identificar la donación.'
+          );
+          return;
+        }
+
+        // Preparar listado para el regreso.
+        await cargarDonacionesRecibidas('TODAS');
+
+        // Abrir detalle.
+       const detalleAbierto =
+          await cargarDetalleDonacionRecibida(
+            notificacion.id_donacion
+          );
+
+        if (!detalleAbierto) {
+          return;
+        }
+
+        // Marcar notificación como leída.
+        if (!notificacion.leida_en) {
+          await handleMarcarNotificacionLeida(
+            notificacion
+          );
+        }
+
+      }}
+
+      onGestionarInscripciones={async (notificacion) => {
+
+        
+
+        if (!notificacion.id_oportunidad) {
+          showAlert(
+            'error',
+            'Oportunidad no disponible',
+            'No se pudo identificar la oportunidad.'
+          );
+          return;
+        }
+
+        try {
+
+          const token = await obtenerToken();
+
+          if (!token) {
+            showAlert(
+              'error',
+              'Sesión finalizada',
+              'Iniciá sesión nuevamente.'
+            );
+            return;
+          }
+
+          // Obtener las oportunidades de la organización.
+          const data = await obtenerMisOportunidades(token);
+
+          const listaOportunidades =
+            data.oportunidades || [];
+
+          const oportunidad = listaOportunidades.find(
+            item =>
+              String(item.id_oportunidad) ===
+              String(notificacion.id_oportunidad)
+          );
+
+          if (!oportunidad) {
+            showAlert(
+              'error',
+              'Oportunidad no disponible',
+              'No se encontró la oportunidad asociada.'
+            );
+            return;
+          }
+
+          setOportunidades(listaOportunidades);
+
+          // Abrir gestión de inscripciones.
+          const gestionAbierta =
+            await abrirGestionInscripciones(
+              oportunidad
+            );
+
+          if (!gestionAbierta) {
+            return;
+          }
+
+          // Marcar como leída.
+          if (!notificacion.leida_en) {
+            await handleMarcarNotificacionLeida(
+              notificacion
+            );
+          }
+
+        } catch (error) {
+
+          console.error(
+            'Error al abrir inscripciones:',
+            error
+          );
+
+          showAlert(
+            'error',
+            'Error',
+            'No se pudo acceder a las inscripciones.'
+          );
+
+        }
+
+      }}
+
+  />
+
+)}
 
           {/* ==================================================
               INICIO ORGANIZACIÓN
@@ -8938,6 +9256,25 @@ useEffect(() => {
               loading={
                 loading
               }
+
+              cantidadNoLeidas={
+                cantidadNoLeidas
+              }
+
+              onNotificaciones={async () => {
+
+                setCurrentScreen(
+                  'ORGANIZACION_NOTIFICACIONES'
+                );
+
+                scrollRef.current?.scrollTo({
+                  y: 0,
+                  animated: false
+                });
+
+                await cargarNotificacionesVoluntario();
+
+              }}
 
               onLogout={
                 handleLogout

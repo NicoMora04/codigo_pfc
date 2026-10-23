@@ -191,21 +191,53 @@ exports.actualizarOportunidad = async (idOportunidad, datos) => {
 // CANCELAR OPORTUNIDAD
 // ======================================================
 
-exports.cancelarOportunidad = async (idOportunidad) => {
+// ======================================================
+// CANCELAR OPORTUNIDAD
+// SOPORTE TRANSACCIONAL - ACTIVIDAD 3.3.2
+// ======================================================
 
-  const result = await pool.query(
-    `
+exports.cancelarOportunidad = async (
+  idOportunidad,
+  idOrganizacion,
+  db = pool
+) => {
+
+  const query = `
+
     UPDATE oportunidad
+
     SET
       estado = 'CANCELADA',
       actualizado_en = CURRENT_TIMESTAMP
-    WHERE id_oportunidad = $1
-    RETURNING *
-    `,
-    [idOportunidad]
-  );
 
-  return result.rows[0];
+    WHERE id_oportunidad = $1
+
+      AND id_organizacion = $2
+
+      AND estado IN (
+        'BORRADOR',
+        'PUBLICADA'
+      )
+
+      AND eliminado_en IS NULL
+
+    RETURNING *;
+
+  `;
+
+
+  const { rows } =
+    await db.query(
+      query,
+      [
+        idOportunidad,
+        idOrganizacion
+      ]
+    );
+
+
+  return rows[0] || null;
+
 };
 
 // ======================================================
@@ -279,6 +311,13 @@ exports.buscarOportunidadesPorOrganizacion = async (
         WHERE i.id_oportunidad = o.id_oportunidad
           AND i.estado = 'ACEPTADA'
       ) AS cupos_ocupados,
+
+      (
+        SELECT COUNT(*)::int
+        FROM inscripcion i
+        WHERE i.id_oportunidad = o.id_oportunidad
+          AND i.estado = 'PENDIENTE'
+      ) AS inscripciones_pendientes,
 
       GREATEST(
         o.cupo_total - (

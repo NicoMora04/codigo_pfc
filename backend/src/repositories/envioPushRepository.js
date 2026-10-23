@@ -75,6 +75,72 @@ const crearPendientesPorOportunidad = async (
 };
 
 // ======================================================
+// REGISTRAR ENVÍOS PUSH PARA UNA NOTIFICACIÓN
+// ACTIVIDAD 3.3.2
+// ======================================================
+
+const crearPendientesPorNotificacion = async (
+  idNotificacion,
+  db = pool
+) => {
+
+  const query = `
+
+    INSERT INTO envio_push (
+
+      id_notificacion,
+
+      id_token_dispositivo,
+
+      estado
+
+    )
+
+    SELECT
+
+      n.id_notificacion,
+
+      td.id_token_dispositivo,
+
+      'PENDIENTE'
+
+    FROM notificacion n
+
+    INNER JOIN token_dispositivo td
+      ON td.id_usuario = n.id_usuario
+
+    WHERE n.id_notificacion = $1
+
+      AND td.activo = TRUE
+
+    ON CONFLICT
+      ON CONSTRAINT
+        uq_envio_push_notificacion_dispositivo
+
+    DO NOTHING
+
+    RETURNING
+
+      id_envio_push,
+
+      id_notificacion,
+
+      id_token_dispositivo,
+
+      estado;
+
+  `;
+
+  const { rows } = await db.query(
+    query,
+    [idNotificacion]
+  );
+
+  return rows;
+
+};
+
+// ======================================================
 // RESERVAR ENVÍOS PUSH PENDIENTES
 // ACTIVIDAD 3.3.1
 // ======================================================
@@ -442,49 +508,49 @@ const resolverRecibo = async ({
 
   const query = `
 
-    UPDATE envio_push
+  UPDATE envio_push
 
-    SET
+  SET
 
-      estado = $3,
+    estado = $3::VARCHAR(30),
 
-      ultimo_error = $4,
+    ultimo_error = $4,
 
-      confirmado_en =
-        CASE
-          WHEN $3 = 'ACEPTADO_PROVEEDOR'
-          THEN NOW()
-          ELSE confirmado_en
-        END,
+    confirmado_en =
+      CASE
+        WHEN $3::VARCHAR(30) = 'ACEPTADO_PROVEEDOR'
+        THEN NOW()
+        ELSE confirmado_en
+      END,
 
-      bloqueado_hasta = NULL,
+    bloqueado_hasta = NULL,
 
-      proximo_intento_en =
-        CASE
-          WHEN $3 = 'REINTENTAR'
-          THEN NOW() +
-            ($5::INTEGER * INTERVAL '1 second')
-          ELSE proximo_intento_en
-        END,
+    proximo_intento_en =
+      CASE
+        WHEN $3::VARCHAR(30) = 'REINTENTAR'
+        THEN NOW() +
+          ($5::INTEGER * INTERVAL '1 second')
+        ELSE proximo_intento_en
+      END,
 
-      expo_ticket_id =
-        CASE
-          WHEN $3 = 'REINTENTAR'
-          THEN NULL
-          ELSE expo_ticket_id
-        END,
+    expo_ticket_id =
+      CASE
+        WHEN $3::VARCHAR(30) = 'REINTENTAR'
+        THEN NULL
+        ELSE expo_ticket_id
+      END,
 
-      actualizado_en = NOW()
+    actualizado_en = NOW()
 
-    WHERE id_envio_push = $1
+  WHERE id_envio_push = $1
 
-      AND expo_ticket_id = $2
+    AND expo_ticket_id = $2
 
-      AND estado = 'ESPERANDO_RECIBO'
+    AND estado = 'ESPERANDO_RECIBO'
 
-    RETURNING *;
+  RETURNING *;
 
-  `;
+`;
 
   const { rows } = await pool.query(
     query,
@@ -657,6 +723,7 @@ const marcarOmitido = async (
 module.exports = {
 
   crearPendientesPorOportunidad,
+  crearPendientesPorNotificacion,
 
   reservarPendientes,
 

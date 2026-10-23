@@ -26,7 +26,12 @@ export default function NotificacionesVoluntarioScreen({
 
   onMarcarLeida,
 
-  onVerOportunidad
+  onVerOportunidad,
+  onVerInscripciones,
+  onVerDonaciones,
+  modoOrganizacion=false,
+  onVerDonacion,
+  onGestionarInscripciones,
 
 }) {
 
@@ -134,9 +139,10 @@ export default function NotificacionesVoluntarioScreen({
 
 
         <Text style={styles.subtitle}>
-          Consultá las novedades relacionadas
-          con tus oportunidades de voluntariado.
-        </Text>
+        {modoOrganizacion
+          ? 'Consultá las novedades relacionadas con tus actividades y donaciones.'
+          : 'Consultá las novedades relacionadas con tu participación como voluntario.'}
+      </Text>
 
 
         <TouchableOpacity
@@ -179,9 +185,9 @@ export default function NotificacionesVoluntarioScreen({
           </Text>
 
           <Text style={styles.emptyText}>
-            Cuando se publiquen oportunidades
-            compatibles con tus intereses,
-            aparecerán acá.
+            {modoOrganizacion
+              ? 'Cuando recibas novedades relacionadas con inscripciones o donaciones, aparecerán acá.'
+              : 'Cuando tengas novedades relacionadas con tus actividades, aparecerán acá.'}
           </Text>
 
         </View>
@@ -194,8 +200,19 @@ export default function NotificacionesVoluntarioScreen({
             !notificacion.leida_en;
 
           const esOportunidad =
+          !modoOrganizacion &&
+          notificacion.tipo ===
+          'NUEVA_OPORTUNIDAD';
+          
+           const esInscripcion =
+            !modoOrganizacion &&
             notificacion.tipo ===
-            'NUEVA_OPORTUNIDAD';
+              'INSCRIPCION_ACEPTADA';
+
+          const esDonacion =
+            !modoOrganizacion &&
+            notificacion.tipo ===
+              'DONACION_COORDINADA';
 
           const disponible =
             notificacion.oportunidad_disponible ===
@@ -203,7 +220,16 @@ export default function NotificacionesVoluntarioScreen({
 
           const estado =
             obtenerEstado(notificacion);
+          
+            const esNuevaDonacion =
+            modoOrganizacion &&
+            notificacion.tipo ===
+              'NUEVA_DONACION_ORGANIZACION';
 
+          const esInscripcionCancelada =
+            modoOrganizacion &&
+            notificacion.tipo ===
+              'INSCRIPCION_CANCELADA_ORGANIZACION';
 
           return (
 
@@ -355,9 +381,113 @@ export default function NotificacionesVoluntarioScreen({
                     </Text>
 
                   </TouchableOpacity>
+                )}
+
+                {/* ======================================= */}
+                {/* VER INSCRIPCIONES */}
+                {/* ======================================= */}
+
+                {esInscripcion && (
+
+                  <TouchableOpacity
+
+                    style={styles.detailButton}
+
+                    onPress={() =>
+                      onVerInscripciones(notificacion)
+                    }
+
+                  >
+
+                    <Text style={styles.detailButtonText}>
+                      Ver mis inscripciones
+                    </Text>
+
+                  </TouchableOpacity>
 
                 )}
 
+
+                {/* ======================================= */}
+                {/* VER DONACIONES */}
+                {/* ======================================= */}
+
+                {esDonacion && (
+
+                  <TouchableOpacity
+
+                    style={styles.detailButton}
+
+                    onPress={() =>
+                      onVerDonaciones(notificacion)
+                    }
+
+                  >
+
+                    <Text style={styles.detailButtonText}>
+                      Ver mis donaciones
+                    </Text>
+
+                  </TouchableOpacity>
+
+                )}
+
+              {/* ==================================================
+                    VER DONACIÓN RECIBIDA
+                    ACTIVIDAD 3.3.2
+                ================================================== */}
+
+                {esNuevaDonacion &&
+                  notificacion.id_donacion && (
+
+                  <TouchableOpacity
+
+                    style={styles.detailButton}
+
+                   onPress={() =>
+                      onVerDonacion(notificacion)
+                    }
+
+                    activeOpacity={0.8}
+
+                  >
+
+                    <Text style={styles.detailButtonText}>
+                      Ver donación
+                    </Text>
+
+                  </TouchableOpacity>
+
+                )}
+
+
+                {/* ==================================================
+                    GESTIONAR INSCRIPCIONES
+                    ACTIVIDAD 3.3.2
+                ================================================== */}
+
+                {esInscripcionCancelada &&
+                  notificacion.id_oportunidad && (
+
+                  <TouchableOpacity
+
+                    style={styles.detailButton}
+
+                   onPress={() =>
+                    onGestionarInscripciones(notificacion)
+                  }
+
+                    activeOpacity={0.8}
+
+                  >
+
+                    <Text style={styles.detailButtonText}>
+                      Gestionar inscripciones
+                    </Text>
+
+                  </TouchableOpacity>
+
+                )}
 
               </View>
 
@@ -398,16 +528,20 @@ const styles = StyleSheet.create({
     borderColor: '#DDE5E2'
   },
 
-  backButton: {
-    marginBottom: 16,
-    alignSelf: 'flex-start'
-  },
+backButton: {
+  alignSelf: 'flex-start',
+  backgroundColor: '#1F6F5C',
+  borderRadius: 9,
+  paddingVertical: 10,
+  paddingHorizontal: 16,
+  marginBottom: 16
+},
 
-  backText: {
-    color: '#1F6F5C',
-    fontWeight: '700',
-    fontSize: 14
-  },
+backText: {
+  color: '#FFFFFF',
+  fontWeight: '700',
+  fontSize: 14
+},
 
   title: {
     fontSize: 24,

@@ -11,6 +11,9 @@ import {
 
 import BASE_URL from '../config/api';
 
+import {
+  formatearUbicacion
+} from '../utils/formatearUbicacion';
 
 export default function DetalleDonacionScreen({
   donacion,
@@ -325,26 +328,23 @@ export default function DetalleDonacionScreen({
 
           <View style={styles.separator} />
 
+            <Text style={styles.label}>
+              Ubicación aproximada
+            </Text>
 
-          <Text style={styles.label}>
-            Ubicación aproximada
+          {formatearUbicacion(donacion) ? (
+
+          <Text style={styles.value}>
+            {formatearUbicacion(donacion)}
           </Text>
 
-         {donacion.direccion ? (
+        ) : (
 
-              <Text style={styles.value}>
-                {donacion.direccion}
-              </Text>
+          <Text style={styles.valueMuted}>
+            No se indicó una ubicación.
+          </Text>
 
-            ) : (
-
-              <Text style={styles.valueMuted}>
-                No se indicó una ubicación.
-              </Text>
-
-            )}
-
-
+        )}
           <View style={styles.separator} />
 
 
@@ -357,6 +357,30 @@ export default function DetalleDonacionScreen({
               donacion.creada_en
             )}
           </Text>
+
+          {/* ==================================================
+                DONACIÓN ACEPTADA - PENDIENTE DE COORDINACIÓN
+                MEJORA UX - ACTIVIDAD 3.3.2
+          ================================================== */}
+
+          {donacion.estado === 'ACEPTADA' && (
+
+            <View style={styles.acceptedNoticeCard}>
+
+              <Text style={styles.acceptedNoticeTitle}>
+                ✓ Donación aceptada
+              </Text>
+
+              <Text style={styles.acceptedNoticeText}>
+                La organización aceptó tu donación.
+                Ahora debés esperar a que coordine la entrega.
+                Cuando lo haga, podrás consultar aquí los detalles
+                de coordinación y el teléfono de contacto.
+              </Text>
+
+            </View>
+
+          )}
 
            {/* ==================================================
                   MOTIVO DE RECHAZO
@@ -726,6 +750,31 @@ finalStateText: {
   fontSize: 13,
   lineHeight: 19,
   color: '#5F6B76',
+},
+// ======================================================
+// AVISO DE DONACIÓN ACEPTADA
+// ======================================================
+
+acceptedNoticeCard: {
+  marginTop: 22,
+  padding: 15,
+  borderRadius: 12,
+  backgroundColor: '#F1F8F5',
+  borderWidth: 1,
+  borderColor: '#CFE3DA'
+},
+
+acceptedNoticeTitle: {
+  fontSize: 16,
+  fontWeight: 'bold',
+  color: '#164C40',
+  marginBottom: 8
+},
+
+acceptedNoticeText: {
+  fontSize: 13,
+  color: '#4B635B',
+  lineHeight: 20
 },
 
   });

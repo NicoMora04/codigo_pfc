@@ -1,6 +1,15 @@
 const pool =
   require('../config/db');
 
+// ======================================================
+// NOTIFICACIONES - ACTIVIDAD 3.3.2
+// ======================================================
+
+const notificacionRepository =
+  require('./notificacionRepository');
+
+const envioPushRepository =
+  require('./envioPushRepository');
 
 // ======================================================
 // LISTAR CATEGORÍAS DE DONACIÓN
@@ -337,6 +346,36 @@ exports.crearDonacionTransaccional =
         ]
       );
 
+      // ======================================================
+      // NOTIFICAR NUEVA DONACIÓN A ORGANIZACIÓN
+      // ACTIVIDAD 3.3.2
+      // ======================================================
+
+      // Generar notificación dentro de la misma transacción.
+
+      const notificaciones =
+        await notificacionRepository
+          .crearPorNuevaDonacionOrganizacion(
+            donacion.id_donacion,
+            client
+          );
+
+
+      // ======================================================
+      // REGISTRAR ENVÍOS PUSH PENDIENTES
+      // ======================================================
+
+      for (
+        const notificacion of notificaciones
+      ) {
+
+        await envioPushRepository
+          .crearPendientesPorNotificacion(
+            notificacion.id_notificacion,
+            client
+          );
+
+      }
 
       // ==================================================
       // 7. CONFIRMAR TRANSACCIÓN
@@ -951,6 +990,37 @@ exports.cambiarEstadoDonacionOrganizacion =
           observacion
         ]
       );
+
+      // ======================================================
+// 5. GENERAR NOTIFICACIÓN SI LA DONACIÓN FUE COORDINADA
+// ACTIVIDAD 3.3.2
+// ======================================================
+
+if (nuevoEstado === 'COORDINADA') {
+
+  const notificaciones =
+    await notificacionRepository
+      .crearPorDonacionCoordinada(
+        idDonacion,
+        client
+      );
+
+
+  // ====================================================
+  // 6. REGISTRAR ENVÍOS PUSH PENDIENTES
+  // ====================================================
+
+  for (const notificacion of notificaciones) {
+
+    await envioPushRepository
+      .crearPendientesPorNotificacion(
+        notificacion.id_notificacion,
+        client
+      );
+
+  }
+
+}
 
 
       // ==================================================

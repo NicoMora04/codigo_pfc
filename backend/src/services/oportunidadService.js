@@ -6,7 +6,8 @@ const oportunidadRepository =
 // COLA PERSISTENTE DE NOTIFICACIONES PUSH
 // ACTIVIDAD 3.3.1
 // ======================================================
-
+const notificacionRepository =
+  require('../repositories/notificacionRepository');
 const envioPushRepository =
   require('../repositories/envioPushRepository');
 // ======================================================
@@ -642,10 +643,116 @@ exports.cancelarOportunidad = async (
     throw error;
   }
 
-  const oportunidadCancelada =
-    await oportunidadRepository.cancelarOportunidad(idOportunidad);
+  // ======================================================
+    // CANCELAR OPORTUNIDAD Y GENERAR NOTIFICACIONES
+    // ACTIVIDAD 3.3.2
+    // ======================================================
 
-  return oportunidadCancelada;
+    const client =
+      await pool.connect();
+
+    try {
+
+      // ==================================================
+      // 1. INICIAR TRANSACCIÓN
+      // ==================================================
+
+      await client.query(
+        'BEGIN'
+      );
+
+
+      // ==================================================
+      // 2. CANCELAR OPORTUNIDAD
+      // ==================================================
+
+      const oportunidadCancelada =
+        await oportunidadRepository.cancelarOportunidad(
+          idOportunidad,
+          idOrganizacion,
+          client
+        );
+
+
+      if (!oportunidadCancelada) {
+
+        const error = new Error(
+          'La oportunidad ya no puede cancelarse'
+        );
+
+        error.status = 409;
+
+        throw error;
+
+      }
+
+
+      // ==================================================
+      // 3. GENERAR NOTIFICACIONES PARA LOS INSCRIPTOS
+      // ==================================================
+
+      const notificaciones =
+        await notificacionRepository
+          .crearPorOportunidadCancelada(
+            idOportunidad,
+            client
+          );
+
+
+      // ==================================================
+      // 4. REGISTRAR ENVÍOS PUSH
+      // ==================================================
+
+      for (
+        const notificacion of notificaciones
+      ) {
+
+        await envioPushRepository
+          .crearPendientesPorNotificacion(
+            notificacion.id_notificacion,
+            client
+          );
+
+      }
+
+
+      // ==================================================
+      // 5. CONFIRMAR TRANSACCIÓN
+      // ==================================================
+
+      await client.query(
+        'COMMIT'
+      );
+
+
+      console.log(
+        'Actividad cancelada:',
+        oportunidadCancelada.id_oportunidad
+      );
+
+      console.log(
+        'Notificaciones de cancelación generadas:',
+        notificaciones.length
+      );
+
+
+      return oportunidadCancelada;
+
+    }
+    catch (error) {
+
+      await client.query(
+        'ROLLBACK'
+      );
+
+      throw error;
+
+    }
+    finally {
+
+      client.release();
+
+    }
 };
 
 
