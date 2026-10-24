@@ -210,8 +210,12 @@ import TiposActividadAdminScreen
 import EstadisticasOrganizacionScreen
   from './src/screens/EstadisticasOrganizacionScreen';
 
+import EstadisticasAdminScreen
+  from './src/screens/EstadisticasAdminScreen';
+
 import {
-  obtenerEstadisticasOrganizacion
+  obtenerEstadisticasOrganizacion,
+  obtenerEstadisticasGlobales
 } from './src/services/estadisticaService';
 
 export default function App() {
@@ -701,6 +705,22 @@ const [
 const [
   loadingTiposActividadAdmin,
   setLoadingTiposActividadAdmin
+] = useState(false);
+
+// ======================================================
+// ESTADÍSTICAS GLOBALES - ADMIN
+// ACTIVIDAD 3.4.2
+// ======================================================
+
+const [
+  estadisticasAdmin,
+  setEstadisticasAdmin
+] = useState(null);
+
+
+const [
+  loadingEstadisticasAdmin,
+  setLoadingEstadisticasAdmin
 ] = useState(false);
 
   // ======================================================
@@ -2871,6 +2891,145 @@ const cargarUsuariosAdmin =
     finally {
 
       setLoadingTiposActividadAdmin(false);
+
+    }
+
+  };
+
+// ======================================================
+// CARGAR ESTADÍSTICAS GLOBALES - ADMIN
+// ACTIVIDAD 3.4.2
+// ======================================================
+
+const cargarEstadisticasAdmin =
+  async () => {
+
+    setLoadingEstadisticasAdmin(
+      true
+    );
+
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setEstadisticasAdmin(
+          null
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión no es válida. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      const data =
+        await obtenerEstadisticasGlobales(
+          token
+        );
+
+
+      setEstadisticasAdmin(
+        data?.estadisticas ||
+        null
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response
+          ?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setEstadisticasAdmin(
+          null
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+
+        return false;
+
+      }
+
+
+      if (
+        error.response
+          ?.status === 403
+      ) {
+
+        setEstadisticasAdmin(
+          null
+        );
+
+
+        showAlert(
+          'error',
+          'Acceso no autorizado',
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+
+        return false;
+
+      }
+
+
+      setEstadisticasAdmin(
+        null
+      );
+
+
+      showAlert(
+        'error',
+        'No se pudieron cargar las estadísticas',
+        error.response
+          ?.data
+          ?.error ||
+        'No fue posible obtener las métricas globales del sistema.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingEstadisticasAdmin(
+        false
+      );
 
     }
 
@@ -10218,6 +10377,26 @@ const cargarDetalleDonacionPropia =
   />
 )}
 
+{/* ==================================================
+    ADMIN - ESTADÍSTICAS
+================================================== */}
+
+{currentScreen ===
+  'ADMIN_ESTADISTICAS' && (
+
+  <EstadisticasAdminScreen
+
+    estadisticas={
+      estadisticasAdmin
+    }
+
+    loading={
+      loadingEstadisticasAdmin
+    }
+
+  />
+
+)}
 
         </ScrollView>
 
@@ -10572,25 +10751,52 @@ const cargarDetalleDonacionPropia =
 
             currentScreen ===
               'ADMIN_ORGANIZACIONES' ||
-              currentScreen ===
+
+            currentScreen ===
               'ADMIN_USUARIOS' ||
-               currentScreen === 'ADMIN_TIPOS_ACTIVIDAD'
+
+            currentScreen ===
+              'ADMIN_TIPOS_ACTIVIDAD' ||
+
+            currentScreen ===
+              'ADMIN_ESTADISTICAS'
+
           ) && (
 
             <AdminBottomNav
 
               opcionActiva={
-  currentScreen === 'ADMIN_HOME'
-    ? 'INICIO'
-    : currentScreen === 'ADMIN_ORGANIZACIONES' ||
-      currentScreen === 'ADMIN_ORGANIZACION_DETALLE'
-      ? 'ORGANIZACIONES'
-      : currentScreen === 'ADMIN_USUARIOS'
-        ? 'USUARIOS'
-        : currentScreen === 'ADMIN_TIPOS_ACTIVIDAD'
-          ? 'TIPOS_ACTIVIDAD'
-          : 'INICIO'
-}
+
+                currentScreen ===
+                  'ADMIN_HOME'
+
+                  ? 'INICIO'
+
+                  : currentScreen ===
+                      'ADMIN_ORGANIZACIONES' ||
+                    currentScreen ===
+                      'ADMIN_ORGANIZACION_DETALLE'
+
+                    ? 'ORGANIZACIONES'
+
+                    : currentScreen ===
+                        'ADMIN_USUARIOS'
+
+                      ? 'USUARIOS'
+
+                      : currentScreen ===
+                          'ADMIN_TIPOS_ACTIVIDAD'
+
+                        ? 'TIPOS_ACTIVIDAD'
+
+                        : currentScreen ===
+                            'ADMIN_ESTADISTICAS'
+
+                          ? 'ESTADISTICAS'
+
+                          : 'INICIO'
+
+              }
 
               onTiposActividad={async () => {
 
@@ -10677,9 +10883,34 @@ const cargarDetalleDonacionPropia =
 
               }}
 
-            />
+          onEstadisticas={async () => {
 
-          )}    
+            setCurrentScreen(
+              'ADMIN_ESTADISTICAS'
+            );
+
+
+            await cargarEstadisticasAdmin();
+
+
+            setTimeout(
+              () => {
+
+                scrollRef.current
+                  ?.scrollTo({
+                    y: 0,
+                    animated: false
+                  });
+
+              },
+              0.1
+            );
+
+          }}
+          
+          />
+        )}
+            
 
             
 

@@ -39,6 +39,15 @@ router.get(
     .obtenerEstadisticasOrganizacion
 );
 
+router.get(
+  '/globales',
+  verificarToken,
+  verificarRol(
+    'ADMIN'
+  ),
+  estadisticaController
+    .obtenerEstadisticasGlobales
+);
 
 module.exports =
   router;

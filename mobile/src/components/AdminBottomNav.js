@@ -17,7 +17,8 @@ export default function AdminBottomNav({
   onInicio,
   onOrganizaciones,
   onUsuarios,
-  onTiposActividad
+  onTiposActividad,
+  onEstadisticas
 }) {
 
   const insets =
@@ -168,6 +169,40 @@ export default function AdminBottomNav({
   </Text>
 </TouchableOpacity>
 
+<TouchableOpacity
+  style={styles.item}
+  onPress={
+    onEstadisticas
+  }
+>
+
+  <Text
+    style={[
+      styles.icon,
+
+      opcionActiva ===
+        'ESTADISTICAS' &&
+        styles.activeText
+    ]}
+  >
+    📊
+  </Text>
+
+
+  <Text
+    style={[
+      styles.label,
+
+      opcionActiva ===
+        'ESTADISTICAS' &&
+        styles.activeText
+    ]}
+  >
+    Estadísticas
+  </Text>
+
+</TouchableOpacity>
+
     </View>
 
   );
@@ -212,7 +247,7 @@ const styles =
       alignItems: 'center',
       justifyContent: 'center',
 
-      paddingHorizontal: 4,
+      paddingHorizontal: 2,
 
     },
 
@@ -228,7 +263,7 @@ const styles =
 
     label: {
 
-      fontSize: 11,
+      fontSize: 10,
 
       color: '#5F6B76',
 

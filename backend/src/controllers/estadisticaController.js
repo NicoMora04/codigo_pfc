@@ -47,3 +47,47 @@ exports.obtenerEstadisticasOrganizacion = async (
   }
 
 };
+
+// ======================================================
+// OBTENER ESTADÍSTICAS GLOBALES DEL SISTEMA
+// ACTIVIDAD 3.4.2
+// ======================================================
+
+exports.obtenerEstadisticasGlobales =
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      const estadisticas =
+        await estadisticaService
+          .obtenerEstadisticasGlobales();
+
+
+      return res.status(200).json({
+        estadisticas
+      });
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL OBTENER ESTADÍSTICAS GLOBALES:',
+        error
+      );
+
+
+      return res.status(
+        error.status || 500
+      ).json({
+        error:
+          error.status
+            ? error.message
+            : 'No se pudieron obtener las estadísticas globales'
+      });
+
+    }
+
+  };
