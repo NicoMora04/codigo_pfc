@@ -1200,7 +1200,7 @@ describe(
           inscripcionRepository
             .cancelarPorVoluntario
         ).toHaveBeenCalledWith(
-          idInscripcion
+          idInscripcion,'voluntario-test'
         );
 
       }

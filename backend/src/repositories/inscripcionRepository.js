@@ -1,4 +1,9 @@
 const pool = require('../config/db');
+const notificacionRepository =
+  require('./notificacionRepository');
+
+const envioPushRepository =
+  require('./envioPushRepository');
 
 const buscarPorOportunidadYVoluntario = async (idOportunidad, idVoluntario) => {
   const query = `
@@ -286,6 +291,33 @@ const aceptarConControlCupo = async (
       throw error;
     }
 
+    // ======================================================
+    // 5. GENERAR NOTIFICACIÓN POR INSCRIPCIÓN ACEPTADA
+    // ACTIVIDAD 3.3.2
+    // ======================================================
+
+    const notificaciones =
+      await notificacionRepository
+        .crearPorInscripcionAceptada(
+          idInscripcion,
+          client
+        );
+
+
+    // ======================================================
+    // 6. REGISTRAR ENVÍOS PUSH PENDIENTES
+    // ======================================================
+
+    for (const notificacion of notificaciones) {
+
+      await envioPushRepository
+        .crearPendientesPorNotificacion(
+          notificacion.id_notificacion,
+          client
+        );
+
+    }
+
 
     await client.query(
       'COMMIT'
@@ -368,32 +400,196 @@ const contarAceptadasPorOportunidad = async (
 
 // ======================================================
 // CANCELAR INSCRIPCIÓN POR EL VOLUNTARIO
+// NOTIFICAR A ORGANIZACIÓN SI ESTABA ACEPTADA
+// ACTIVIDAD 3.3.2
 // ======================================================
 
 const cancelarPorVoluntario = async (
-  idInscripcion
+  idInscripcion,
+  idVoluntario
 ) => {
 
-  const query = `
-    UPDATE inscripcion
-    SET
-      estado = 'CANCELADA',
-      actualizada_en = NOW()
-    WHERE id_inscripcion = $1
-      AND estado IN (
-        'PENDIENTE',
-        'ACEPTADA'
-      )
-    RETURNING *;
-  `;
+  const client =
+    await pool.connect();
 
-  const { rows } =
-    await pool.query(
-      query,
-      [idInscripcion]
+  try {
+
+    // ==================================================
+    // 1. INICIAR TRANSACCIÓN
+    // ==================================================
+
+    await client.query(
+      'BEGIN'
     );
 
-  return rows[0] || null;
+
+    // ==================================================
+    // 2. OBTENER Y BLOQUEAR INSCRIPCIÓN
+    // ==================================================
+
+    const resultadoAnterior =
+      await client.query(
+        `
+        SELECT estado
+        FROM inscripcion
+        WHERE id_inscripcion = $1
+          AND id_voluntario = $2
+        FOR UPDATE;
+        `,
+        [
+          idInscripcion,
+          idVoluntario
+        ]
+      );
+
+
+    if (
+      resultadoAnterior.rows.length === 0
+    ) {
+
+      await client.query(
+        'ROLLBACK'
+      );
+
+      return null;
+
+    }
+
+
+    const estadoAnterior =
+      resultadoAnterior.rows[0].estado;
+
+
+    // ==================================================
+    // 3. VERIFICAR ESTADO PERMITIDO
+    // ==================================================
+
+    if (
+      ![
+        'PENDIENTE',
+        'ACEPTADA'
+      ].includes(estadoAnterior)
+    ) {
+
+      await client.query(
+        'ROLLBACK'
+      );
+
+      return null;
+
+    }
+
+
+    // ==================================================
+    // 4. CANCELAR INSCRIPCIÓN
+    // ==================================================
+
+    const resultadoCancelacion =
+      await client.query(
+        `
+        UPDATE inscripcion
+
+        SET
+          estado = 'CANCELADA',
+          actualizada_en = NOW()
+
+        WHERE id_inscripcion = $1
+
+          AND id_voluntario = $2
+
+          AND estado IN (
+            'PENDIENTE',
+            'ACEPTADA'
+          )
+
+        RETURNING *;
+        `,
+        [
+          idInscripcion,
+          idVoluntario
+        ]
+      );
+
+
+    if (
+      resultadoCancelacion.rows.length === 0
+    ) {
+
+      await client.query(
+        'ROLLBACK'
+      );
+
+      return null;
+
+    }
+
+
+    const inscripcionCancelada =
+      resultadoCancelacion.rows[0];
+
+
+    // ==================================================
+    // 5. NOTIFICAR SOLO SI ESTABA ACEPTADA
+    // ==================================================
+
+    if (
+      estadoAnterior === 'ACEPTADA'
+    ) {
+
+      const notificaciones =
+        await notificacionRepository
+          .crearPorCancelacionInscripcionAceptada(
+            idInscripcion,
+            client
+          );
+
+
+      // ================================================
+      // 6. REGISTRAR ENVÍOS PUSH
+      // ================================================
+
+      for (
+        const notificacion of notificaciones
+      ) {
+
+        await envioPushRepository
+          .crearPendientesPorNotificacion(
+            notificacion.id_notificacion,
+            client
+          );
+
+      }
+
+    }
+
+
+    // ==================================================
+    // 7. CONFIRMAR TRANSACCIÓN
+    // ==================================================
+
+    await client.query(
+      'COMMIT'
+    );
+
+
+    return inscripcionCancelada;
+
+  }
+  catch (error) {
+
+    await client.query(
+      'ROLLBACK'
+    );
+
+    throw error;
+
+  }
+  finally {
+
+    client.release();
+
+  }
+
 };
 
 // ======================================================

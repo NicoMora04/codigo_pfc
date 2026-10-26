@@ -233,7 +233,35 @@ const contarMisNoLeidas = async (
 
 };
 
+// ======================================================
+// GENERAR NOTIFICACIONES POR NUEVA OPORTUNIDAD
+// ACTIVIDAD 3.3.1
+// ======================================================
 
+const generarPorNuevaOportunidad = async (
+  idOportunidad,
+  db
+) => {
+
+  // Validar oportunidad
+
+  validarUUID(
+    idOportunidad,
+    'oportunidad'
+  );
+
+  // Buscar destinatarios y registrar notificaciones
+
+  const notificaciones =
+    await notificacionRepository
+      .crearPorOportunidadPublicada(
+        idOportunidad,
+        db
+      );
+
+  return notificaciones;
+
+};
 // ======================================================
 // EXPORTACIONES
 // ======================================================
@@ -242,5 +270,6 @@ module.exports = {
   crearNotificacion,
   listarMisNotificaciones,
   marcarComoLeida,
-  contarMisNoLeidas
+  contarMisNoLeidas,
+  generarPorNuevaOportunidad
 };

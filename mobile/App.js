@@ -3,6 +3,13 @@ import React, {
   useEffect
 } from 'react';
 
+import * as Notifications from 'expo-notifications';
+
+import {
+  registrarDispositivoPush,
+  desactivarDispositivoPush
+} from './src/services/notificacionesPush';
+
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import {
@@ -218,6 +225,44 @@ import {
   obtenerEstadisticasGlobales
 } from './src/services/estadisticaService';
 
+
+import NotificacionesVoluntarioScreen
+  from './src/screens/NotificacionesVoluntarioScreen';
+
+import {
+  obtenerMisNotificaciones,
+  obtenerCantidadNoLeidas,
+  marcarNotificacionLeida
+} from './src/services/notificacionService';
+
+
+// ======================================================
+// REGISTRAR PUSH SIN INTERRUMPIR LA SESIÓN
+// ======================================================
+
+const intentarRegistrarPush = async (jwt) => {
+
+  try {
+
+    await registrarDispositivoPush(jwt);
+
+  }
+  catch (error) {
+
+    console.warn(
+
+      'No se pudo registrar el dispositivo para push:',
+
+      error.response?.data?.mensaje ||
+      error.message
+
+    );
+
+  }
+
+};
+
+
 export default function App() {
 
   const [
@@ -429,6 +474,22 @@ const [
   ] =
     useState('');
 
+  const [
+  notificacionesVoluntario,
+  setNotificacionesVoluntario
+] = useState([]);
+
+
+const [
+  cantidadNoLeidas,
+  setCantidadNoLeidas
+] = useState(0);
+
+
+const [
+  loadingNotificaciones,
+  setLoadingNotificaciones
+] = useState(false);  
 
   const [
     estadoUbicacionVoluntario,
@@ -445,7 +506,7 @@ const [
 
     textoUbicacion: '',
 
-    radioBusquedaKm: '10',
+    radioBusquedaKm: '',
 
   });
 
@@ -464,7 +525,7 @@ const [
 
   textoUbicacion: '',
 
-  radioBusquedaKm: '10',
+  radioBusquedaKm:'',
 
 });
 
@@ -775,6 +836,9 @@ const [
             await cargarOportunidadesVoluntario();
 
             await cargarMisInscripciones();
+            await intentarRegistrarPush(
+              token
+            );
 
           }
           else if (
@@ -787,7 +851,9 @@ const [
 
 
             await cargarOportunidades();
-
+            await intentarRegistrarPush(
+              token
+            );
           }
           else if (
             rol === 'ADMIN'
@@ -987,6 +1053,9 @@ const [
           await cargarOportunidadesVoluntario();
 
           await cargarMisInscripciones();
+          await intentarRegistrarPush(
+            data.token
+          );
 
         }
         else if (
@@ -999,6 +1068,9 @@ const [
 
 
           await cargarOportunidades();
+          await intentarRegistrarPush(
+              data.token
+            )
 
         }
         else if (
@@ -1604,6 +1676,8 @@ const abrirGestionInscripciones =
         'GESTION_INSCRIPCIONES'
       );
 
+      return true;
+
     }
     catch (error) {
 
@@ -1624,7 +1698,7 @@ const abrirGestionInscripciones =
           'Tu sesión venció. Iniciá sesión nuevamente.'
         );
 
-        return;
+        return false;
       }
 
       showAlert(
@@ -3977,14 +4051,75 @@ const handleRechazarOrganizacion =
 
   const confirmarLogout =
     async () => {
+      
+       // ==================================================
+    // DESACTIVAR NOTIFICACIONES PUSH
+    // ACTIVIDAD 3.3.1
+    // ==================================================
 
+    const jwt = await obtenerToken();
+
+    if (jwt) {
+
+      try {
+
+        await desactivarDispositivoPush(
+          jwt
+        );
+
+      }
+      catch (error) {
+
+        console.warn(
+
+          'No se pudo desactivar el dispositivo push:',
+
+          error.response?.data?.mensaje ||
+          error.message
+
+        );
+
+        showAlert(
+          'error',
+          'Advertencia de notificaciones',
+          'No se pudo desactivar el dispositivo. Podrías seguir recibiendo notificaciones de esta cuenta hasta que se regularice el registro.'
+        );
+
+      }
+
+    }
+
+
+    // ==================================================
+    // ELIMINAR JWT
+    // ==================================================
       await eliminarToken();
 
+      // Limpiar notificaciones de la sesión anterior
+        setNotificacionesVoluntario([]);
+
+        setCantidadNoLeidas(0);
+
+        setLoadingNotificaciones(false);
 
       setOportunidades(
         []
       );
 
+      setInscripcionesVoluntario([]);
+
+        setInscripcionesOrganizacion([]);
+
+        setOportunidadGestionando(null);
+
+        setFiltroEstadoInscripciones('TODAS');
+
+        setDatosOrganizacion(null);
+
+        // Limpiar información de administración.
+        setUsuariosAdmin([]);
+
+        setTiposActividadAdmin([]);
 
       setOportunidadesVoluntario(
         []
@@ -4078,9 +4213,52 @@ setLoadingReputacionOrganizacion(false);
           '',
 
         radioBusquedaKm:
-          '10',
+          '',
 
       });
+
+  setBusquedaOrganizacion('');
+
+// Restablecer filtro de estado.
+setFiltroEstadoOrganizacion('TODAS');
+
+      // ======================================================
+        // LIMPIAR BÚSQUEDA DE ORGANIZACIONES AL CERRAR SESIÓN
+        // MEJORA UX - ACTIVIDAD 3.3.2
+        // ======================================================
+
+        // Limpiar filtros de búsqueda:
+        // nombre, tipo de actividad y ubicación.
+        setFiltrosDonacion({});
+
+        // Limpiar resultados de la sesión anterior.
+        setOrganizacionesDonacion([]);
+
+        // Limpiar organización seleccionada.
+        setOrganizacionDonacionSeleccionada(null);
+
+        // Restablecer estado de carga.
+        setLoadingDonacion(false);
+
+        // Restablecer filtros y datos de ubicación.
+        setEstadoUbicacionDonacion({
+
+          modoUbicacion: null,
+
+          ubicacionActual: null,
+
+          ubicacionManualSeleccionada: null,
+
+          direccionActual: '',
+
+          textoUbicacion: '',
+
+          radioBusquedaKm: '',
+
+        });
+
+        // Restablecer posición de desplazamiento.
+        setScrollYDonacion(0);
 
 
       setScrollYVoluntario(
@@ -4822,10 +5000,11 @@ setLoadingReputacionOrganizacion(false);
         ) {
 
           showAlert(
-            'error',
-            'Ubicación no disponible',
-            'Podés seguir recibiendo recomendaciones según tus intereses e historial.'
-          );
+          'error',
+          'Permiso de ubicación',
+          'No fue posible acceder a tu ubicación actual. Verificá el permiso de ubicación de la aplicación en la configuración del dispositivo. Podés seguir recibiendo recomendaciones según tus intereses e historial.'
+        );
+
 
 
           return;
@@ -4833,66 +5012,96 @@ setLoadingReputacionOrganizacion(false);
         }
 
 
-        setLoadingRecomendaciones(
-          true
-        );
+        // ==================================================
+      // 2. VERIFICAR QUE EL GPS ESTÉ ACTIVADO
+      // ==================================================
+
+      const serviciosActivos =
+        await Location
+          .hasServicesEnabledAsync();
 
 
-        const posicion =
-          await Location
-            .getCurrentPositionAsync({
-              accuracy:
-                Location.Accuracy.Balanced
-            });
-
-
-        const ubicacion = {
-
-          latitud:
-            posicion.coords.latitude,
-
-          longitud:
-            posicion.coords.longitude,
-
-          radioKm: 25
-
-        };
-
-
-        setUbicacionRecomendaciones(
-          ubicacion
-        );
-
-
-        await cargarRecomendacionesVoluntario(
-          ubicacion
-        );
-
-      }
-      catch (error) {
-
-        console.error(
-          'ERROR AL OBTENER UBICACIÓN:',
-          error
-        );
-
+      if (!serviciosActivos) {
 
         showAlert(
           'error',
-          'Ubicación no disponible',
-          'No se pudo obtener tu ubicación. Las recomendaciones pueden seguir calculándose sin este criterio.'
+          'Ubicación desactivada',
+          'La ubicación de tu dispositivo está desactivada. Activala desde la configuración del celular e intentá nuevamente.'
         );
 
-      }
-      finally {
-
-        setLoadingRecomendaciones(
-          false
-        );
+        return;
 
       }
 
-    };
+
+      // ==================================================
+      // 3. OBTENER UBICACIÓN ACTUAL
+      // ==================================================
+
+      setLoadingRecomendaciones(
+        true
+      );
+
+
+      const posicion =
+        await Location
+          .getCurrentPositionAsync({
+            accuracy:
+              Location.Accuracy.Balanced
+          });
+
+
+      const ubicacion = {
+
+        latitud:
+          posicion.coords.latitude,
+
+        longitud:
+          posicion.coords.longitude,
+
+        radioKm: 25
+
+      };
+
+
+      // ==================================================
+      // 4. ACTUALIZAR RECOMENDACIONES
+      // ==================================================
+
+      setUbicacionRecomendaciones(
+        ubicacion
+      );
+
+
+      await cargarRecomendacionesVoluntario(
+        ubicacion
+      );
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL OBTENER UBICACIÓN:',
+        error
+      );
+
+
+      showAlert(
+        'error',
+        'Ubicación no disponible',
+        'No se pudo obtener tu ubicación actual. Verificá que la ubicación esté activada en tu celular e intentá nuevamente.'
+      );
+
+    }
+    finally {
+
+      setLoadingRecomendaciones(
+        false
+      );
+
+    }
+
+  };
   // ======================================================
   // OPORTUNIDADES VOLUNTARIO
   // ======================================================
@@ -6452,6 +6661,7 @@ const cargarDetalleDonacionRecibida =
       setCurrentScreen(
         'ORGANIZACION_DONACION_DETALLE'
       );
+      return true
 
     }
     catch (error) {
@@ -6480,7 +6690,7 @@ const cargarDetalleDonacionRecibida =
           'Tu sesión venció. Iniciá sesión nuevamente.'
         );
 
-        return;
+        return false;
 
       }
 
@@ -6561,7 +6771,7 @@ const handleAceptarDonacionRecibida =
       showAlert(
         'success',
         'Donación aceptada',
-        'La donación fue aceptada correctamente.'
+        'La donación fue aceptada correctamente. El siguiente paso es coordinar la entrega con el voluntario desde esta misma pantalla.'
       );
 
     }
@@ -7566,6 +7776,227 @@ const cargarDetalleDonacionPropia =
   };
 
   // ======================================================
+// OBTENER CANTIDAD DE NOTIFICACIONES NO LEÍDAS
+// ======================================================
+
+const cargarCantidadNoLeidas = async () => {
+
+  try {
+
+    const token = await obtenerToken();
+
+    if (!token) {
+      return;
+    }
+
+
+    const data =
+      await obtenerCantidadNoLeidas(token);
+
+
+    setCantidadNoLeidas(
+      Number(data.cantidad) || 0
+    );
+
+  }
+  catch (error) {
+
+    console.warn(
+      'No se pudo consultar el contador de notificaciones:',
+      error.message
+    );
+
+  }
+
+};
+
+// ======================================================
+// CARGAR HISTORIAL DE NOTIFICACIONES
+// ======================================================
+
+const cargarNotificacionesVoluntario = async () => {
+
+  setLoadingNotificaciones(true);
+
+  try {
+
+    const token = await obtenerToken();
+
+    if (!token) {
+      return;
+    }
+
+
+    const data =
+      await obtenerMisNotificaciones(token);
+
+
+    setNotificacionesVoluntario(
+      data.notificaciones || []
+    );
+
+
+    await cargarCantidadNoLeidas();
+
+  }
+  catch (error) {
+
+    console.error(
+      'Error al obtener notificaciones:',
+      error.message
+    );
+
+
+    showAlert(
+      'error',
+      'Notificaciones',
+      'No se pudieron cargar las notificaciones.'
+    );
+
+  }
+  finally {
+
+    setLoadingNotificaciones(false);
+
+  }
+
+};
+
+// ======================================================
+// MARCAR NOTIFICACIÓN COMO LEÍDA
+// ======================================================
+
+const handleMarcarNotificacionLeida = async (
+  notificacion
+) => {
+
+  try {
+
+    const token = await obtenerToken();
+
+    if (!token) {
+      return false;
+    }
+
+
+    await marcarNotificacionLeida(
+      token,
+      notificacion.id_notificacion
+    );
+
+
+    // Actualizar estado local
+
+    setNotificacionesVoluntario(
+      anteriores =>
+        anteriores.map(item =>
+
+          item.id_notificacion ===
+          notificacion.id_notificacion
+
+            ? {
+                ...item,
+                leida_en:
+                  item.leida_en ||
+                  new Date().toISOString()
+              }
+
+            : item
+
+        )
+    );
+
+
+    await cargarCantidadNoLeidas();
+
+    return true;
+
+  }
+  catch (error) {
+
+    console.error(
+      'Error al marcar notificación:',
+      error.message
+    );
+
+
+    showAlert(
+      'error',
+      'Notificaciones',
+      'No se pudo marcar la notificación como leída.'
+    );
+
+    return false;
+
+  }
+
+};
+
+// ======================================================
+// ACTUALIZAR CONTADOR DE NOTIFICACIONES
+// VOLUNTARIOS Y ORGANIZACIONES
+// ACTIVIDAD 3.3.2
+// ======================================================
+
+useEffect(() => {
+
+  if (
+    currentScreen === 'VOLUNTARIO_INICIO' ||
+    currentScreen === 'ORGANIZACION_INICIO'
+  ) {
+
+    cargarCantidadNoLeidas();
+
+  }
+
+}, [currentScreen]);
+
+
+// ======================================================
+// ACTUALIZAR NOTIFICACIONES AL RECIBIR PUSH
+// ACTIVIDAD 3.3.1
+// ======================================================
+
+useEffect(() => {
+
+  const suscripcion =
+    Notifications.addNotificationReceivedListener(
+          async () => {
+
+      // Actualizar contador de ambos roles.
+
+      if (
+        currentScreen === 'VOLUNTARIO_INICIO' ||
+        currentScreen === 'ORGANIZACION_INICIO'
+      ) {
+
+        await cargarCantidadNoLeidas();
+
+      }
+
+      // Actualizar historial de ambos roles.
+
+      if (
+        currentScreen === 'VOLUNTARIO_NOTIFICACIONES' ||
+        currentScreen === 'ORGANIZACION_NOTIFICACIONES'
+      ) {
+
+        await cargarNotificacionesVoluntario();
+
+      }
+
+    }
+    );
+
+  return () => {
+
+    suscripcion.remove();
+
+  };
+
+}, [currentScreen]);
+
+  // ======================================================
   // RENDER PRINCIPAL
   // ======================================================
 
@@ -7993,6 +8424,157 @@ const cargarDetalleDonacionPropia =
               VOLUNTARIO
           ================================================== */}
 
+          {/* ================================================== */}
+          {/* NOTIFICACIONES DEL VOLUNTARIO - ACTIVIDAD 3.3.1 */}
+          {/* ================================================== */}
+
+          {currentScreen ===
+            'VOLUNTARIO_NOTIFICACIONES' && (
+
+            <NotificacionesVoluntarioScreen
+
+              notificaciones={
+                notificacionesVoluntario
+              }
+
+              loading={
+                loadingNotificaciones
+              }
+
+              onRecargar={
+                cargarNotificacionesVoluntario
+              }
+
+              onMarcarLeida={
+                handleMarcarNotificacionLeida
+              }
+
+              onVolver={async () => {
+
+                setCurrentScreen(
+                  'VOLUNTARIO_INICIO'
+                );
+
+                await cargarCantidadNoLeidas();
+
+              }}
+
+              onVerDonaciones={async (notificacion) => {
+
+                
+                // Cargar donaciones actualizadas.
+                const cargadas = await cargarMisDonaciones(null);
+
+                if (!cargadas) {
+                  return;
+                }
+
+                // Restablecer filtro.
+                setFiltroEstadoDonaciones(null);
+
+                // Abrir pantalla.
+                setCurrentScreen('MIS_DONACIONES');
+
+                // Marcar como leída.
+                if (!notificacion.leida_en) {
+                  await handleMarcarNotificacionLeida(
+                    notificacion
+                  );
+                }
+
+              }}
+
+              onVerInscripciones={async (notificacion) => {
+
+              
+                // Cargar inscripciones actualizadas.
+                const cargadas = await cargarMisInscripciones();
+
+                if (!cargadas) {
+                  return;
+                }
+
+                // Abrir pantalla.
+                setCurrentScreen('MIS_INSCRIPCIONES');
+
+                // Marcar como leída.
+                if (!notificacion.leida_en) {
+                  await handleMarcarNotificacionLeida(
+                    notificacion
+                  );
+                }
+
+              }}
+
+              onVerOportunidad={async (notificacion) => {
+
+                // Actualizar estado de lectura
+
+                if (!notificacion.leida_en) {
+
+                  await handleMarcarNotificacionLeida(
+                    notificacion
+                  );
+
+                }
+
+
+                // Comprobar disponibilidad
+
+                if (
+                  !notificacion.oportunidad_disponible ||
+                  !notificacion.id_oportunidad
+                ) {
+
+                  showAlert(
+                    'error',
+                    'Oportunidad no disponible',
+                    'Esta oportunidad ya no se encuentra disponible.'
+                  );
+
+                  return;
+
+                }
+
+
+                // Recuperar inscripción existente
+
+                const inscripcionExistente =
+                  inscripcionesVoluntario.find(
+                    inscripcion =>
+                      String(inscripcion.id_oportunidad) ===
+                      String(notificacion.id_oportunidad)
+                  );
+
+
+                setEstadoInscripcionDetalle(
+
+                  inscripcionExistente
+                    ? inscripcionExistente.estado
+                    : null
+
+                );
+
+
+                // Registrar origen de navegación
+
+                setOrigenDetalleVoluntario(
+                  'NOTIFICACIONES'
+                );
+
+
+                // Abrir detalle actual de la oportunidad
+
+                await cargarDetalleOportunidadVoluntario(
+                  notificacion.id_oportunidad
+                );
+
+              }}
+
+            />
+
+          )}
+
           {/* ==================================================
                 INICIO VOLUNTARIO
             ================================================== */}
@@ -8030,10 +8612,24 @@ const cargarDetalleDonacionPropia =
                   usarUbicacionRecomendaciones
                 }
 
-                onLogout={
-                  handleLogout
+                cantidadNoLeidas={
+                cantidadNoLeidas
                 }
 
+                onNotificaciones={async () => {
+
+                  setCurrentScreen(
+                   'VOLUNTARIO_NOTIFICACIONES'
+                  );
+
+                  scrollRef.current?.scrollTo({
+                  y: 0,
+                  animated: false
+                  });
+
+                  await cargarNotificacionesVoluntario();
+
+                }}
 
                 onBuscar={async () => {
 
@@ -8338,6 +8934,30 @@ const cargarDetalleDonacionPropia =
                 setOportunidadSeleccionada(
                   null
                 );
+
+                // ======================================================
+                // VOLVER AL CENTRO DE NOTIFICACIONES
+                // ======================================================
+
+                if (
+                  origenDetalleVoluntario ===
+                  'NOTIFICACIONES'
+                ) {
+
+                  setCurrentScreen(
+                    'VOLUNTARIO_NOTIFICACIONES'
+                  );
+
+                  await cargarNotificacionesVoluntario();
+
+                  scrollRef.current?.scrollTo({
+                    y: 0,
+                    animated: false
+                  });
+
+                  return;
+
+                }
                 
                 if (
                   origenDetalleVoluntario ===
@@ -8763,6 +9383,171 @@ const cargarDetalleDonacionPropia =
       />
 
     )}  
+    
+    {/* ==================================================
+    NOTIFICACIONES DE ORGANIZACIÓN
+    ACTIVIDAD 3.3.2
+================================================== */}
+
+{currentScreen ===
+  'ORGANIZACION_NOTIFICACIONES' && (
+
+  <NotificacionesVoluntarioScreen
+
+    modoOrganizacion={true}
+
+    notificaciones={
+      notificacionesVoluntario
+    }
+
+    loading={
+      loadingNotificaciones
+    }
+
+    onRecargar={
+      cargarNotificacionesVoluntario
+    }
+
+    onMarcarLeida={
+      handleMarcarNotificacionLeida
+    }
+
+    onVolver={async () => {
+
+      setCurrentScreen(
+        'ORGANIZACION_INICIO'
+      );
+
+      await cargarCantidadNoLeidas();
+
+      scrollRef.current?.scrollTo({
+        y: 0,
+        animated: false
+      });
+
+    }}
+
+    onVerDonacion={async (notificacion) => {
+
+       
+
+        if (!notificacion.id_donacion) {
+          showAlert(
+            'error',
+            'Donación no disponible',
+            'No se pudo identificar la donación.'
+          );
+          return;
+        }
+
+        // Preparar listado para el regreso.
+        await cargarDonacionesRecibidas('TODAS');
+
+        // Abrir detalle.
+       const detalleAbierto =
+          await cargarDetalleDonacionRecibida(
+            notificacion.id_donacion
+          );
+
+        if (!detalleAbierto) {
+          return;
+        }
+
+        // Marcar notificación como leída.
+        if (!notificacion.leida_en) {
+          await handleMarcarNotificacionLeida(
+            notificacion
+          );
+        }
+
+      }}
+
+      onGestionarInscripciones={async (notificacion) => {
+
+        
+
+        if (!notificacion.id_oportunidad) {
+          showAlert(
+            'error',
+            'Oportunidad no disponible',
+            'No se pudo identificar la oportunidad.'
+          );
+          return;
+        }
+
+        try {
+
+          const token = await obtenerToken();
+
+          if (!token) {
+            showAlert(
+              'error',
+              'Sesión finalizada',
+              'Iniciá sesión nuevamente.'
+            );
+            return;
+          }
+
+          // Obtener las oportunidades de la organización.
+          const data = await obtenerMisOportunidades(token);
+
+          const listaOportunidades =
+            data.oportunidades || [];
+
+          const oportunidad = listaOportunidades.find(
+            item =>
+              String(item.id_oportunidad) ===
+              String(notificacion.id_oportunidad)
+          );
+
+          if (!oportunidad) {
+            showAlert(
+              'error',
+              'Oportunidad no disponible',
+              'No se encontró la oportunidad asociada.'
+            );
+            return;
+          }
+
+          setOportunidades(listaOportunidades);
+
+          // Abrir gestión de inscripciones.
+          const gestionAbierta =
+            await abrirGestionInscripciones(
+              oportunidad
+            );
+
+          if (!gestionAbierta) {
+            return;
+          }
+
+          // Marcar como leída.
+          if (!notificacion.leida_en) {
+            await handleMarcarNotificacionLeida(
+              notificacion
+            );
+          }
+
+        } catch (error) {
+
+          console.error(
+            'Error al abrir inscripciones:',
+            error
+          );
+
+          showAlert(
+            'error',
+            'Error',
+            'No se pudo acceder a las inscripciones.'
+          );
+
+        }
+
+      }}
+
+  />
+
+)}
 
           {/* ==================================================
               INICIO ORGANIZACIÓN
@@ -8780,6 +9565,25 @@ const cargarDetalleDonacionPropia =
               loading={
                 loading
               }
+
+              cantidadNoLeidas={
+                cantidadNoLeidas
+              }
+
+              onNotificaciones={async () => {
+
+                setCurrentScreen(
+                  'ORGANIZACION_NOTIFICACIONES'
+                );
+
+                scrollRef.current?.scrollTo({
+                  y: 0,
+                  animated: false
+                });
+
+                await cargarNotificacionesVoluntario();
+
+              }}
 
               onLogout={
                 handleLogout

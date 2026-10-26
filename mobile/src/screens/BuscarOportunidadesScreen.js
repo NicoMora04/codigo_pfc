@@ -115,7 +115,7 @@ const [
     setRadioBusquedaKm
   ] = React.useState(
     estadoUbicacionGuardado?.radioBusquedaKm ??
-    '10'
+    ''
   );
 
 
@@ -690,8 +690,7 @@ const [
           '',
 
         radioBusquedaKm:
-          radioBusquedaKm ||
-          '10',
+          radioBusquedaKm,
 
       });
 
@@ -817,7 +816,7 @@ const [
 
 
       setRadioBusquedaKm(
-        '10'
+        ''
       );
 
 
@@ -839,7 +838,7 @@ const [
           '',
 
         radioBusquedaKm:
-          '10',
+          '',
 
       });
 
@@ -976,6 +975,7 @@ const hayZonasAproximadas =
         <TextInput
           style={styles.searchInput}
           placeholder="Ej. Colecta de alimentos"
+          placeholderTextColor="#6B7280"
           value={tituloBusqueda}
           onChangeText={setTituloBusqueda}
         />
@@ -988,6 +988,7 @@ const hayZonasAproximadas =
         <TextInput
           style={styles.searchInput}
           placeholder="Ej. Actitud Solidaria"
+          placeholderTextColor="#6B7280"
           value={organizacionBusqueda}
           onChangeText={setOrganizacionBusqueda}
         />
@@ -998,11 +999,11 @@ const hayZonasAproximadas =
         </Text>
 
 
-        <View style={styles.typeContainer}>
+        <View style={styles.activityTypeContainer}>
 
           <TouchableOpacity
             style={[
-              styles.typeButton,
+              styles.activityTypeButton,
 
               tipoSeleccionado ===
                 null &&
@@ -1021,7 +1022,7 @@ const hayZonasAproximadas =
 
             <Text
               style={[
-                styles.typeButtonText,
+                styles.activityTypeButtonText,
 
                 tipoSeleccionado ===
                   null &&
@@ -1042,7 +1043,7 @@ const hayZonasAproximadas =
                   tipo.id_tipo_actividad
                 }
                 style={[
-                  styles.typeButton,
+                  styles.activityTypeButton,
 
                   tipoSeleccionado ===
                     tipo.id_tipo_actividad &&
@@ -1061,7 +1062,7 @@ const hayZonasAproximadas =
 
                 <Text
                   style={[
-                    styles.typeButtonText,
+                    styles.activityTypeButtonText,
 
                     tipoSeleccionado ===
                       tipo.id_tipo_actividad &&
@@ -1192,7 +1193,7 @@ const hayZonasAproximadas =
                     'es-AR'
                   )
 
-              : 'Todas las fechas'}
+              : 'Buscar por fecha'}
 
           </Text>
 
@@ -1377,6 +1378,7 @@ const hayZonasAproximadas =
             <TextInput
               style={styles.locationInput}
               placeholder="Ej. Güemes 1281, Santa Fe"
+              placeholderTextColor="#6B7280"
               value={
                 textoUbicacion
               }
@@ -1530,6 +1532,7 @@ const hayZonasAproximadas =
               }
               keyboardType="decimal-pad"
               placeholder="Ej: 10"
+              placeholderTextColor="#6B7280"
             />
 
           </View>
@@ -2691,6 +2694,39 @@ emptyClearButtonText: {
   fontSize: 12,
   fontWeight: '700',
 
+},
+
+
+activityTypeContainer: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  justifyContent: 'space-between',
+  rowGap: 10,
+  marginTop: 4,
+},
+
+activityTypeButton: {
+  width: '48%',
+  minHeight: 44,
+
+  backgroundColor: '#FFFFFF',
+
+  borderWidth: 1,
+  borderColor: '#D7DEDA',
+  borderRadius: 12,
+
+  paddingHorizontal: 10,
+  paddingVertical: 10,
+
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+activityTypeButtonText: {
+  fontSize: 12,
+  fontWeight: '600',
+  color: '#5F6B76',
+  textAlign: 'center',
 },
 
   });

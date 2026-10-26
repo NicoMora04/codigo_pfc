@@ -1,6 +1,25 @@
 const oportunidadRepository =
   require('../repositories/oportunidadRepository');
 
+
+  // ======================================================
+// COLA PERSISTENTE DE NOTIFICACIONES PUSH
+// ACTIVIDAD 3.3.1
+// ======================================================
+const notificacionRepository =
+  require('../repositories/notificacionRepository');
+const envioPushRepository =
+  require('../repositories/envioPushRepository');
+// ======================================================
+// NOTIFICACIONES - ACTIVIDAD 3.3.1
+// ======================================================
+
+const notificacionService =
+  require('./notificacionService');
+
+const pool =
+  require('../config/db');  
+
 const uuidRegex =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -624,10 +643,116 @@ exports.cancelarOportunidad = async (
     throw error;
   }
 
-  const oportunidadCancelada =
-    await oportunidadRepository.cancelarOportunidad(idOportunidad);
+  // ======================================================
+    // CANCELAR OPORTUNIDAD Y GENERAR NOTIFICACIONES
+    // ACTIVIDAD 3.3.2
+    // ======================================================
 
-  return oportunidadCancelada;
+    const client =
+      await pool.connect();
+
+    try {
+
+      // ==================================================
+      // 1. INICIAR TRANSACCIÓN
+      // ==================================================
+
+      await client.query(
+        'BEGIN'
+      );
+
+
+      // ==================================================
+      // 2. CANCELAR OPORTUNIDAD
+      // ==================================================
+
+      const oportunidadCancelada =
+        await oportunidadRepository.cancelarOportunidad(
+          idOportunidad,
+          idOrganizacion,
+          client
+        );
+
+
+      if (!oportunidadCancelada) {
+
+        const error = new Error(
+          'La oportunidad ya no puede cancelarse'
+        );
+
+        error.status = 409;
+
+        throw error;
+
+      }
+
+
+      // ==================================================
+      // 3. GENERAR NOTIFICACIONES PARA LOS INSCRIPTOS
+      // ==================================================
+
+      const notificaciones =
+        await notificacionRepository
+          .crearPorOportunidadCancelada(
+            idOportunidad,
+            client
+          );
+
+
+      // ==================================================
+      // 4. REGISTRAR ENVÍOS PUSH
+      // ==================================================
+
+      for (
+        const notificacion of notificaciones
+      ) {
+
+        await envioPushRepository
+          .crearPendientesPorNotificacion(
+            notificacion.id_notificacion,
+            client
+          );
+
+      }
+
+
+      // ==================================================
+      // 5. CONFIRMAR TRANSACCIÓN
+      // ==================================================
+
+      await client.query(
+        'COMMIT'
+      );
+
+
+      console.log(
+        'Actividad cancelada:',
+        oportunidadCancelada.id_oportunidad
+      );
+
+      console.log(
+        'Notificaciones de cancelación generadas:',
+        notificaciones.length
+      );
+
+
+      return oportunidadCancelada;
+
+    }
+    catch (error) {
+
+      await client.query(
+        'ROLLBACK'
+      );
+
+      throw error;
+
+    }
+    finally {
+
+      client.release();
+
+    }
 };
 
 
@@ -697,12 +822,152 @@ exports.publicarOportunidad = async (
     throw error;
   }
 
-  const oportunidadPublicada =
-    await oportunidadRepository.publicarOportunidad(idOportunidad);
 
-  return oportunidadPublicada;
+// ======================================================
+// PUBLICAR OPORTUNIDAD Y REGISTRAR ENVÍOS PUSH
+// ACTIVIDAD 3.3.1
+// ======================================================
+
+const client = await pool.connect();
+
+let oportunidadPublicada = null;
+
+let cantidadNotificaciones = 0;
+
+let cantidadEnvios = 0;
+
+
+// ======================================================
+// 1. TRANSACCIÓN POSTGRESQL
+// ======================================================
+
+try {
+
+  await client.query('BEGIN');
+
+
+  // ==================================================
+  // 2. PUBLICAR OPORTUNIDAD
+  // ==================================================
+
+  oportunidadPublicada =
+    await oportunidadRepository.publicarOportunidad(
+      idOportunidad,
+      idOrganizacion,
+      client
+    );
+
+
+  if (!oportunidadPublicada) {
+
+    const error = new Error(
+      'La oportunidad ya no está disponible para su publicación'
+    );
+
+    error.status = 409;
+
+    throw error;
+
+  }
+
+
+  // ==================================================
+  // 3. GENERAR NOTIFICACIONES
+  // ==================================================
+
+  const notificaciones =
+    await notificacionService.generarPorNuevaOportunidad(
+      oportunidadPublicada.id_oportunidad,
+      client
+    );
+
+
+  cantidadNotificaciones =
+    notificaciones.length;
+
+
+  // ==================================================
+  // 4. REGISTRAR ENVÍOS PUSH PENDIENTES
+  // ==================================================
+
+  const enviosPendientes =
+    await envioPushRepository
+      .crearPendientesPorOportunidad(
+        oportunidadPublicada.id_oportunidad,
+        client
+      );
+
+
+  cantidadEnvios =
+    enviosPendientes.length;
+
+
+  // ==================================================
+  // 5. CONFIRMAR TRANSACCIÓN
+  // ==================================================
+
+  await client.query('COMMIT');
+
+}
+catch (error) {
+
+  // ==================================================
+  // REVERTIR CAMBIOS ANTE ERRORES
+  // ==================================================
+
+  try {
+
+    await client.query('ROLLBACK');
+
+  }
+  catch (rollbackError) {
+
+    console.error(
+      'Error al revertir la transacción:',
+      rollbackError
+    );
+
+  }
+
+  throw error;
+
+}
+finally {
+
+  // Liberar conexión PostgreSQL
+
+  client.release();
+
+}
+
+
+// ======================================================
+// 6. REGISTRAR RESULTADO
+// ======================================================
+
+console.log(
+  'Oportunidad publicada:',
+  oportunidadPublicada.id_oportunidad
+);
+
+console.log(
+  'Notificaciones generadas:',
+  cantidadNotificaciones
+);
+
+console.log(
+  'Envíos push pendientes creados:',
+  cantidadEnvios
+);
+
+
+// ======================================================
+// 7. DEVOLVER OPORTUNIDAD PUBLICADA
+// ======================================================
+
+return oportunidadPublicada;
+
 };
-
 // ======================================================
 // LISTAR OPORTUNIDADES DE LA ORGANIZACIÓN
 // ======================================================

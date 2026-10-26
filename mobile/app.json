@@ -16,6 +16,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.nicomora04.voluntariado",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -27,7 +29,14 @@
     },
     "plugins": [
       "expo-secure-store",
-      "@react-native-community/datetimepicker"
-    ]
+      "@react-native-community/datetimepicker",
+      "expo-notifications"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a00c6af2-2c49-499b-ba50-3cf8211b7f38"
+      }
+    },
+    "owner": "nicomora04"
   }
 }

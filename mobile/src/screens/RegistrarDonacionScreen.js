@@ -34,6 +34,9 @@ import {
   Image
 } from 'react-native';
 
+import {
+  formatearUbicacion
+} from '../utils/formatearUbicacion';
 
 export default function RegistrarDonacionScreen({
   organizacion,
@@ -1083,6 +1086,7 @@ const formatearFechaBackend =
         placeholder={
           'Ej.: Arroz, fideos y leche larga vida.'
         }
+        placeholderTextColor="#6B7280"
         multiline
         value={descripcion}
         onChangeText={
@@ -1100,6 +1104,7 @@ const formatearFechaBackend =
       <TextInput
         style={styles.input}
         placeholder="Ej.: 15"
+        placeholderTextColor="#6B7280"
         keyboardType="decimal-pad"
         value={cantidad}
         onChangeText={
@@ -1119,6 +1124,7 @@ const formatearFechaBackend =
         placeholder={
           'Ej.: kg, unidades, cajas'
         }
+        placeholderTextColor="#6B7280"
         value={unidad}
         onChangeText={
           setUnidad
@@ -1137,6 +1143,7 @@ const formatearFechaBackend =
         placeholder={
           'Ej.: Buen estado'
         }
+        placeholderTextColor="#6B7280"
         value={condicionBien}
         onChangeText={
           setCondicionBien
@@ -1386,6 +1393,7 @@ const formatearFechaBackend =
       }
 
       placeholder="Buscar dirección o lugar..."
+      placeholderTextColor="#6B7280"
 
       value={
         busquedaUbicacion
@@ -1442,7 +1450,7 @@ const formatearFechaBackend =
               );
 
               setBusquedaUbicacion(
-                resultado.nombre
+               formatearUbicacion(resultado)
               );
 
               setResultadosUbicacion(
@@ -1498,7 +1506,9 @@ const formatearFechaBackend =
             styles.selectedLocationText
           }
         >
-          {ubicacionSeleccionada.nombre}
+          {formatearUbicacion(
+          ubicacionSeleccionada
+        )}
         </Text>
 
       </View>
@@ -1973,7 +1983,8 @@ selectedLocationText: {
 locationModeContainer: {
   flexDirection: 'row',
   gap: 8,
-  marginTop: 4
+  marginTop: 4,
+  marginBottom:12
 },
 
 locationModeButton: {

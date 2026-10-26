@@ -340,7 +340,19 @@ export default function DonacionesRecibidasScreen({
                 </View>
 
               </View>
+              
+              {/* ==================================================
+                  DONACIÓN ACEPTADA - PENDIENTE DE COORDINACIÓN
+                  MEJORA UX - ACTIVIDAD 3.3.2
+              ================================================== */}
 
+              {donacion.estado === 'ACEPTADA' && (
+
+                <Text style={styles.pendingCoordinationText}>
+                  ⏳ Pendiente de coordinar entrega
+                </Text>
+
+              )}
 
               <View style={styles.divider} />
 
@@ -657,5 +669,10 @@ const styles =
       fontSize: 14,
       fontWeight: '800',
     },
-
+    pendingCoordinationText: {
+      fontSize: 12,
+      color: '#8A6D3B',
+      fontWeight: '600',
+      marginTop: 10
+    },
   });

@@ -20,6 +20,8 @@ export default function InicioOrganizacionScreen({
   onMisOportunidades,
   onNuevaOportunidad,
   onMiOrganizacion,
+  cantidadNoLeidas=0,
+  onNotificaciones,
 }) {
 
 
@@ -106,6 +108,24 @@ export default function InicioOrganizacionScreen({
       'FINALIZADA'
     );
 
+  // ======================================================
+// CONTADOR TOTAL DE INSCRIPCIONES PENDIENTES
+// ACTIVIDAD 3.3.2
+// ======================================================
+
+const inscripcionesPendientes =
+  oportunidades.reduce(
+    (total, oportunidad) => {
+
+      return total +
+        Number(
+          oportunidad.inscripciones_pendientes || 0
+        );
+
+    },
+    0
+  );  
+
 
   // =====================================================
   // FILTRADO DEL MAPA
@@ -168,26 +188,52 @@ export default function InicioOrganizacionScreen({
 
 
       {/* ================================================= */}
-      {/* ENCABEZADO */}
+      {/* ENCABEZADO CON NOTIFICACIONES - ACTIVIDAD 3.3.2 */}
       {/* ================================================= */}
 
       <View style={styles.header}>
 
-        <View>
+        <View style={styles.headerTopRow}>
 
           <Text style={styles.title}>
             Inicio
           </Text>
 
+          <TouchableOpacity
+            style={styles.notificationButton}
+            onPress={onNotificaciones}
+            accessibilityRole="button"
+            accessibilityLabel={
+              `Notificaciones. ${cantidadNoLeidas} sin leer`
+            }
+          >
 
-          <Text style={styles.subtitle}>
-            Administrá las oportunidades de voluntariado de tu organización.
-          </Text>
+            <Text style={styles.notificationIcon}>
+              🔔
+            </Text>
+
+            {cantidadNoLeidas > 0 && (
+
+              <View style={styles.notificationBadge}>
+
+                <Text style={styles.notificationBadgeText}>
+                  {cantidadNoLeidas > 99
+                    ? '99+'
+                    : cantidadNoLeidas}
+                </Text>
+
+              </View>
+
+            )}
+
+          </TouchableOpacity>
 
         </View>
 
+        <Text style={styles.subtitle}>
+          Administrá las oportunidades de voluntariado de tu organización.
+        </Text>
 
-        
       </View>
 
 
@@ -301,6 +347,41 @@ export default function InicioOrganizacionScreen({
 
           </View>
 
+          {/* ==================================================
+              INSCRIPCIONES PENDIENTES
+              ACTIVIDAD 3.3.2
+          ================================================== */}
+
+          <TouchableOpacity
+              style={[
+                styles.statCard,
+                styles.pendingStatCard
+              ]}
+              onPress={onMisOportunidades}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={
+                `${inscripcionesPendientes} inscripciones pendientes. Ver mis oportunidades`
+              }
+            >
+
+              <Text style={styles.pendingStatNumber}>
+                {inscripcionesPendientes}
+              </Text>
+
+              <Text style={styles.pendingStatLabel}>
+                Inscripciones pendientes
+              </Text>
+
+              <View style={styles.pendingStatButton}>
+
+                <Text style={styles.pendingStatButtonText}>
+                  Ver mis oportunidades
+                </Text>
+
+              </View>
+
+            </TouchableOpacity>
         </View>
 
       )}
@@ -1142,5 +1223,106 @@ const styles =
       textAlign: 'center',
 
     },
+    // ======================================================
+// CAMPANITA DE NOTIFICACIONES - ACTIVIDAD 3.3.2
+// ======================================================
 
+headerTopRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginBottom: 8
+},
+
+notificationButton: {
+  width: 46,
+  height: 46,
+  borderRadius: 14,
+  backgroundColor: '#EAF5F2',
+  alignItems: 'center',
+  justifyContent: 'center',
+  position: 'relative'
+},
+
+notificationIcon: {
+  fontSize: 24
+},
+
+notificationBadge: {
+  position: 'absolute',
+  top: -4,
+  right: -5,
+  backgroundColor: '#D32F2F',
+  minWidth: 20,
+  height: 20,
+  borderRadius: 10,
+  paddingHorizontal: 4,
+  alignItems: 'center',
+  justifyContent: 'center'
+},
+
+notificationBadgeText: {
+  color: '#FFFFFF',
+  fontSize: 10,
+  fontWeight: 'bold'
+},
+
+// ======================================================
+// TARJETA DE INSCRIPCIONES PENDIENTES
+// ACTIVIDAD 3.3.2 - MEJORA VISUAL
+// ======================================================
+
+pendingStatCard: {
+  width: '100%',
+
+  backgroundColor: '#EAF5F2',
+
+  borderColor: '#A8D5C5',
+  borderWidth: 1.5,
+
+  borderRadius: 16,
+
+  paddingVertical: 22,
+  paddingHorizontal: 18,
+
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+
+pendingStatNumber: {
+  fontSize: 32,
+  fontWeight: '800',
+  color: '#1F6F5C',
+  textAlign: 'center',
+},
+
+pendingStatLabel: {
+  fontSize: 14,
+  fontWeight: '700',
+  color: '#164C40',
+
+  marginTop: 6,
+  marginBottom: 16,
+
+  textAlign: 'center',
+},
+
+pendingStatButton: {
+  backgroundColor: '#1F6F5C',
+
+  borderRadius: 10,
+
+  paddingVertical: 12,
+  paddingHorizontal: 22,
+
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+
+pendingStatButtonText: {
+  color: '#FFFFFF',
+  fontSize: 13,
+  fontWeight: '700',
+  textAlign: 'center',
+},
   });

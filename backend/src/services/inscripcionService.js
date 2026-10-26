@@ -537,10 +537,11 @@ const cancelarInscripcionVoluntario = async (
 
   // 7. Cancelar
   const inscripcionCancelada =
-    await inscripcionRepository
-      .cancelarPorVoluntario(
-        idInscripcion
-      );
+  await inscripcionRepository
+    .cancelarPorVoluntario(
+      idInscripcion,
+      idVoluntario
+    );
 
 
   if (!inscripcionCancelada) {

@@ -30,7 +30,46 @@ afterAll(
 
     // Las donaciones eliminan su historial
     // mediante ON DELETE CASCADE.
+    // ======================================================
+// ELIMINAR ENVÍOS PUSH DE LAS DONACIONES DE PRUEBA
+// ======================================================
 
+await pool.query(
+  `
+  DELETE FROM envio_push
+  WHERE id_notificacion IN (
+    SELECT n.id_notificacion
+    FROM notificacion n
+    INNER JOIN donacion d
+      ON d.id_donacion = n.id_donacion
+    WHERE d.id_voluntario IN ($1, $2)
+  )
+  `,
+  [
+    idVoluntario,
+    idSegundoVoluntario
+  ]
+);
+
+
+// ======================================================
+// ELIMINAR NOTIFICACIONES DE LAS DONACIONES DE PRUEBA
+// ======================================================
+
+await pool.query(
+  `
+  DELETE FROM notificacion
+  WHERE id_donacion IN (
+    SELECT id_donacion
+    FROM donacion
+    WHERE id_voluntario IN ($1, $2)
+  )
+  `,
+  [
+    idVoluntario,
+    idSegundoVoluntario
+  ]
+);
     await pool.query(
       `
       DELETE FROM donacion
@@ -136,7 +175,50 @@ beforeAll(
 // anteriores usando las claves del test.
 // El historial se elimina por ON DELETE CASCADE.
 // ----------------------------------------------
+// ======================================================
+// LIMPIEZA PREVENTIVA DE ENVÍOS PUSH
+// ======================================================
 
+await pool.query(
+  `
+  DELETE FROM envio_push
+  WHERE id_notificacion IN (
+    SELECT n.id_notificacion
+    FROM notificacion n
+    INNER JOIN donacion d
+      ON d.id_donacion = n.id_donacion
+    WHERE d.idempotency_key IN ($1, $2, $3, $4)
+  )
+  `,
+  [
+    idempotencyKey,
+    segundaIdempotencyKey,
+    terceraIdempotencyKey,
+    cuartaIdempotencyKey
+  ]
+);
+
+
+// ======================================================
+// LIMPIEZA PREVENTIVA DE NOTIFICACIONES
+// ======================================================
+
+await pool.query(
+  `
+  DELETE FROM notificacion
+  WHERE id_donacion IN (
+    SELECT id_donacion
+    FROM donacion
+    WHERE idempotency_key IN ($1, $2, $3, $4)
+  )
+  `,
+  [
+    idempotencyKey,
+    segundaIdempotencyKey,
+    terceraIdempotencyKey,
+    cuartaIdempotencyKey
+  ]
+);
 await pool.query(
   `
   DELETE FROM donacion
@@ -505,6 +587,525 @@ describe(
 describe(
   'donacionRepository - integración PostgreSQL',
   () => {
+
+    // ======================================================
+// ACTIVIDAD 3.3.2
+// PRUEBAS DE INTEGRACIÓN TRANSACCIONAL
+// ======================================================
+
+const { randomUUID } = require('node:crypto');
+
+const notificacionRepository332 =
+  require('../src/repositories/notificacionRepository');
+
+
+// ======================================================
+// DATOS AUXILIARES
+// ======================================================
+
+const crearDatosDonacion332 = (
+  clave,
+  voluntario = idVoluntario
+) => ({
+  idVoluntario: voluntario,
+  idOrganizacion,
+  idCategoriaDonacion: idCategoria,
+  idUbicacion: null,
+  descripcion: 'Donación de prueba 3.3.2',
+  cantidad: 5,
+  unidad: 'paquetes',
+  condicionBien: 'Nuevo',
+  disponibleDesde: '2099-01-01',
+  idempotencyKey: clave
+});
+
+
+// ======================================================
+// PRUEBA 1
+// CONCURRENCIA SIN NOTIFICACIONES DUPLICADAS
+// ======================================================
+
+test(
+  '3.3.2 - dos solicitudes concurrentes generan una sola notificación',
+  async () => {
+
+    const clave = randomUUID();
+
+    const datos = crearDatosDonacion332(clave);
+
+    const [primero, segundo] = await Promise.all([
+      donacionRepository.crearDonacionTransaccional(datos),
+      donacionRepository.crearDonacionTransaccional(datos)
+    ]);
+
+    // Una solicitud registra y la otra reutiliza.
+
+    expect([
+      primero.reutilizada,
+      segundo.reutilizada
+    ].sort()).toEqual([false, true]);
+
+    // Ambas deben identificar la misma donación.
+
+    expect(primero.donacion.id_donacion)
+      .toBe(segundo.donacion.id_donacion);
+
+    const idDonacion =
+      primero.donacion.id_donacion;
+
+    // Verificar notificaciones persistidas.
+
+    const resultado = await pool.query(
+      `
+      SELECT
+        id_notificacion,
+        id_usuario,
+        tipo
+      FROM notificacion
+      WHERE id_donacion = $1
+      `,
+      [idDonacion]
+    );
+
+    // Debe existir exactamente una notificación.
+
+    expect(resultado.rows).toHaveLength(1);
+
+    expect(resultado.rows[0].tipo)
+      .toBe('NUEVA_DONACION_ORGANIZACION');
+
+  }
+);
+
+
+// ======================================================
+// PRUEBA 2
+// DOS DONACIONES DIFERENTES
+// ======================================================
+
+test(
+  '3.3.2 - dos donaciones diferentes generan notificaciones independientes',
+  async () => {
+
+    const primera =
+      await donacionRepository.crearDonacionTransaccional(
+        crearDatosDonacion332(randomUUID())
+      );
+
+    const segunda =
+      await donacionRepository.crearDonacionTransaccional(
+        crearDatosDonacion332(randomUUID())
+      );
+
+    const idPrimera =
+      primera.donacion.id_donacion;
+
+    const idSegunda =
+      segunda.donacion.id_donacion;
+
+    expect(idPrimera).not.toBe(idSegunda);
+
+    const resultado = await pool.query(
+      `
+      SELECT
+        id_notificacion,
+        id_donacion,
+        id_usuario,
+        tipo
+      FROM notificacion
+      WHERE id_donacion IN ($1, $2)
+      ORDER BY id_donacion
+      `,
+      [idPrimera, idSegunda]
+    );
+
+    // Cada donación debe tener su propia notificación.
+
+    expect(resultado.rows).toHaveLength(2);
+
+    const idsDonaciones =
+      resultado.rows.map(n => n.id_donacion);
+
+    expect(idsDonaciones).toContain(idPrimera);
+    expect(idsDonaciones).toContain(idSegunda);
+
+    // Los identificadores de notificación son diferentes.
+
+    expect(
+      resultado.rows[0].id_notificacion
+    ).not.toBe(
+      resultado.rows[1].id_notificacion
+    );
+
+    // Ambas corresponden al mismo tipo de evento.
+
+    expect(
+      resultado.rows.every(
+        n => n.tipo === 'NUEVA_DONACION_ORGANIZACION'
+      )
+    ).toBe(true);
+
+  }
+);
+
+
+// ======================================================
+// PRUEBA 3
+// ROLLBACK SI FALLA LA NOTIFICACIÓN
+// ======================================================
+
+test(
+  '3.3.2 - revierte la donación si falla la generación de notificaciones',
+  async () => {
+
+    const clave = randomUUID();
+
+    const datos = crearDatosDonacion332(clave);
+
+    const errorSimulado =
+      'Fallo simulado de notificaciones 3.3.2';
+
+    // Simular una falla dentro de la transacción.
+
+    const spy = jest.spyOn(
+      notificacionRepository332,
+      'crearPorNuevaDonacionOrganizacion'
+    ).mockRejectedValueOnce(
+      new Error(errorSimulado)
+    );
+
+    try {
+
+      await expect(
+        donacionRepository.crearDonacionTransaccional(datos)
+      ).rejects.toThrow(errorSimulado);
+
+    } finally {
+
+      // Restaurar siempre la función original.
+      spy.mockRestore();
+
+    }
+
+    // La donación no debe haberse persistido.
+
+    const resultado = await pool.query(
+      `
+      SELECT COUNT(*)::int AS total
+      FROM donacion
+      WHERE idempotency_key = $1
+      `,
+      [clave]
+    );
+
+    expect(resultado.rows[0].total).toBe(0);
+
+    // Tampoco debe existir un historial asociado
+    // a una donación con esa clave.
+
+    const historial = await pool.query(
+      `
+      SELECT COUNT(*)::int AS total
+      FROM historial_estado_donacion h
+      INNER JOIN donacion d
+        ON d.id_donacion = h.id_donacion
+      WHERE d.idempotency_key = $1
+      `,
+      [clave]
+    );
+
+    expect(historial.rows[0].total).toBe(0);
+
+  }
+);
+
+
+// ======================================================
+// PRUEBA 4
+// IDEMPOTENCIA Y SEGURIDAD
+// ======================================================
+
+test(
+  '3.3.2 - rechaza reutilización ajena sin generar otra notificación',
+  async () => {
+
+    const clave = randomUUID();
+
+    // Primer voluntario registra la donación.
+
+    const primera =
+      await donacionRepository.crearDonacionTransaccional(
+        crearDatosDonacion332(
+          clave,
+          idVoluntario
+        )
+      );
+
+    const idDonacion =
+      primera.donacion.id_donacion;
+
+    const consultarNotificaciones = async () =>
+      pool.query(
+        `
+        SELECT
+          id_notificacion,
+          id_usuario
+        FROM notificacion
+        WHERE id_donacion = $1
+        `,
+        [idDonacion]
+      );
+
+    const notificacionesIniciales =
+      await consultarNotificaciones();
+
+    expect(notificacionesIniciales.rows)
+      .toHaveLength(1);
+
+    // Otro voluntario intenta reutilizar la clave.
+
+    await expect(
+      donacionRepository.crearDonacionTransaccional(
+        crearDatosDonacion332(
+          clave,
+          idSegundoVoluntario
+        )
+      )
+    ).rejects.toMatchObject({
+      status: 409
+    });
+
+    // No debe generarse ninguna notificación adicional.
+
+    const notificacionesFinales =
+      await consultarNotificaciones();
+
+    expect(notificacionesFinales.rows)
+      .toHaveLength(1);
+
+    expect(
+      notificacionesFinales.rows[0].id_notificacion
+    ).toBe(
+      notificacionesIniciales.rows[0].id_notificacion
+    );
+
+  }
+);
+
+        // ======================================================
+    // ACTIVIDAD 3.3.2
+    // NOTIFICACIÓN POR NUEVA DONACIÓN
+    // ======================================================
+
+    test(
+      '3.3.2 - notifica a la organización sin generar duplicados',
+      async () => {
+
+        const { randomUUID } =
+          require('node:crypto');
+
+        // Clave única para esta ejecución.
+        const idempotencyKeyNotificacion =
+          randomUUID();
+
+        const datosDonacion = {
+          idVoluntario,
+          idOrganizacion,
+
+          idCategoriaDonacion:
+            idCategoria,
+
+          idUbicacion: null,
+
+          descripcion:
+            'Donación para probar notificaciones',
+
+          cantidad: 5,
+
+          unidad: 'paquetes',
+
+          condicionBien: 'Nuevo',
+
+          disponibleDesde: '2099-01-01',
+
+          idempotencyKey:
+            idempotencyKeyNotificacion
+        };
+
+        let idDonacion = null;
+
+        try {
+
+          // ================================================
+          // 1. REGISTRAR DONACIÓN
+          // ================================================
+
+          const resultado =
+            await donacionRepository
+              .crearDonacionTransaccional(
+                datosDonacion
+              );
+
+          idDonacion =
+            resultado.donacion.id_donacion;
+
+          expect(resultado.reutilizada)
+            .toBe(false);
+
+          expect(resultado.donacion.estado)
+            .toBe('PENDIENTE');
+
+
+          // ================================================
+          // 2. CONSULTAR NOTIFICACIONES GENERADAS
+          // ================================================
+
+          const consultarNotificaciones =
+            async () => pool.query(
+              `
+              SELECT
+                n.id_notificacion,
+                n.id_usuario,
+                n.id_donacion,
+                n.tipo,
+
+                o.id_usuario
+                  AS id_usuario_organizacion
+
+              FROM notificacion n
+
+              INNER JOIN donacion d
+                ON d.id_donacion =
+                  n.id_donacion
+
+              INNER JOIN organizacion o
+                ON o.id_organizacion =
+                  d.id_organizacion
+
+              WHERE n.id_donacion = $1
+              `,
+              [idDonacion]
+            );
+
+          const notificaciones =
+            await consultarNotificaciones();
+
+
+          // Debe existir una sola notificación.
+          expect(notificaciones.rows)
+            .toHaveLength(1);
+
+
+          const notificacion =
+            notificaciones.rows[0];
+
+
+          // Verificar el tipo de notificación.
+          expect(notificacion.tipo)
+            .toBe(
+              'NUEVA_DONACION_ORGANIZACION'
+            );
+
+
+          // Verificar la organización destinataria.
+          expect(notificacion.id_usuario)
+            .toBe(
+              notificacion.id_usuario_organizacion
+            );
+
+
+          // Verificar la donación relacionada.
+          expect(notificacion.id_donacion)
+            .toBe(idDonacion);
+
+
+          // ================================================
+          // 3. COMPROBAR IDEMPOTENCIA
+          // ================================================
+
+          const segundoResultado =
+            await donacionRepository
+              .crearDonacionTransaccional(
+                datosDonacion
+              );
+
+
+          // Debe reutilizar la donación existente.
+          expect(segundoResultado.reutilizada)
+            .toBe(true);
+
+
+          expect(
+            segundoResultado.donacion.id_donacion
+          ).toBe(idDonacion);
+
+
+          // ================================================
+          // 4. VERIFICAR AUSENCIA DE DUPLICADOS
+          // ================================================
+
+          const notificacionesFinales =
+            await consultarNotificaciones();
+
+
+          expect(notificacionesFinales.rows)
+            .toHaveLength(1);
+
+
+          expect(
+            notificacionesFinales.rows[0]
+              .id_notificacion
+          ).toBe(
+            notificacion.id_notificacion
+          );
+
+        } finally {
+
+          // ================================================
+          // 5. LIMPIEZA DE DATOS DE PRUEBA
+          // ================================================
+
+          if (idDonacion) {
+
+            // Eliminar envíos push asociados.
+            await pool.query(
+              `
+              DELETE FROM envio_push
+              WHERE id_notificacion IN (
+                SELECT id_notificacion
+                FROM notificacion
+                WHERE id_donacion = $1
+              )
+              `,
+              [idDonacion]
+            );
+
+
+            // Eliminar notificaciones.
+            await pool.query(
+              `
+              DELETE FROM notificacion
+              WHERE id_donacion = $1
+              `,
+              [idDonacion]
+            );
+
+
+            // Eliminar donación.
+            await pool.query(
+              `
+              DELETE FROM donacion
+              WHERE id_donacion = $1
+              `,
+              [idDonacion]
+            );
+
+          }
+
+        }
+
+      }
+    );
 
     test(
       'crea la donación y el historial inicial en PostgreSQL',

@@ -114,9 +114,14 @@ export default function MisOportunidadesScreen({
         </Text>
       </TouchableOpacity>
 
+      <Text style={styles.searchLabel}>
+        Buscar oportunidad por título
+      </Text>
+
       <TextInput
         style={styles.searchInput}
-        placeholder="Buscar por título..."
+        placeholder="Ej. Jornada solidaria"
+        placeholderTextColor="#6B7280"
         value={busqueda}
         onChangeText={onCambiarBusqueda}
         autoFocus={false}
@@ -231,6 +236,29 @@ export default function MisOportunidadesScreen({
               {oportunidad.cupos_disponibles ??
                 oportunidad.cupo_total}
             </Text>
+
+            {/* ==================================================
+                INSCRIPCIONES PENDIENTES
+                ACTIVIDAD 3.3.2
+            ================================================== */}
+
+            {Number(
+              oportunidad.inscripciones_pendientes || 0
+            ) > 0 && (
+
+              <View style={styles.pendingBadge}>
+
+                <Text style={styles.pendingBadgeText}>
+                  ⏳ {oportunidad.inscripciones_pendientes}
+                  {' '}
+                  {Number(oportunidad.inscripciones_pendientes) === 1
+                    ? 'inscripción pendiente'
+                    : 'inscripciones pendientes'}
+                </Text>
+
+              </View>
+
+            )}
 
             <Text style={styles.cardInfo}>
               Urgencia: {oportunidad.urgencia}
@@ -697,6 +725,29 @@ btnDelete: {
   borderRadius: 8,
   backgroundColor: '#8B1E1E',
   justifyContent: 'center',
+},
+searchLabel: {
+  fontSize: 14,
+  fontWeight: '700',
+  color: '#164C40',
+  marginTop: 12,
+  marginBottom: 8
+},
+pendingBadge: {
+  backgroundColor: '#FFF8E6',
+  borderColor: '#E8D5A3',
+  borderWidth: 1,
+  borderRadius: 10,
+  paddingVertical: 9,
+  paddingHorizontal: 12,
+  marginTop: 10,
+  alignSelf: 'flex-start'
+},
+
+pendingBadgeText: {
+  fontSize: 12,
+  fontWeight: '700',
+  color: '#8A6D3B'
 },
 
 });

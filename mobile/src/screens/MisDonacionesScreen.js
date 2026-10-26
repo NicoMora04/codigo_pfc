@@ -333,7 +333,13 @@ export default function MisDonacionesScreen({
 
                   </View>
 
+                  {donacion.estado === 'ACEPTADA' && (
 
+                      <Text style={styles.pendingCoordinationText}>
+                        ⏳ Pendiente de coordinación
+                      </Text>
+
+                    )}
                   <Text style={styles.organization}>
                     {donacion.organizacion}
                   </Text>
@@ -679,6 +685,14 @@ const styles =
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: 8,
+    },
+    
+    pendingCoordinationText: {
+      fontSize: 12,
+      color: '#8A6D3B',
+      fontWeight: '600',
+      marginTop: 8,
+      marginBottom: 4
     },
 
   });

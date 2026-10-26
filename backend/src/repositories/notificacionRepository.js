@@ -39,8 +39,9 @@ const crear = async (
 };
 
 
-// ======================================================
-// LISTAR NOTIFICACIONES DE UN USUARIO
+/// ======================================================
+// LISTAR NOTIFICACIONES CON ESTADO DE OPORTUNIDAD
+// ACTIVIDAD 3.3.1
 // ======================================================
 
 const listarPorUsuario = async (
@@ -50,25 +51,98 @@ const listarPorUsuario = async (
 ) => {
 
   const query = `
+
     SELECT
-      id_notificacion,
-      titulo,
-      mensaje,
-      tipo,
-      creada_en,
-      leida_en
+      n.id_notificacion,
+      n.titulo,
+      n.mensaje,
+      n.tipo,
 
-    FROM notificacion
+      COALESCE(
+        n.id_oportunidad,
+        i.id_oportunidad
+      ) AS id_oportunidad,
 
-    WHERE id_usuario = $1
+      n.id_inscripcion,
+      n.id_donacion,
+
+      n.creada_en,
+      n.leida_en,
+
+      o.titulo AS oportunidad_titulo,
+
+      o.estado AS oportunidad_estado,
+
+      CASE
+
+        WHEN n.tipo = 'NUEVA_OPORTUNIDAD'
+
+        THEN COALESCE(
+
+          o.estado = 'PUBLICADA'
+
+          AND o.eliminado_en IS NULL
+
+          AND o.fecha_inicio > NOW()
+
+          AND o.fecha_fin >= NOW()
+
+          AND (
+
+            SELECT COUNT(*)::INTEGER
+
+            FROM inscripcion i
+
+            WHERE i.id_oportunidad =
+              o.id_oportunidad
+
+              AND i.estado = 'ACEPTADA'
+
+          ) < o.cupo_total,
+
+          FALSE
+
+        )
+
+        ELSE NULL
+
+      END AS oportunidad_disponible
+
+    FROM (
+
+      SELECT *
+
+      FROM notificacion
+
+      WHERE id_usuario = $1
+
+      ORDER BY
+        creada_en DESC,
+        id_notificacion DESC
+
+      LIMIT $2
+
+      OFFSET $3
+
+    ) n
+
+    LEFT JOIN inscripcion i
+
+    ON i.id_inscripcion = n.id_inscripcion
+
+    LEFT JOIN oportunidad o
+
+      ON o.id_oportunidad = COALESCE(
+        n.id_oportunidad,
+        i.id_oportunidad
+      )
 
     ORDER BY
-      creada_en DESC,
-      id_notificacion DESC
+      n.creada_en DESC,
+      n.id_notificacion DESC;
 
-    LIMIT $2
-    OFFSET $3;
   `;
+
 
   const { rows } = await pool.query(
     query,
@@ -79,10 +153,10 @@ const listarPorUsuario = async (
     ]
   );
 
+
   return rows;
 
 };
-
 
 // ======================================================
 // MARCAR NOTIFICACIÓN COMO LEÍDA
@@ -147,7 +221,533 @@ const contarNoLeidas = async (
 
 };
 
+// ======================================================
+// BUSCAR DESTINATARIOS POR TIPO DE ACTIVIDAD
+// ACTIVIDAD 3.3.1
+// ======================================================
 
+const buscarDestinatariosPorTipoActividad = async (
+  idTipoActividad
+) => {
+
+  const query = `
+    SELECT DISTINCT
+      u.id_usuario
+
+    FROM voluntario_tipo_actividad vta
+
+    INNER JOIN usuario u
+      ON u.id_usuario = vta.id_voluntario
+
+    WHERE vta.id_tipo_actividad = $1
+
+      AND u.rol = 'VOLUNTARIO'
+
+      AND u.estado_cuenta = 'ACTIVA'
+
+    ORDER BY u.id_usuario;
+  `;
+
+  const { rows } = await pool.query(
+    query,
+    [idTipoActividad]
+  );
+
+  return rows.map(
+    (fila) => fila.id_usuario
+  );
+
+};
+
+
+// ======================================================
+// GENERAR NOTIFICACIONES POR NUEVA OPORTUNIDAD
+// ACTIVIDAD 3.3.1
+// ======================================================
+
+const crearPorOportunidadPublicada = async (
+  idOportunidad,
+  db = pool
+) => {
+
+  const query = `
+
+    INSERT INTO notificacion (
+      id_usuario,
+      titulo,
+      mensaje,
+      tipo,
+      id_oportunidad
+    )
+
+    SELECT DISTINCT
+
+      u.id_usuario,
+
+      'Nueva oportunidad de voluntariado',
+
+      'Se publicó "' ||
+      o.titulo ||
+      '", una oportunidad compatible con tus intereses.',
+
+      'NUEVA_OPORTUNIDAD',
+
+      o.id_oportunidad
+
+    FROM oportunidad o
+
+    INNER JOIN voluntario_tipo_actividad vta
+      ON vta.id_tipo_actividad =
+         o.id_tipo_actividad
+
+    INNER JOIN usuario u
+      ON u.id_usuario =
+         vta.id_voluntario
+
+    WHERE o.id_oportunidad = $1
+
+      AND o.estado = 'PUBLICADA'
+
+      AND o.eliminado_en IS NULL
+
+      AND u.rol = 'VOLUNTARIO'
+
+      AND u.estado_cuenta = 'ACTIVA'
+
+    ON CONFLICT
+      ON CONSTRAINT
+        uq_notificacion_usuario_tipo_oportunidad
+
+    DO NOTHING
+
+    RETURNING
+      id_notificacion,
+      id_usuario,
+      titulo,
+      mensaje,
+      tipo,
+      id_oportunidad,
+      creada_en;
+
+  `;
+
+  const { rows } = await db.query(
+    query,
+    [idOportunidad]
+  );
+
+  return rows;
+
+};
+
+// ======================================================
+// CREAR NOTIFICACIÓN POR INSCRIPCIÓN ACEPTADA
+// ACTIVIDAD 3.3.2
+// ======================================================
+
+const crearPorInscripcionAceptada = async (
+  idInscripcion,
+  db = pool
+) => {
+
+  const query = `
+
+    INSERT INTO notificacion (
+      id_usuario,
+      titulo,
+      mensaje,
+      tipo,
+      id_inscripcion
+    )
+
+    SELECT
+
+      i.id_voluntario,
+
+      'Inscripción aceptada',
+
+      'Tu inscripción a "' ||
+      o.titulo ||
+      '" fue aceptada por la organización.',
+
+      'INSCRIPCION_ACEPTADA',
+
+      i.id_inscripcion
+
+    FROM inscripcion i
+
+    INNER JOIN oportunidad o
+      ON o.id_oportunidad = i.id_oportunidad
+
+    INNER JOIN usuario u
+      ON u.id_usuario = i.id_voluntario
+
+    WHERE i.id_inscripcion = $1
+
+      AND i.estado = 'ACEPTADA'
+
+      AND u.rol = 'VOLUNTARIO'
+
+      AND u.estado_cuenta = 'ACTIVA'
+
+    ON CONFLICT
+      ON CONSTRAINT
+        uq_notificacion_usuario_tipo_inscripcion
+
+    DO NOTHING
+
+    RETURNING
+      id_notificacion,
+      id_usuario,
+      titulo,
+      mensaje,
+      tipo,
+      id_inscripcion,
+      creada_en;
+
+  `;
+
+  const { rows } = await db.query(
+    query,
+    [idInscripcion]
+  );
+
+  return rows;
+
+};
+// ======================================================
+// CREAR NOTIFICACIÓN POR DONACIÓN COORDINADA
+// ACTIVIDAD 3.3.2
+// ======================================================
+
+const crearPorDonacionCoordinada = async (
+  idDonacion,
+  db = pool
+) => {
+
+  const query = `
+
+    INSERT INTO notificacion (
+      id_usuario,
+      titulo,
+      mensaje,
+      tipo,
+      id_donacion
+    )
+
+    SELECT
+
+      d.id_voluntario,
+
+      'Donación coordinada',
+
+      'La organización ' ||
+      o.razon_social ||
+      ' coordinó la entrega de tu donación. ' ||
+      'Consultá los detalles en Mis Donaciones.',
+
+      'DONACION_COORDINADA',
+
+      d.id_donacion
+
+    FROM donacion d
+
+    INNER JOIN organizacion o
+      ON o.id_organizacion = d.id_organizacion
+
+    INNER JOIN usuario u
+      ON u.id_usuario = d.id_voluntario
+
+    WHERE d.id_donacion = $1
+
+      AND d.estado = 'COORDINADA'
+
+      AND u.rol = 'VOLUNTARIO'
+
+      AND u.estado_cuenta = 'ACTIVA'
+
+    ON CONFLICT
+      ON CONSTRAINT
+        uq_notificacion_usuario_tipo_donacion
+
+    DO NOTHING
+
+    RETURNING
+      id_notificacion,
+      id_usuario,
+      titulo,
+      mensaje,
+      tipo,
+      id_donacion,
+      creada_en;
+
+  `;
+
+  const { rows } = await db.query(
+    query,
+    [idDonacion]
+  );
+
+  return rows;
+
+};
+
+// ======================================================
+// NOTIFICAR CANCELACIÓN DE INSCRIPCIÓN ACEPTADA
+// DESTINATARIO: ORGANIZACIÓN
+// ACTIVIDAD 3.3.2
+// ======================================================
+
+const crearPorCancelacionInscripcionAceptada = async (
+  idInscripcion,
+  db = pool
+) => {
+
+  const query = `
+
+    INSERT INTO notificacion (
+
+      id_usuario,
+      titulo,
+      mensaje,
+      tipo,
+      id_inscripcion
+
+    )
+
+    SELECT
+
+      u.id_usuario,
+
+      'Inscripción cancelada',
+
+      'Un voluntario canceló su inscripción aceptada a "' ||
+      o.titulo ||
+      '". Revisá las inscripciones de la actividad.',
+
+      'INSCRIPCION_CANCELADA_ORGANIZACION',
+
+      i.id_inscripcion
+
+     FROM inscripcion i
+
+    INNER JOIN oportunidad o
+      ON o.id_oportunidad = i.id_oportunidad
+
+    INNER JOIN organizacion org
+      ON org.id_organizacion = o.id_organizacion
+
+    INNER JOIN usuario u
+      ON u.id_usuario = org.id_usuario
+
+    WHERE i.id_inscripcion = $1
+
+      AND i.estado = 'CANCELADA'
+
+      AND u.rol = 'ORGANIZACION'
+
+      AND u.estado_cuenta = 'ACTIVA'
+
+    ON CONFLICT
+      ON CONSTRAINT
+        uq_notificacion_usuario_tipo_inscripcion
+
+    DO NOTHING
+
+    RETURNING
+
+      id_notificacion,
+      id_usuario,
+      titulo,
+      mensaje,
+      tipo,
+      id_inscripcion,
+      creada_en;
+
+  `;
+
+  const { rows } = await db.query(
+    query,
+    [idInscripcion]
+  );
+
+  return rows;
+
+};
+
+// ======================================================
+// NOTIFICAR NUEVA DONACIÓN A ORGANIZACIÓN
+// ACTIVIDAD 3.3.2
+// ======================================================
+
+const crearPorNuevaDonacionOrganizacion = async (
+  idDonacion,
+  db = pool
+) => {
+
+  const query = `
+
+    INSERT INTO notificacion (
+
+      id_usuario,
+      titulo,
+      mensaje,
+      tipo,
+      id_donacion
+
+    )
+
+    SELECT
+
+      u.id_usuario,
+
+      'Nueva donación recibida',
+
+      'Recibiste una nueva donación de ' ||
+      c.nombre ||
+      '. Revisá Donaciones recibidas para gestionarla.',
+
+      'NUEVA_DONACION_ORGANIZACION',
+
+      d.id_donacion
+
+    FROM donacion d
+
+    INNER JOIN organizacion org
+      ON org.id_organizacion = d.id_organizacion
+
+    INNER JOIN usuario u
+      ON u.id_usuario = org.id_usuario
+
+    INNER JOIN categoria_donacion c
+      ON c.id_categoria_donacion =
+         d.id_categoria_donacion
+
+    WHERE d.id_donacion = $1
+
+      AND d.estado = 'PENDIENTE'
+
+      AND u.rol = 'ORGANIZACION'
+
+      AND u.estado_cuenta = 'ACTIVA'
+
+    ON CONFLICT
+      ON CONSTRAINT
+        uq_notificacion_usuario_tipo_donacion
+
+    DO NOTHING
+
+    RETURNING
+
+      id_notificacion,
+      id_usuario,
+      titulo,
+      mensaje,
+      tipo,
+      id_donacion,
+      creada_en;
+
+  `;
+
+
+  const { rows } =
+    await db.query(
+      query,
+      [idDonacion]
+    );
+
+
+  return rows;
+
+};
+
+// ======================================================
+// NOTIFICAR CANCELACIÓN DE ACTIVIDAD
+// VOLUNTARIOS PENDIENTES Y ACEPTADOS
+// ACTIVIDAD 3.3.2
+// ======================================================
+
+const crearPorOportunidadCancelada = async (
+  idOportunidad,
+  db = pool
+) => {
+
+  const query = `
+
+    INSERT INTO notificacion (
+
+      id_usuario,
+      titulo,
+      mensaje,
+      tipo,
+      id_oportunidad
+
+    )
+
+    SELECT DISTINCT
+
+      u.id_usuario,
+
+      'Actividad cancelada',
+
+      'La organización canceló la actividad "' ||
+      o.titulo ||
+      '" en la que estabas inscripto.',
+
+      'OPORTUNIDAD_CANCELADA',
+
+      o.id_oportunidad
+
+    FROM oportunidad o
+
+    INNER JOIN inscripcion i
+      ON i.id_oportunidad = o.id_oportunidad
+
+    INNER JOIN usuario u
+      ON u.id_usuario = i.id_voluntario
+
+    WHERE o.id_oportunidad = $1
+
+      AND o.estado = 'CANCELADA'
+
+      AND i.estado IN (
+        'PENDIENTE',
+        'ACEPTADA'
+      )
+
+      AND u.rol = 'VOLUNTARIO'
+
+      AND u.estado_cuenta = 'ACTIVA'
+
+    ON CONFLICT
+      ON CONSTRAINT
+        uq_notificacion_usuario_tipo_oportunidad
+
+    DO NOTHING
+
+    RETURNING
+
+      id_notificacion,
+      id_usuario,
+      titulo,
+      mensaje,
+      tipo,
+      id_oportunidad,
+      creada_en;
+
+  `;
+
+
+  const { rows } =
+    await db.query(
+      query,
+      [idOportunidad]
+    );
+
+
+  return rows;
+
+};
 // ======================================================
 // EXPORTACIONES
 // ======================================================
@@ -156,5 +756,12 @@ module.exports = {
   crear,
   listarPorUsuario,
   marcarComoLeida,
-  contarNoLeidas
+  contarNoLeidas,
+  buscarDestinatariosPorTipoActividad,
+  crearPorOportunidadPublicada,
+  crearPorInscripcionAceptada,
+  crearPorDonacionCoordinada,
+  crearPorCancelacionInscripcionAceptada,
+  crearPorNuevaDonacionOrganizacion,
+  crearPorOportunidadCancelada
 };

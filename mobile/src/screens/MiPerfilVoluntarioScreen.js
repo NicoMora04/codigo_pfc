@@ -27,6 +27,56 @@ export default function MiPerfilVoluntarioScreen({
 
   const [interesesSeleccionados, setInteresesSeleccionados] = useState([]);
 
+  // ======================================================
+// DETECTAR MODIFICACIONES EN LOS INTERESES
+// MEJORA UX - ACTIVIDAD 3.3.2
+// ======================================================
+
+const interesesGuardados =
+  (Array.isArray(intereses) ? intereses : [])
+    .map((interes) => {
+
+      if (
+        typeof interes === 'object' &&
+        interes !== null
+      ) {
+        return Number(interes.id_tipo_actividad);
+      }
+
+      return Number(interes);
+
+    })
+    .filter(Number.isFinite);
+
+
+// Ordenar los identificadores para comparar
+// independientemente del orden de selección.
+
+const normalizarIds = (ids) =>
+  [...new Set(ids)].sort((a, b) => a - b);
+
+
+const seleccionActual =
+  normalizarIds(interesesSeleccionados);
+
+const seleccionGuardada =
+  normalizarIds(interesesGuardados);
+
+
+// Determinar si existen cambios sin guardar.
+
+const hayCambios =
+  seleccionActual.length !== seleccionGuardada.length ||
+  seleccionActual.some(
+    (id, index) => id !== seleccionGuardada[index]
+  );
+
+
+const botonActualizarDeshabilitado =
+  loadingIntereses ||
+  !hayCambios ||
+  tiposActividad.length === 0;
+
   useEffect(() => {
 
   const listaIntereses =
@@ -65,13 +115,25 @@ export default function MiPerfilVoluntarioScreen({
   };
 
 
-  const guardarIntereses = async () => {
-    if (!onGuardarIntereses) {
-      return;
-    }
+// ======================================================
+// ACTUALIZAR INTERESES
+// MEJORA UX - ACTIVIDAD 3.3.2
+// ======================================================
 
-    await onGuardarIntereses(interesesSeleccionados);
-  };
+const guardarIntereses = async () => {
+
+  if (
+    !onGuardarIntereses ||
+    botonActualizarDeshabilitado
+  ) {
+    return;
+  }
+
+  await onGuardarIntereses(
+    interesesSeleccionados
+  );
+
+};
   // ======================================================
   // ESTADO DE CARGA
   // ======================================================
@@ -335,20 +397,22 @@ export default function MiPerfilVoluntarioScreen({
         )}
 
         <TouchableOpacity
-          style={[
-            styles.saveInterestsButton,
-            loadingIntereses && styles.disabledButton
-          ]}
-          onPress={guardarIntereses}
-          disabled={loadingIntereses}
-        >
+        style={[
+          styles.saveInterestsButton,
+          botonActualizarDeshabilitado &&
+            styles.disabledButton
+        ]}
+        onPress={guardarIntereses}
+        disabled={botonActualizarDeshabilitado}
+      >
 
-          <Text style={styles.saveInterestsButtonText}>
-            Guardar intereses
-          </Text>
+        <Text style={styles.saveInterestsButtonText}>
+          {loadingIntereses
+            ? 'Actualizando...'
+            : 'Actualizar intereses'}
+        </Text>
 
-        </TouchableOpacity>
-
+      </TouchableOpacity>
       </View>
 
 

@@ -108,7 +108,7 @@ const [
   setRadioBusquedaKm
 ] = React.useState(
   estadoUbicacionGuardado
-    ?.radioBusquedaKm ?? '10'
+    ?.radioBusquedaKm ?? ''
 );
 
 
@@ -468,7 +468,7 @@ const obtenerUbicacionActual =
     );
 
     setRadioBusquedaKm(
-      '10'
+      ''
     );
 
 
@@ -490,7 +490,7 @@ const obtenerUbicacionActual =
         '',
 
       radioBusquedaKm:
-        '10',
+        '',
 
     });
 
@@ -621,6 +621,7 @@ const obtenerUbicacionActual =
           }
 
           placeholder="Nombre de la organización"
+          placeholderTextColor="#6B7280"
 
           value={
             nombreBusqueda
@@ -870,6 +871,7 @@ const obtenerUbicacionActual =
                 }
 
                 placeholder="Ej. Güemes 1281, Santa Fe"
+                placeholderTextColor="#6B7280"
 
                 value={
                     textoUbicacion
@@ -1061,6 +1063,7 @@ const obtenerUbicacionActual =
                 keyboardType="decimal-pad"
 
                 placeholder="Ej. 10"
+                placeholderTextColor="#6B7280"
 
                 />
 
@@ -1442,33 +1445,31 @@ const styles =
 
 
     chipsContainer: {
-
-      flexDirection: 'row',
-
-      flexWrap: 'wrap',
-
-      gap: 8,
-
-      marginBottom: 18,
-
-    },
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  justifyContent: 'space-between',
+  rowGap: 10,
+  marginTop: 4,
+  marginBottom: 18,
+},
 
 
     chip: {
+  width: '48%',
+  minHeight: 44,
 
-      paddingVertical: 8,
+  backgroundColor: '#FFFFFF',
 
-      paddingHorizontal: 12,
+  borderWidth: 1,
+  borderColor: '#D7DEDA',
+  borderRadius: 12,
 
-      borderRadius: 20,
+  paddingHorizontal: 10,
+  paddingVertical: 10,
 
-      borderWidth: 1,
-
-      borderColor: '#C9D5D1',
-
-      backgroundColor: '#FFFFFF',
-
-    },
+  justifyContent: 'center',
+  alignItems: 'center',
+},
 
 
     chipActive: {
@@ -1481,12 +1482,11 @@ const styles =
 
 
     chipText: {
-
-      fontSize: 12,
-
-      color: '#48545D',
-
-    },
+  fontSize: 12,
+  fontWeight: '600',
+  color: '#5F6B76',
+  textAlign: 'center',
+},
 
 
     chipTextActive: {
