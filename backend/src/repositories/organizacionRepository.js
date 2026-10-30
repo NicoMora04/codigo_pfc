@@ -272,6 +272,7 @@ exports.obtenerDetalleDisponibleDonacion =
 
           p.nombre_visible,
           p.descripcion_publica,
+          p.slug,
           p.sitio_web_url,
           p.email_contacto_publico,
           p.telefono_contacto_publico,

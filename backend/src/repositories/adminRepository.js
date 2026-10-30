@@ -429,3 +429,489 @@ exports.anularRegistroOrganizacion =
     }
 
   };
+
+// ======================================================
+// OCULTAR PERFIL PÚBLICO
+// ACTIVIDAD 3.6.4
+// ======================================================
+
+exports.ocultarPerfilPublico =
+  async (
+    idPerfilPublico,
+    idAdmin,
+    motivo
+  ) => {
+
+    const client =
+      await pool.connect()
+
+
+    try {
+
+      await client.query(
+        'BEGIN'
+      )
+
+
+      // Bloqueamos el registro para evitar
+      // modificaciones concurrentes.
+      const perfilResult =
+        await client.query(
+          `
+          SELECT
+            id_perfil_publico,
+            id_organizacion,
+            slug,
+            estado_publicacion
+
+          FROM perfil_publico_organizacion
+
+          WHERE id_perfil_publico = $1
+
+          FOR UPDATE
+          `,
+          [
+            idPerfilPublico
+          ]
+        )
+
+
+      if (
+        perfilResult.rows.length === 0
+      ) {
+
+        await client.query(
+          'ROLLBACK'
+        )
+
+        return null
+      }
+
+
+      const perfil =
+        perfilResult.rows[0]
+
+
+      if (
+        ![
+          'PUBLICADO',
+          'NO_PUBLICADO'
+        ].includes(
+          perfil.estado_publicacion
+        )
+      ) {
+
+        await client.query(
+          'ROLLBACK'
+        )
+
+        return {
+          estadoInvalido: true,
+          estadoActual:
+            perfil.estado_publicacion
+        }
+      }
+
+
+      const estadoAnterior =
+        perfil.estado_publicacion
+
+
+      const actualizadoResult =
+        await client.query(
+          `
+          UPDATE perfil_publico_organizacion
+
+          SET
+            estado_publicacion =
+              'OCULTO',
+
+            estado_publicacion_anterior =
+              $2,
+
+            ocultado_por =
+              $3,
+
+            ocultado_en =
+              NOW(),
+
+            motivo_ocultamiento =
+              $4,
+
+            actualizado_en =
+              NOW()
+
+          WHERE id_perfil_publico =
+            $1
+
+          RETURNING
+            id_perfil_publico,
+            id_organizacion,
+            slug,
+            estado_publicacion,
+            estado_publicacion_anterior,
+            ocultado_por,
+            ocultado_en,
+            motivo_ocultamiento,
+            actualizado_en
+          `,
+          [
+            idPerfilPublico,
+            estadoAnterior,
+            idAdmin,
+            motivo
+          ]
+        )
+
+
+      await client.query(
+        `
+        INSERT INTO historial_moderacion_perfil (
+          id_perfil_publico,
+          accion,
+          estado_anterior,
+          estado_nuevo,
+          id_admin,
+          motivo
+        )
+
+        VALUES (
+          $1,
+          'OCULTAR',
+          $2,
+          'OCULTO',
+          $3,
+          $4
+        )
+        `,
+        [
+          idPerfilPublico,
+          estadoAnterior,
+          idAdmin,
+          motivo
+        ]
+      )
+
+
+      await client.query(
+        'COMMIT'
+      )
+
+
+      return {
+        perfil:
+          actualizadoResult.rows[0]
+      }
+
+    }
+    catch (error) {
+
+      await client.query(
+        'ROLLBACK'
+      )
+
+      throw error
+
+    }
+    finally {
+
+      client.release()
+
+    }
+
+  }
+
+
+// ======================================================
+// REHABILITAR PERFIL PÚBLICO
+// ACTIVIDAD 3.6.4
+// ======================================================
+
+exports.rehabilitarPerfilPublico =
+  async (
+    idPerfilPublico,
+    idAdmin
+  ) => {
+
+    const client =
+      await pool.connect()
+
+
+    try {
+
+      await client.query(
+        'BEGIN'
+      )
+
+
+      const perfilResult =
+        await client.query(
+          `
+          SELECT
+            id_perfil_publico,
+            id_organizacion,
+            slug,
+            estado_publicacion,
+            estado_publicacion_anterior
+
+          FROM perfil_publico_organizacion
+
+          WHERE id_perfil_publico = $1
+
+          FOR UPDATE
+          `,
+          [
+            idPerfilPublico
+          ]
+        )
+
+
+      if (
+        perfilResult.rows.length === 0
+      ) {
+
+        await client.query(
+          'ROLLBACK'
+        )
+
+        return null
+      }
+
+
+      const perfil =
+        perfilResult.rows[0]
+
+
+      if (
+        perfil.estado_publicacion !==
+          'OCULTO'
+      ) {
+
+        await client.query(
+          'ROLLBACK'
+        )
+
+        return {
+          estadoInvalido: true,
+          estadoActual:
+            perfil.estado_publicacion
+        }
+      }
+
+
+      if (
+        ![
+          'PUBLICADO',
+          'NO_PUBLICADO'
+        ].includes(
+          perfil
+            .estado_publicacion_anterior
+        )
+      ) {
+
+        await client.query(
+          'ROLLBACK'
+        )
+
+        return {
+          estadoAnteriorInvalido:
+            true
+        }
+      }
+
+
+      const estadoRestaurado =
+        perfil
+          .estado_publicacion_anterior
+
+
+      const actualizadoResult =
+        await client.query(
+          `
+          UPDATE perfil_publico_organizacion
+
+          SET
+            estado_publicacion =
+              $2,
+
+            estado_publicacion_anterior =
+              NULL,
+
+            ocultado_por =
+              NULL,
+
+            ocultado_en =
+              NULL,
+
+            motivo_ocultamiento =
+              NULL,
+
+            actualizado_en =
+              NOW()
+
+          WHERE id_perfil_publico =
+            $1
+
+          RETURNING
+            id_perfil_publico,
+            id_organizacion,
+            slug,
+            estado_publicacion,
+            estado_publicacion_anterior,
+            ocultado_por,
+            ocultado_en,
+            motivo_ocultamiento,
+            actualizado_en
+          `,
+          [
+            idPerfilPublico,
+            estadoRestaurado
+          ]
+        )
+
+
+      await client.query(
+        `
+        INSERT INTO historial_moderacion_perfil (
+          id_perfil_publico,
+          accion,
+          estado_anterior,
+          estado_nuevo,
+          id_admin,
+          motivo
+        )
+
+        VALUES (
+          $1,
+          'REHABILITAR',
+          'OCULTO',
+          $2,
+          $3,
+          NULL
+        )
+        `,
+        [
+          idPerfilPublico,
+          estadoRestaurado,
+          idAdmin
+        ]
+      )
+
+
+      await client.query(
+        'COMMIT'
+      )
+
+
+      return {
+        perfil:
+          actualizadoResult.rows[0]
+      }
+
+    }
+    catch (error) {
+
+      await client.query(
+        'ROLLBACK'
+      )
+
+      throw error
+
+    }
+    finally {
+
+      client.release()
+
+    }
+
+  }
+
+// ======================================================
+// LISTAR PERFILES PÚBLICOS PARA MODERACIÓN
+// ACTIVIDAD 3.6.4
+// ======================================================
+
+exports.listarPerfilesPublicos =
+  async (
+    estado = null
+  ) => {
+
+    const valores = []
+
+    const condiciones = [
+      `
+      p.estado_publicacion IN (
+        'PUBLICADO',
+        'OCULTO'
+      )
+      `
+    ]
+
+
+    if (estado) {
+
+      valores.push(estado)
+
+      condiciones.push(
+        `p.estado_publicacion = $${valores.length}`
+      )
+
+    }
+
+
+    const result =
+      await pool.query(
+        `
+        SELECT
+          p.id_perfil_publico,
+          p.id_organizacion,
+          p.nombre_visible,
+          p.slug,
+          p.estado_publicacion,
+          p.estado_publicacion_anterior,
+          p.publicado_en,
+          p.ocultado_en,
+          p.motivo_ocultamiento,
+
+          o.razon_social,
+          o.estado_verificacion,
+
+          u.estado_cuenta,
+
+          ub.localidad,
+          ub.provincia
+
+        FROM perfil_publico_organizacion p
+
+        INNER JOIN organizacion o
+          ON o.id_organizacion =
+            p.id_organizacion
+
+        INNER JOIN usuario u
+          ON u.id_usuario =
+            o.id_usuario
+
+        LEFT JOIN ubicacion ub
+          ON ub.id_ubicacion =
+            o.id_ubicacion
+
+        WHERE
+          ${condiciones.join('\n AND ')}
+
+        ORDER BY
+          CASE
+            WHEN p.estado_publicacion =
+              'PUBLICADO'
+              THEN 0
+            ELSE 1
+          END,
+
+          p.nombre_visible ASC
+        `,
+        valores
+      )
+
+
+    return result.rows
+
+  }

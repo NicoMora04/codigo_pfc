@@ -321,3 +321,206 @@ exports.anularRegistroOrganizacion =
     };
 
   };
+
+// ======================================================
+// OCULTAR PERFIL PÚBLICO
+// ACTIVIDAD 3.6.4
+// ======================================================
+
+exports.ocultarPerfilPublico =
+  async (
+    idPerfilPublico,
+    idAdmin,
+    motivo
+  ) => {
+
+    const motivoLimpio =
+      String(
+        motivo || ''
+      ).trim()
+
+
+    if (!motivoLimpio) {
+
+      const error =
+        new Error(
+          'El motivo de ocultamiento es obligatorio'
+        )
+
+      error.status = 400
+
+      throw error
+
+    }
+
+
+    const resultado =
+      await adminRepository
+        .ocultarPerfilPublico(
+          idPerfilPublico,
+          idAdmin,
+          motivoLimpio
+        )
+
+
+    if (!resultado) {
+
+      const error =
+        new Error(
+          'Perfil público no encontrado'
+        )
+
+      error.status = 404
+
+      throw error
+
+    }
+
+
+    if (
+      resultado.estadoInvalido
+    ) {
+
+      const error =
+        new Error(
+          `No se puede ocultar un perfil en estado ${resultado.estadoActual}`
+        )
+
+      error.status = 409
+
+      throw error
+
+    }
+
+
+    return resultado.perfil
+
+  }
+
+
+// ======================================================
+// REHABILITAR PERFIL PÚBLICO
+// ACTIVIDAD 3.6.4
+// ======================================================
+
+exports.rehabilitarPerfilPublico =
+  async (
+    idPerfilPublico,
+    idAdmin
+  ) => {
+
+    const resultado =
+      await adminRepository
+        .rehabilitarPerfilPublico(
+          idPerfilPublico,
+          idAdmin
+        )
+
+
+    if (!resultado) {
+
+      const error =
+        new Error(
+          'Perfil público no encontrado'
+        )
+
+      error.status = 404
+
+      throw error
+
+    }
+
+
+    if (
+      resultado.estadoInvalido
+    ) {
+
+      const error =
+        new Error(
+          `Solo puede rehabilitarse un perfil oculto. Estado actual: ${resultado.estadoActual}`
+        )
+
+      error.status = 409
+
+      throw error
+
+    }
+
+
+    if (
+      resultado.estadoAnteriorInvalido
+    ) {
+
+      const error =
+        new Error(
+          'El perfil no posee un estado anterior válido para rehabilitar'
+        )
+
+      error.status = 409
+
+      throw error
+
+    }
+
+
+    return resultado.perfil
+
+  }
+
+// ======================================================
+// LISTAR PERFILES PÚBLICOS PARA MODERACIÓN
+// ACTIVIDAD 3.6.4
+// ======================================================
+
+exports.listarPerfilesPublicos =
+  async (
+    estado
+  ) => {
+
+    let estadoNormalizado =
+      null
+
+
+    if (
+      estado !== undefined &&
+      estado !== null &&
+      String(estado).trim() !== ''
+    ) {
+
+      estadoNormalizado =
+        String(
+          estado
+        )
+          .trim()
+          .toUpperCase()
+
+
+      if (
+        ![
+          'PUBLICADO',
+          'OCULTO'
+        ].includes(
+          estadoNormalizado
+        )
+      ) {
+
+        const error =
+          new Error(
+            'El estado debe ser PUBLICADO u OCULTO'
+          )
+
+        error.status = 400
+
+        throw error
+
+      }
+
+    }
+
+
+    return await adminRepository
+      .listarPerfilesPublicos(
+        estadoNormalizado
+      )
+
+  }

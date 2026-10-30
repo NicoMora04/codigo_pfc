@@ -27,5 +27,14 @@ router.get(
   perfilPublicoController.listarOrganizacionesPublicas
 );
 
+// ======================================================
+// PERFIL PÚBLICO DE ORGANIZACIÓN POR SLUG
+// ======================================================
+
+router.get(
+  '/organizaciones/:slug',
+  perfilPublicoController.obtenerPerfilPublicoPorSlug
+);
+
 
 module.exports = router;

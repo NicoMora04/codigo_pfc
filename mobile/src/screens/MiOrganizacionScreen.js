@@ -6,12 +6,18 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  Linking,
 } from 'react-native';
 
+import {
+  WEB_URL
+} from '../config/api';
 
 export default function MiOrganizacionScreen({
   organizacion,
   loading,
+  perfilPublico,
+  loadingPerfilPublico,
   onLogout,
   onVerReputacion,
 }) {
@@ -273,19 +279,207 @@ export default function MiOrganizacionScreen({
       </View>
 
       {/* ================================================= */}
-      {/* ACLARACIÓN */}
+      {/* PERFIL PÚBLICO - ACTIVIDAD 3.6.1 */}
       {/* ================================================= */}
 
-      <View style={styles.noteCard}>
+      <View style={styles.publicProfileCard}>
 
-        <Text style={styles.noteTitle}>
+        <Text style={styles.sectionTitle}>
           Perfil público
         </Text>
 
 
-        <Text style={styles.noteText}>
-          Más adelante esta sección podrá incorporar la edición del perfil público de la organización, imágenes, descripción y datos visibles para los visitantes.
-        </Text>
+        {loadingPerfilPublico ? (
+
+          <ActivityIndicator
+            size="small"
+            color="#1F6F5C"
+            style={styles.publicProfileLoader}
+          />
+
+        ) : (
+
+          <>
+
+            <View
+              style={[
+                styles.publicProfileStatusBadge,
+
+                !perfilPublico
+                  ? styles.publicProfileStatusMissing
+
+                  : perfilPublico.estado_publicacion ===
+                      'PUBLICADO'
+                    ? styles.publicProfileStatusPublished
+
+                    : perfilPublico.estado_publicacion ===
+                        'OCULTO'
+                      ? styles.publicProfileStatusHidden
+
+                      : styles.publicProfileStatusDraft
+              ]}
+            >
+
+              <Text
+                style={
+                  styles.publicProfileStatusText
+                }
+              >
+
+                {!perfilPublico
+                  ? 'SIN CREAR'
+
+                  : perfilPublico
+                      .estado_publicacion}
+
+              </Text>
+
+            </View>
+
+            {perfilPublico?.estado_publicacion ===
+                'PUBLICADO' &&
+              perfilPublico?.slug && (
+
+                <TouchableOpacity
+                  style={
+                    styles.publicProfileWebButton
+                  }
+                  onPress={() =>
+                    Linking.openURL(
+                      `${WEB_URL}/organizaciones/${perfilPublico.slug}`
+                    )
+                  }
+                >
+
+                  <Text
+                    style={
+                      styles.publicProfileWebButtonText
+                    }
+                  >
+                    Ver mi perfil público en la web
+                  </Text>
+
+                </TouchableOpacity>
+              )}
+            
+            <TouchableOpacity
+              style={
+                styles.managePublicProfileButton
+              }
+              onPress={() =>
+                Linking.openURL(
+                  `${WEB_URL}/mi-perfil`
+                )
+              }
+            >
+
+              <Text
+                style={
+                  styles.managePublicProfileButtonText
+                }
+              >
+                Administrar perfil en la web
+              </Text>
+
+            </TouchableOpacity>
+
+            <Text
+              style={
+                styles.publicProfileDescription
+              }
+            >
+
+              {!perfilPublico
+
+                ? 'Tu organización todavía no tiene un perfil público. Podrás crearlo y completar la información institucional visible para los visitantes.'
+
+                : perfilPublico
+                    .estado_publicacion ===
+                    'PUBLICADO'
+
+                  ? 'Tu perfil se encuentra publicado y visible para los visitantes del portal web.'
+
+                  : perfilPublico
+                      .estado_publicacion ===
+                      'BORRADOR'
+
+                    ? 'Tu perfil está guardado como borrador. Podrás seguir completándolo antes de publicarlo.'
+
+                    : perfilPublico
+                        .estado_publicacion ===
+                        'NO_PUBLICADO'
+
+                      ? 'Tu perfil existe, pero actualmente no está disponible en el portal público.'
+
+                      : perfilPublico
+                          .estado_publicacion ===
+                          'OCULTO'
+
+                        ? 'El perfil fue ocultado administrativamente y no se encuentra visible para los visitantes.'
+
+                        : 'El perfil público existe y puede gestionarse desde el portal web.'}
+
+            </Text>
+
+
+            {perfilPublico?.nombre_visible && (
+
+              <View style={styles.publicProfileInfo}>
+
+                <Text style={styles.infoLabel}>
+                  Nombre público
+                </Text>
+
+                <Text style={styles.infoValue}>
+                  {
+                    perfilPublico
+                      .nombre_visible
+                  }
+                </Text>
+
+              </View>
+
+            )}
+
+
+            {perfilPublico?.slug && (
+
+              <View style={styles.publicProfileInfo}>
+
+                <Text style={styles.infoLabel}>
+                  Identificador público
+                </Text>
+
+                <Text style={styles.infoValue}>
+                  {
+                    perfilPublico.slug
+                  }
+                </Text>
+
+              </View>
+
+            )}
+
+
+            <View style={styles.publicProfileGuide}>
+
+              <Text style={styles.publicProfileGuideTitle}>
+                Gestión del perfil
+              </Text>
+
+              <Text style={styles.publicProfileGuideText}>
+
+                {perfilPublico
+                  ? 'La edición, selección de plantilla, previsualización y publicación del perfil se realizará desde el portal web.'
+                  : 'Para comenzar, ingresá al portal web con la misma cuenta de tu organización y completá tu perfil institucional.'}
+
+              </Text>
+
+            </View>
+
+          </>
+
+        )}
 
       </View>
 
@@ -565,7 +759,8 @@ const styles =
       marginTop: 5,
 
     },
-    // ======================================================
+
+ // ======================================================
 // REPUTACIÓN DE ORGANIZACIÓN - ACTIVIDAD 3.2.2
 // ======================================================
 
@@ -621,6 +816,207 @@ reputationButtonText: {
   fontWeight: '700',
 
   fontSize: 14,
+},
+
+publicProfileCard: {
+
+  backgroundColor: '#FFFFFF',
+
+  borderRadius: 16,
+
+  padding: 18,
+
+  borderWidth: 1,
+  borderColor: '#DDE5E2',
+
+  marginBottom: 18,
+
+},
+
+
+publicProfileLoader: {
+
+  marginVertical: 18,
+
+},
+
+
+publicProfileStatusBadge: {
+
+  alignSelf: 'flex-start',
+
+  paddingHorizontal: 11,
+  paddingVertical: 6,
+
+  borderRadius: 20,
+
+  marginBottom: 12,
+
+},
+
+
+publicProfileStatusPublished: {
+
+  backgroundColor: '#D9F2E8',
+
+},
+
+
+publicProfileStatusDraft: {
+
+  backgroundColor: '#FFF3CD',
+
+},
+
+
+publicProfileStatusMissing: {
+
+  backgroundColor: '#EEF1F0',
+
+},
+
+
+publicProfileStatusHidden: {
+
+  backgroundColor: '#F8D7DA',
+
+},
+
+
+publicProfileStatusText: {
+
+  fontSize: 11,
+
+  fontWeight: '700',
+
+  color: '#164C40',
+
+},
+
+
+publicProfileDescription: {
+
+  fontSize: 14,
+
+  color: '#5F6B76',
+
+  lineHeight: 21,
+
+  marginBottom: 16,
+
+},
+
+
+publicProfileInfo: {
+
+  paddingVertical: 8,
+
+  borderTopWidth: 1,
+
+  borderTopColor: '#EEF1F0',
+
+},
+
+
+publicProfileGuide: {
+
+  marginTop: 14,
+
+  padding: 14,
+
+  borderRadius: 12,
+
+  backgroundColor: '#EAF5F2',
+
+  borderWidth: 1,
+
+  borderColor: '#CFE4DE',
+
+},
+
+
+publicProfileGuideTitle: {
+
+  fontSize: 13,
+
+  fontWeight: '700',
+
+  color: '#164C40',
+
+  marginBottom: 5,
+
+},
+
+
+publicProfileGuideText: {
+
+  fontSize: 12,
+
+  color: '#5F6B76',
+
+  lineHeight: 18,
+
+},
+
+publicProfileWebButton: {
+
+  minHeight: 46,
+
+  marginTop: 14,
+
+  borderRadius: 10,
+
+  backgroundColor: '#1F6F5C',
+
+  alignItems: 'center',
+  justifyContent: 'center',
+
+  paddingHorizontal: 14,
+
+},
+
+
+publicProfileWebButtonText: {
+
+  color: '#FFFFFF',
+
+  fontSize: 14,
+  fontWeight: '700',
+
+  textAlign: 'center',
+
+},
+
+managePublicProfileButton: {
+
+  minHeight: 46,
+
+  marginTop: 10,
+
+  borderRadius: 10,
+
+  borderWidth: 1,
+  borderColor: '#1F6F5C',
+
+  backgroundColor: '#FFFFFF',
+
+  alignItems: 'center',
+  justifyContent: 'center',
+
+  paddingHorizontal: 14,
+
+},
+
+
+managePublicProfileButtonText: {
+
+  color: '#1F6F5C',
+
+  fontSize: 14,
+  fontWeight: '700',
+
+  textAlign: 'center',
+
 },
 
   });

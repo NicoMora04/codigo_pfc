@@ -1,6 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import { haySesion } from '../services/authService.js'
+import AppFooter from './AppFooter.jsx'
 
 function AppLayout() {
+  const sesionActiva = haySesion()
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -38,11 +41,28 @@ function AppLayout() {
             >
               Organizaciones
             </NavLink>
+
+            {sesionActiva ? (
+              <NavLink
+                to="/mi-perfil"
+                className="site-nav__link"
+              >
+                Mi perfil
+              </NavLink>
+            ) : (
+              <NavLink
+                to="/acceso-organizacion"
+                className="site-nav__link"
+              >
+                Iniciar sesión
+              </NavLink>
+            )}
           </nav>
         </div>
       </header>
 
       <Outlet />
+      <AppFooter />
     </div>
   )
 }

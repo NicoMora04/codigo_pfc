@@ -1110,12 +1110,25 @@ exports.resetPassword = async (req, res) => {
               u.id_usuario,
               u.email,
               u.estado_cuenta,
+
+              o.id_organizacion,
               o.razon_social,
               o.cuit,
-              o.estado_verificacion
+              o.estado_verificacion,
+
+              p.slug,
+              p.estado_publicacion
+
             FROM usuario u
+
             INNER JOIN organizacion o
-              ON o.id_usuario = u.id_usuario
+              ON o.id_usuario =
+                u.id_usuario
+
+            LEFT JOIN perfil_publico_organizacion p
+              ON p.id_organizacion =
+                o.id_organizacion
+
             WHERE u.id_usuario = $1
             `,
             [

@@ -17,6 +17,7 @@ export default function AdminBottomNav({
   onInicio,
   onOrganizaciones,
   onUsuarios,
+  onPerfiles,
   onTiposActividad,
   onEstadisticas
 }) {
@@ -140,6 +141,40 @@ export default function AdminBottomNav({
     ]}
   >
     Usuarios
+  </Text>
+
+</TouchableOpacity>
+
+<TouchableOpacity
+  style={styles.item}
+  onPress={
+    onPerfiles
+  }
+>
+
+  <Text
+    style={[
+      styles.icon,
+
+      opcionActiva ===
+        'PERFILES' &&
+        styles.activeText
+    ]}
+  >
+    🪪
+  </Text>
+
+
+  <Text
+    style={[
+      styles.label,
+
+      opcionActiva ===
+        'PERFILES' &&
+        styles.activeText
+    ]}
+  >
+    Perfiles
   </Text>
 
 </TouchableOpacity>

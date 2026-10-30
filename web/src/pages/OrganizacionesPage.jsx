@@ -1,10 +1,25 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import {
   listarOrganizaciones,
   listarTiposActividad,
 } from '../services/publicPortalService.js'
+
+function obtenerUrlImagen(url) {
+  if (!url) {
+    return null
+  }
+
+  if (
+    url.startsWith('http://') ||
+    url.startsWith('https://')
+  ) {
+    return url
+  }
+
+  return `http://localhost:3000${url}`
+}
 
 function obtenerIniciales(nombre = '') {
   return nombre
@@ -320,11 +335,44 @@ function OrganizacionesPage() {
                           className="org-card"
                           key={organizacion.slug}
                         >
-                          <div className="org-cover">
+                          <div
+                            className="org-cover"
+                            style={
+                              organizacion.portada?.url
+                                ? {
+                                    backgroundImage:
+                                      `url("${obtenerUrlImagen(
+                                        organizacion.portada.url
+                                      )}")`,
+                                  }
+                                : undefined
+                            }
+                          >
                             <div className="org-logo">
-                              {obtenerIniciales(
-                                organizacion.nombre_visible
+
+                              {organizacion.logo?.url ? (
+
+                                <img
+                                  src={
+                                    obtenerUrlImagen(
+                                      organizacion.logo.url
+                                    )
+                                  }
+                                  alt={
+                                    organizacion.logo
+                                      .texto_alternativo ||
+                                    `Logo de ${organizacion.nombre_visible}`
+                                  }
+                                />
+
+                              ) : (
+
+                                obtenerIniciales(
+                                  organizacion.nombre_visible
+                                )
+
                               )}
+
                             </div>
                           </div>
 
@@ -370,14 +418,12 @@ function OrganizacionesPage() {
                                 Perfil publicado
                               </span>
 
-                              <button
-                                type="button"
+                              <Link
+                                to={`/organizaciones/${organizacion.slug}`}
                                 className="mini-primary"
-                                disabled
-                                title="El perfil público se implementará en una actividad posterior"
                               >
                                 Ver perfil
-                              </button>
+                              </Link>
                             </div>
                           </div>
                         </article>

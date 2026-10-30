@@ -362,3 +362,193 @@ exports.anularRegistroOrganizacion =
     }
 
   };
+
+// ======================================================
+// OCULTAR PERFIL PÚBLICO
+// ACTIVIDAD 3.6.4
+// ======================================================
+
+exports.ocultarPerfilPublico =
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      const {
+        idPerfilPublico
+      } = req.params
+
+
+      const {
+        motivo
+      } = req.body
+
+
+      const perfil =
+        await adminService
+          .ocultarPerfilPublico(
+            idPerfilPublico,
+            req.user.id,
+            motivo
+          )
+
+
+      return res
+        .status(200)
+        .json({
+
+          message:
+            'Perfil ocultado correctamente',
+
+          perfil
+
+        })
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL OCULTAR PERFIL:',
+        error
+      )
+
+
+      return res
+        .status(
+          error.status ||
+          500
+        )
+        .json({
+
+          error:
+            error.status
+              ? error.message
+              : 'No se pudo ocultar el perfil'
+
+        })
+
+    }
+
+  }
+
+
+// ======================================================
+// REHABILITAR PERFIL PÚBLICO
+// ACTIVIDAD 3.6.4
+// ======================================================
+
+exports.rehabilitarPerfilPublico =
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      const {
+        idPerfilPublico
+      } = req.params
+
+
+      const perfil =
+        await adminService
+          .rehabilitarPerfilPublico(
+            idPerfilPublico,
+            req.user.id
+          )
+
+
+      return res
+        .status(200)
+        .json({
+
+          message:
+            'Perfil rehabilitado correctamente',
+
+          perfil
+
+        })
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL REHABILITAR PERFIL:',
+        error
+      )
+
+
+      return res
+        .status(
+          error.status ||
+          500
+        )
+        .json({
+
+          error:
+            error.status
+              ? error.message
+              : 'No se pudo rehabilitar el perfil'
+
+        })
+
+    }
+
+  }
+
+// ======================================================
+// LISTAR PERFILES PÚBLICOS PARA MODERACIÓN
+// ACTIVIDAD 3.6.4
+// ======================================================
+
+exports.listarPerfilesPublicos =
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      const perfiles =
+        await adminService
+          .listarPerfilesPublicos(
+            req.query.estado
+          )
+
+
+      return res
+        .status(200)
+        .json({
+
+          perfiles
+
+        })
+
+    }
+    catch (error) {
+
+      console.error(
+        'ERROR AL LISTAR PERFILES PÚBLICOS:',
+        error
+      )
+
+
+      return res
+        .status(
+          error.status ||
+          500
+        )
+        .json({
+
+          error:
+            error.status
+              ? error.message
+              : 'No se pudieron obtener los perfiles públicos'
+
+        })
+
+    }
+
+  }

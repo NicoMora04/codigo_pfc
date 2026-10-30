@@ -1,7 +1,6 @@
 import axios from 'axios';
 import BASE_URL from '../config/api';
 
-
 const authHeaders = (token) => ({
   headers: {
     Authorization: `Bearer ${token}`,
@@ -74,7 +73,7 @@ export const rechazarOrganizacion =
   };
 
 
-  // ======================================================
+// ======================================================
 // OBTENER USUARIOS
 // ======================================================
 
@@ -138,7 +137,76 @@ export const rehabilitarUsuario =
 
   };
 
-  // ======================================================
+// ======================================================
+// PERFILES PÚBLICOS - ADMIN
+// ACTIVIDAD 3.6.4
+// ======================================================
+
+export const obtenerPerfilesPublicosAdmin =
+  async (
+    token,
+    estado = null
+  ) => {
+
+    const query =
+      estado
+        ? `?estado=${encodeURIComponent(estado)}`
+        : '';
+
+
+    const response =
+      await axios.get(
+        `${BASE_URL}/admin/perfiles-publicos${query}`,
+        authHeaders(token)
+      );
+
+
+    return response.data;
+
+  };
+
+
+export const ocultarPerfilPublicoAdmin =
+  async (
+    token,
+    idPerfilPublico,
+    motivo
+  ) => {
+
+    const response =
+      await axios.patch(
+        `${BASE_URL}/admin/perfiles/${idPerfilPublico}/ocultar`,
+        {
+          motivo
+        },
+        authHeaders(token)
+      );
+
+
+    return response.data;
+
+  };
+
+
+export const rehabilitarPerfilPublicoAdmin =
+  async (
+    token,
+    idPerfilPublico
+  ) => {
+
+    const response =
+      await axios.patch(
+        `${BASE_URL}/admin/perfiles/${idPerfilPublico}/rehabilitar`,
+        {},
+        authHeaders(token)
+      );
+
+
+    return response.data;
+
+  };
+
+// ======================================================
 // TIPOS DE ACTIVIDAD
 // ======================================================
 

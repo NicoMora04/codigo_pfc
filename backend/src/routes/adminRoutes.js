@@ -70,4 +70,39 @@ router.delete(
   adminController.anularRegistroOrganizacion
 );
 
+// ======================================================
+// MODERACIÓN DE PERFILES PÚBLICOS
+// ACTIVIDAD 3.6.4
+// ======================================================
+
+router.patch(
+  '/perfiles/:idPerfilPublico/ocultar',
+  verificarToken,
+  verificarRol('ADMIN'),
+  adminController
+    .ocultarPerfilPublico
+)
+
+
+router.patch(
+  '/perfiles/:idPerfilPublico/rehabilitar',
+  verificarToken,
+  verificarRol('ADMIN'),
+  adminController
+    .rehabilitarPerfilPublico
+)
+
+// ======================================================
+// LISTADO DE PERFILES PARA MODERACIÓN
+// ACTIVIDAD 3.6.4
+// ======================================================
+
+router.get(
+  '/perfiles-publicos',
+  verificarToken,
+  verificarRol('ADMIN'),
+  adminController
+    .listarPerfilesPublicos
+)
+
 module.exports = router;

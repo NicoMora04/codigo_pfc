@@ -9,6 +9,30 @@ import {
   listarTiposActividad,
 } from '../services/publicPortalService.js'
 
+import {
+  registrarVoluntario,
+} from '../services/authService.js'
+
+
+import {
+  BACKEND_URL,
+} from '../config/env.js'
+
+function obtenerUrlImagen(url) {
+  if (!url) {
+    return null
+  }
+
+  if (
+    url.startsWith('http://') ||
+    url.startsWith('https://')
+  ) {
+    return url
+  }
+
+  return `${BACKEND_URL}${url}`
+}
+
 function obtenerIniciales(nombre = '') {
   return nombre
     .trim()
@@ -75,6 +99,36 @@ const [
   cargarOrganizaciones()
 }, [])
 
+  const [
+    registroVoluntario,
+    setRegistroVoluntario,
+  ] = useState({
+    nombre: '',
+    apellido: '',
+    email: '',
+    telefono: '',
+    password: '',
+    confirmarPassword: '',
+  })
+
+
+  const [
+    registrandoVoluntario,
+    setRegistrandoVoluntario,
+  ] = useState(false)
+
+
+  const [
+    errorRegistroVoluntario,
+    setErrorRegistroVoluntario,
+  ] = useState('')
+
+
+  const [
+    exitoRegistroVoluntario,
+    setExitoRegistroVoluntario,
+  ] = useState('')
+
   useEffect(() => {
     async function cargarTipos() {
       try {
@@ -128,6 +182,118 @@ const [
         : '/organizaciones'
     )
   }
+
+  function manejarCambioRegistro(
+    event
+  ) {
+
+    const {
+      name,
+      value,
+    } = event.target
+
+
+    setRegistroVoluntario(
+      anterior => ({
+        ...anterior,
+        [name]: value,
+      })
+    )
+
+  }
+
+
+  async function manejarRegistroVoluntario(
+    event
+  ) {
+
+    event.preventDefault()
+
+    setErrorRegistroVoluntario('')
+    setExitoRegistroVoluntario('')
+
+
+    if (
+      registroVoluntario.password !==
+      registroVoluntario.confirmarPassword
+    ) {
+
+      setErrorRegistroVoluntario(
+        'Las contraseñas no coinciden'
+      )
+
+      return
+
+    }
+
+
+    if (
+      registroVoluntario.password.length < 6
+    ) {
+
+      setErrorRegistroVoluntario(
+        'La contraseña debe tener al menos 6 caracteres'
+      )
+
+      return
+
+    }
+
+
+    try {
+
+      setRegistrandoVoluntario(true)
+
+
+      await registrarVoluntario({
+        nombre:
+          registroVoluntario.nombre.trim(),
+
+        apellido:
+          registroVoluntario.apellido.trim(),
+
+        email:
+          registroVoluntario.email.trim(),
+
+        telefono:
+          registroVoluntario.telefono.trim(),
+
+        password:
+          registroVoluntario.password,
+      })
+
+
+      setExitoRegistroVoluntario(
+        'Cuenta creada correctamente. Ya podés ingresar desde la aplicación móvil.'
+      )
+
+
+      setRegistroVoluntario({
+        nombre: '',
+        apellido: '',
+        email: '',
+        telefono: '',
+        password: '',
+        confirmarPassword: '',
+      })
+
+    }
+    catch (error) {
+
+      setErrorRegistroVoluntario(
+        error.message ||
+        'No se pudo crear la cuenta'
+      )
+
+    }
+    finally {
+
+      setRegistrandoVoluntario(false)
+
+    }
+
+  }
+
   return (
     <main>
       <section className="home-hero">
@@ -362,11 +528,44 @@ const [
                 className="home-org-card"
                 key={organizacion.slug}
               >
-                <div className="home-org-cover">
+                <div
+                  className="home-org-cover"
+                  style={
+                    organizacion.portada?.url
+                      ? {
+                          backgroundImage:
+                            `url("${obtenerUrlImagen(
+                              organizacion.portada.url
+                            )}")`,
+                        }
+                      : undefined
+                  }
+                >
                   <div className="home-org-logo">
-                    {obtenerIniciales(
-                      organizacion.nombre_visible
+
+                    {organizacion.logo?.url ? (
+
+                      <img
+                        src={
+                          obtenerUrlImagen(
+                            organizacion.logo.url
+                          )
+                        }
+                        alt={
+                          organizacion.logo
+                            .texto_alternativo ||
+                          `Logo de ${organizacion.nombre_visible}`
+                        }
+                      />
+
+                    ) : (
+
+                      obtenerIniciales(
+                        organizacion.nombre_visible
+                      )
+
                     )}
+
                   </div>
                 </div>
 
@@ -418,12 +617,10 @@ const [
                     </span>
 
                     <Link
-                      to={`/organizaciones?nombre=${encodeURIComponent(
-                        organizacion.nombre_visible
-                      )}`}
+                      to={`/organizaciones/${organizacion.slug}`}
                       className="mini-primary home-org-link"
                     >
-                      Ver organización
+                      Ver perfil
                     </Link>
                   </div>
                 </div>
@@ -494,71 +691,211 @@ const [
         </span>
 
         <h3>
-          Sumate desde la app
+          Creá tu cuenta y sumate
         </h3>
 
         <p>
-          Ingresá como voluntario desde la aplicación
-          móvil para gestionar tu participación en
-          actividades de voluntariado.
+          Registrate como voluntario desde esta misma
+          página y utilizá después tus credenciales en
+          la aplicación móvil para participar en
+          oportunidades de voluntariado.
         </p>
       </article>
     </div>
+    <div className="home-volunteer-register">
+
+  <div className="home-volunteer-register__intro">
+
+    <span className="home-section-eyebrow">
+      ¿Querés participar?
+    </span>
+
+    <h3>
+      Creá tu cuenta de voluntario
+    </h3>
+
+    <p>
+      Registrate desde la web y utilizá las mismas
+      credenciales para ingresar en la aplicación móvil.
+    </p>
+
+  </div>
+
+
+  <form
+    className="home-volunteer-register__form"
+    onSubmit={manejarRegistroVoluntario}
+  >
+
+    <div className="field-row">
+
+      <div className="field">
+
+        <label htmlFor="registroNombre">
+          Nombre
+        </label>
+
+        <input
+          id="registroNombre"
+          name="nombre"
+          type="text"
+          value={registroVoluntario.nombre}
+          onChange={manejarCambioRegistro}
+          required
+          disabled={registrandoVoluntario}
+        />
+
+      </div>
+
+
+      <div className="field">
+
+        <label htmlFor="registroApellido">
+          Apellido
+        </label>
+
+        <input
+          id="registroApellido"
+          name="apellido"
+          type="text"
+          value={registroVoluntario.apellido}
+          onChange={manejarCambioRegistro}
+          required
+          disabled={registrandoVoluntario}
+        />
+
+      </div>
+
+    </div>
+
+
+    <div className="field-row">
+
+      <div className="field">
+
+        <label htmlFor="registroEmail">
+          Correo electrónico
+        </label>
+
+        <input
+          id="registroEmail"
+          name="email"
+          type="email"
+          value={registroVoluntario.email}
+          onChange={manejarCambioRegistro}
+          required
+          disabled={registrandoVoluntario}
+        />
+
+      </div>
+
+
+      <div className="field">
+
+        <label htmlFor="registroTelefono">
+          Teléfono
+        </label>
+
+        <input
+          id="registroTelefono"
+          name="telefono"
+          type="tel"
+          value={registroVoluntario.telefono}
+          onChange={manejarCambioRegistro}
+          placeholder="Opcional"
+          disabled={registrandoVoluntario}
+        />
+
+      </div>
+
+    </div>
+
+
+    <div className="field-row">
+
+      <div className="field">
+
+        <label htmlFor="registroPassword">
+          Contraseña
+        </label>
+
+        <input
+          id="registroPassword"
+          name="password"
+          type="password"
+          value={registroVoluntario.password}
+          onChange={manejarCambioRegistro}
+          required
+          minLength="6"
+          disabled={registrandoVoluntario}
+        />
+
+      </div>
+
+
+      <div className="field">
+
+        <label htmlFor="registroConfirmarPassword">
+          Confirmar contraseña
+        </label>
+
+        <input
+          id="registroConfirmarPassword"
+          name="confirmarPassword"
+          type="password"
+          value={
+            registroVoluntario.confirmarPassword
+          }
+          onChange={manejarCambioRegistro}
+          required
+          minLength="6"
+          disabled={registrandoVoluntario}
+        />
+
+      </div>
+
+    </div>
+
+
+    {errorRegistroVoluntario && (
+
+      <div
+        className="error-state"
+        role="alert"
+      >
+        {errorRegistroVoluntario}
+      </div>
+
+    )}
+
+
+    {exitoRegistroVoluntario && (
+
+      <div
+        className="success-state"
+        role="status"
+      >
+        {exitoRegistroVoluntario}
+      </div>
+
+    )}
+
+
+    <button
+      type="submit"
+      className="primary-button"
+      disabled={registrandoVoluntario}
+    >
+      {registrandoVoluntario
+        ? 'Creando cuenta...'
+        : 'Crear cuenta de voluntario'}
+    </button>
+
+  </form>
+
+</div>
   </div>
 </section>
-
-<footer className="site-footer">
-  <div className="site-container footer-grid">
-    <div className="footer-brand">
-      <h2>
-        Voluntariado Geolocalizado
-      </h2>
-
-      <p>
-        Conectamos personas con organizaciones
-        sociales y oportunidades de participación.
-      </p>
-    </div>
-
-    <div className="footer-column">
-      <h3>Explorar</h3>
-
-      <Link to="/">
-        Inicio
-      </Link>
-
-      <Link to="/organizaciones">
-        Organizaciones
-      </Link>
-    </div>
-
-    <div className="footer-column">
-      <h3>Plataforma</h3>
-
-      <span>
-        Organizaciones verificadas
-      </span>
-
-      <span>
-        Consulta pública
-      </span>
-
-      <span>
-        Voluntariado geolocalizado
-      </span>
-    </div>
-  </div>
-
-  <div className="site-container footer-bottom">
-    <span>
-      Proyecto Final de Carrera
-    </span>
-
-    <span>
-      Voluntariado Geolocalizado
-    </span>
-  </div>
-</footer>
     </main>
   )
 }

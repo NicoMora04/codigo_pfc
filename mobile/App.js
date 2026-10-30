@@ -235,6 +235,13 @@ import {
   marcarNotificacionLeida
 } from './src/services/notificacionService';
 
+import {
+  obtenerMiPerfilPublico
+} from './src/services/perfilPublicoService';
+
+import PerfilesPublicosAdminScreen
+  from './src/screens/PerfilesPublicosAdminScreen';
+
 
 // ======================================================
 // REGISTRAR PUSH SIN INTERRUMPIR LA SESIÓN
@@ -590,7 +597,21 @@ const [
   setLoadingReputacionOrganizacion
 ] = useState(false);
 
-  const [
+// ======================================================
+// PERFIL PÚBLICO DE ORGANIZACIÓN - ACTIVIDAD 3.6.1
+// ======================================================
+
+const [
+  perfilPublicoOrganizacion,
+  setPerfilPublicoOrganizacion
+] = useState(null);
+
+const [
+  loadingPerfilPublicoOrganizacion,
+  setLoadingPerfilPublicoOrganizacion
+] = useState(false);
+
+const [
   organizacionesDonacion,
   setOrganizacionesDonacion
 ] = useState([]);
@@ -6319,7 +6340,110 @@ const cargarReputacionVoluntario = async () => {
 
   };
 
-  // ======================================================
+// ======================================================
+// CARGAR PERFIL PÚBLICO DE LA ORGANIZACIÓN
+// ACTIVIDAD 3.6.1
+// ======================================================
+
+const cargarPerfilPublicoOrganizacion =
+  async () => {
+
+    setLoadingPerfilPublicoOrganizacion(
+      true
+    );
+
+    try {
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        await eliminarToken();
+
+        setPerfilPublicoOrganizacion(
+          null
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+        return false;
+      }
+
+
+      const data =
+        await obtenerMiPerfilPublico(
+          token
+        );
+
+
+      setPerfilPublicoOrganizacion(
+        data.perfil || null
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        await eliminarToken();
+
+        setDatosOrganizacion(
+          null
+        );
+
+        setPerfilPublicoOrganizacion(
+          null
+        );
+
+        setCurrentScreen(
+          'A01'
+        );
+
+        showAlert(
+          'error',
+          'Sesión finalizada',
+          'Tu sesión venció. Iniciá sesión nuevamente.'
+        );
+
+        return false;
+      }
+
+
+      setPerfilPublicoOrganizacion(
+        null
+      );
+
+
+      showAlert(
+        'error',
+        'No se pudo cargar el perfil público',
+        error.response?.data?.error ||
+        'Ocurrió un error al consultar el perfil público.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setLoadingPerfilPublicoOrganizacion(
+        false
+      );
+
+    }
+
+  };
+
+// ======================================================
 // CARGAR REPUTACIÓN DE LA ORGANIZACIÓN
 // ACTIVIDAD 3.2.2
 // ======================================================
@@ -8313,7 +8437,7 @@ useEffect(() => {
 
           )}
 
-        {/* ==================================================
+{/* ==================================================
     MI PERFIL - VOLUNTARIO
     ACTIVIDAD 3.2.1
 ================================================== */}
@@ -9636,7 +9760,20 @@ useEffect(() => {
                 );
 
 
-                await cargarDatosOrganizacion();
+                await Promise.all([
+                  cargarDatosOrganizacion(),
+                  cargarPerfilPublicoOrganizacion()
+                ]);
+
+
+                setTimeout(() => {
+
+                  scrollRef.current?.scrollTo({
+                    y: 0,
+                    animated: false
+                  });
+
+                }, 0);
 
               }}
 
@@ -10531,6 +10668,14 @@ useEffect(() => {
       loadingDatosOrganizacion
     }
 
+    perfilPublico={
+      perfilPublicoOrganizacion
+    }
+
+    loadingPerfilPublico={
+      loadingPerfilPublicoOrganizacion
+    }
+
     onLogout={
       handleLogout
     }
@@ -11131,7 +11276,7 @@ useEffect(() => {
 
       )}
 
-      {/* ==================================================
+{/* ==================================================
     ADMIN - USUARIOS
 ================================================== */}
 
@@ -11179,6 +11324,17 @@ useEffect(() => {
       handleActualizarTipoActividadAdmin
     }
   />
+)}
+
+{/* ==================================================
+    ADMIN - PERFILES PÚBLICOS
+================================================== */}
+
+{currentScreen ===
+  'ADMIN_PERFILES' && (
+
+  <PerfilesPublicosAdminScreen />
+
 )}
 
 {/* ==================================================
@@ -11512,7 +11668,20 @@ useEffect(() => {
                   );
 
 
-                  await cargarDatosOrganizacion();
+                  await Promise.all([
+                    cargarDatosOrganizacion(),
+                    cargarPerfilPublicoOrganizacion()
+                  ]);
+
+
+                  setTimeout(() => {
+
+                    scrollRef.current?.scrollTo({
+                      y: 0,
+                      animated: false
+                    });
+
+                  }, 0);
 
                 }}
 
@@ -11559,6 +11728,9 @@ useEffect(() => {
             currentScreen ===
               'ADMIN_USUARIOS' ||
 
+              currentScreen ===
+              'ADMIN_PERFILES' ||
+
             currentScreen ===
               'ADMIN_TIPOS_ACTIVIDAD' ||
 
@@ -11589,9 +11761,14 @@ useEffect(() => {
                       ? 'USUARIOS'
 
                       : currentScreen ===
-                          'ADMIN_TIPOS_ACTIVIDAD'
+                          'ADMIN_PERFILES'
 
-                        ? 'TIPOS_ACTIVIDAD'
+                        ? 'PERFILES'
+
+                        : currentScreen ===
+                            'ADMIN_TIPOS_ACTIVIDAD'
+
+                          ? 'TIPOS_ACTIVIDAD'
 
                         : currentScreen ===
                             'ADMIN_ESTADISTICAS'
@@ -11686,6 +11863,28 @@ useEffect(() => {
                 );
 
               }}
+          
+            onPerfiles={() => {
+
+            setCurrentScreen(
+              'ADMIN_PERFILES'
+            );
+
+
+            setTimeout(
+              () => {
+
+                scrollRef.current
+                  ?.scrollTo({
+                    y: 0,
+                    animated: false
+                  });
+
+              },
+              0.1
+            );
+
+          }}
 
           onEstadisticas={async () => {
 
