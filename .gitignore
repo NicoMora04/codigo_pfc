@@ -1,6 +1,6 @@
 # Dependencias
 node_modules/
-
+backend/uploads/perfiles/
 # Variables de entorno
 .env
 .env.*
