@@ -6,6 +6,10 @@ import {
   listarTiposActividad,
 } from '../services/publicPortalService.js'
 
+import {
+  BACKEND_URL,
+} from '../config/env.js'
+
 function obtenerUrlImagen(url) {
   if (!url) {
     return null
@@ -18,7 +22,7 @@ function obtenerUrlImagen(url) {
     return url
   }
 
-  return `http://localhost:3000${url}`
+  return `${BACKEND_URL}${url}`
 }
 
 function obtenerIniciales(nombre = '') {

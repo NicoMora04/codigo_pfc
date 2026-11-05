@@ -50,6 +50,17 @@ import BuscarOportunidadesScreen
 import DetalleOportunidadScreen
   from './src/screens/DetalleOportunidadScreen';
 
+import BuscarVoluntarioScreen
+  from './src/screens/BuscarVoluntarioScreen';
+
+import DetalleOrganizacionPublicaScreen
+  from './src/screens/DetalleOrganizacionPublicaScreen';
+
+import {
+  listarOrganizacionesPublicas,
+  obtenerPerfilPublicoOrganizacion
+} from './src/services/publicPortalService';
+
 import MisInscripcionesScreen from './src/screens/MisInscripcionesScreen';
 
 import GestionInscripcionesScreen
@@ -303,6 +314,47 @@ export default function App() {
   const [
   loadingInicioVoluntario,
   setLoadingInicioVoluntario
+  ] = useState(false);
+
+  // ======================================================
+  // BÚSQUEDA PÚBLICA DE ORGANIZACIONES
+  // ======================================================
+
+  const [
+    modoBusquedaVoluntario,
+    setModoBusquedaVoluntario
+  ] = useState(
+    'OPORTUNIDADES'
+  );
+
+
+  const [
+    organizacionesPublicas,
+    setOrganizacionesPublicas
+  ] = useState([]);
+
+
+  const [
+    filtrosOrganizacionesPublicas,
+    setFiltrosOrganizacionesPublicas
+  ] = useState({});
+
+
+  const [
+    loadingOrganizacionesPublicas,
+    setLoadingOrganizacionesPublicas
+  ] = useState(false);
+
+
+  const [
+    organizacionPublicaSeleccionada,
+    setOrganizacionPublicaSeleccionada
+  ] = useState(null);
+
+
+  const [
+    loadingDetalleOrganizacionPublica,
+    setLoadingDetalleOrganizacionPublica
   ] = useState(false);
 
   // ======================================================
@@ -5247,6 +5299,141 @@ setFiltroEstadoOrganizacion('TODAS');
 
     };
 
+    // ======================================================
+    // ORGANIZACIONES PÚBLICAS
+    // ======================================================
+
+    const cargarOrganizacionesPublicas =
+      async (
+        filtros = {}
+      ) => {
+
+        setLoadingOrganizacionesPublicas(
+          true
+        );
+
+
+        try {
+
+          const organizaciones =
+            await listarOrganizacionesPublicas(
+              filtros
+            );
+
+
+          console.log(
+            'ORGANIZACIONES PÚBLICAS:',
+            organizaciones
+          );
+
+
+          setOrganizacionesPublicas(
+            Array.isArray(
+              organizaciones
+            )
+              ? organizaciones
+              : []
+          );
+
+        }
+        catch (error) {
+
+          console.log(
+            'ERROR AL CARGAR ORGANIZACIONES PÚBLICAS:',
+            error
+          );
+
+
+          showAlert(
+            'error',
+            'Error',
+            error.response
+              ?.data
+              ?.error ||
+            'No se pudieron cargar las organizaciones.'
+          );
+
+        }
+        finally {
+
+          setLoadingOrganizacionesPublicas(
+            false
+          );
+
+        }
+
+      };
+
+      // ======================================================
+      // DETALLE DE ORGANIZACIÓN PÚBLICA
+      // ======================================================
+
+      const cargarDetalleOrganizacionPublica =
+        async (
+          slug
+        ) => {
+
+          setLoadingDetalleOrganizacionPublica(
+            true
+          );
+
+
+          try {
+
+            const perfil =
+              await obtenerPerfilPublicoOrganizacion(
+                slug
+              );
+
+
+            setOrganizacionPublicaSeleccionada(
+              perfil
+            );
+
+
+            setCurrentScreen(
+              'ORGANIZACION_PUBLICA_DETALLE'
+            );
+
+
+            setTimeout(() => {
+
+              scrollRef.current?.scrollTo({
+                y: 0,
+                animated: false
+              });
+
+            }, 0);
+
+          }
+          catch (error) {
+
+            console.log(
+              'ERROR AL CARGAR PERFIL PÚBLICO:',
+              error
+            );
+
+
+            showAlert(
+              'error',
+              'Error',
+              error.response
+                ?.data
+                ?.error ||
+              'No se pudo cargar el perfil de la organización.'
+            );
+
+          }
+          finally {
+
+            setLoadingDetalleOrganizacionPublica(
+              false
+            );
+
+          }
+
+        };
+
 
   // ======================================================
   // DETALLE VOLUNTARIO
@@ -8865,7 +9052,38 @@ useEffect(() => {
           {currentScreen ===
             'VOLUNTARIO_HOME' && (
 
-            <BuscarOportunidadesScreen
+            <BuscarVoluntarioScreen
+
+              modoBusqueda={
+                modoBusquedaVoluntario
+              }
+
+              onCambiarModo={async (
+                modo
+              ) => {
+
+                setModoBusquedaVoluntario(
+                  modo
+                );
+
+
+                if (
+                  modo ===
+                  'ORGANIZACIONES'
+                ) {
+
+                  await cargarOrganizacionesPublicas(
+                    filtrosOrganizacionesPublicas
+                  );
+
+                }
+
+              }}
+
+
+              // ==================================================
+              // OPORTUNIDADES
+              // ==================================================
 
               oportunidades={
                 oportunidadesVoluntario
@@ -8887,7 +9105,7 @@ useEffect(() => {
                 handleInscribirse
               }
 
-              onFiltrar={async (
+              onFiltrarOportunidades={async (
                 filtros
               ) => {
 
@@ -8910,37 +9128,41 @@ useEffect(() => {
                 handleLogout
               }
 
-              onVerDetalle={async (
-                  idOportunidad
-                ) => {
+              onVerDetalleOportunidad={async (
+                idOportunidad
+              ) => {
 
-                  const inscripcionExistente =
-                    inscripcionesVoluntario.find(
-                      (inscripcion) =>
-                        inscripcion.id_oportunidad ===
+                const inscripcionExistente =
+                  inscripcionesVoluntario.find(
+                    inscripcion =>
+                      String(
+                        inscripcion.id_oportunidad
+                      ) ===
+                      String(
                         idOportunidad
-                    );
-
-
-                  setOrigenDetalleVoluntario(
-                    'BUSCAR'
+                      )
                   );
 
 
-                  setEstadoInscripcionDetalle(
-                    inscripcionExistente
-                      ? inscripcionExistente.estado
-                      : null
-                  );
+                setOrigenDetalleVoluntario(
+                  'BUSCAR'
+                );
 
 
-                  await cargarDetalleOportunidadVoluntario(
-                    idOportunidad
-                  );
+                setEstadoInscripcionDetalle(
+                  inscripcionExistente
+                    ? inscripcionExistente.estado
+                    : null
+                );
 
-                }}
 
-              filtrosGuardados={
+                await cargarDetalleOportunidadVoluntario(
+                  idOportunidad
+                );
+
+              }}
+
+              filtrosOportunidades={
                 filtrosVoluntario
               }
 
@@ -8955,6 +9177,127 @@ useEffect(() => {
               showAlert={
                 showAlert
               }
+
+
+              // ==================================================
+              // ORGANIZACIONES
+              // ==================================================
+
+              organizaciones={
+                organizacionesPublicas
+              }
+
+              loadingOrganizaciones={
+                loadingOrganizacionesPublicas
+              }
+
+              filtrosOrganizaciones={
+                filtrosOrganizacionesPublicas
+              }
+
+              onFiltrarOrganizaciones={async (
+                filtros
+              ) => {
+
+                setFiltrosOrganizacionesPublicas(
+                  filtros
+                );
+
+
+                await cargarOrganizacionesPublicas(
+                  filtros
+                );
+
+              }}
+
+              onSeleccionarOrganizacion={async (
+                organizacion
+              ) => {
+
+                await cargarDetalleOrganizacionPublica(
+                  organizacion.slug
+                );
+
+              }}
+
+            />
+
+          )}
+
+          {/* ==================================================
+              DETALLE ORGANIZACIÓN PÚBLICA
+          ================================================== */}
+
+          {currentScreen ===
+            'ORGANIZACION_PUBLICA_DETALLE' && (
+
+            <DetalleOrganizacionPublicaScreen
+
+              organizacion={
+                organizacionPublicaSeleccionada
+              }
+
+              loading={
+                loadingDetalleOrganizacionPublica
+              }
+
+              onVolver={() => {
+
+                setCurrentScreen(
+                  'VOLUNTARIO_HOME'
+                );
+
+
+                setModoBusquedaVoluntario(
+                  'ORGANIZACIONES'
+                );
+
+
+                setTimeout(() => {
+
+                  scrollRef.current?.scrollTo({
+                    y: 0,
+                    animated: false
+                  });
+
+                }, 0);
+
+              }}
+
+
+              onVerOportunidad={async (
+                idOportunidad
+              ) => {
+
+                const inscripcionExistente =
+                  inscripcionesVoluntario.find(
+                    inscripcion =>
+                      String(
+                        inscripcion.id_oportunidad
+                      ) ===
+                      String(
+                        idOportunidad
+                      )
+                  );
+
+
+                setOrigenDetalleVoluntario(
+                  'ORGANIZACION_PUBLICA'
+                );
+
+
+                setEstadoInscripcionDetalle(
+                  inscripcionExistente
+                    ? inscripcionExistente.estado
+                    : null
+                );
+
+
+                await cargarDetalleOportunidadVoluntario(
+                  idOportunidad
+                );
+
+              }}
 
             />
 
@@ -9152,6 +9495,35 @@ useEffect(() => {
 
                   }
 
+
+                  if (
+                        origenDetalleVoluntario ===
+                        'ORGANIZACION_PUBLICA'
+                      ) {
+
+                        setCurrentScreen(
+                          'ORGANIZACION_PUBLICA_DETALLE'
+                        );
+
+
+                        setModoBusquedaVoluntario(
+                          'ORGANIZACIONES'
+                        );
+
+
+                        setTimeout(() => {
+
+                          scrollRef.current?.scrollTo({
+                            y: 0,
+                            animated: false
+                          });
+
+                        }, 0);
+
+
+                        return;
+
+                      }
 
 
 
