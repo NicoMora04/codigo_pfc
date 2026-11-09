@@ -57,6 +57,31 @@ export const actualizarInteresesVoluntario =
 
   };
 
+  // ======================================================
+// ACTUALIZAR DATOS PERSONALES DEL VOLUNTARIO
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+export const actualizarDatosPersonalesVoluntario =
+  async (
+    token,
+    datos
+  ) => {
+
+    const response = await axios.put(
+      `${BASE_URL}/voluntarios/perfil`,
+      {
+        nombre: datos.nombre,
+        apellido: datos.apellido,
+        telefono: datos.telefono
+      },
+      authHeaders(token)
+    );
+
+    return response.data;
+
+  };
+
 
 // ======================================================
 // OBTENER RECOMENDACIONES

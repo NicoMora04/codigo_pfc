@@ -140,9 +140,52 @@ const obtenerTiposExistentes = async (
 
 };
 
+// ======================================================
+// ACTUALIZAR DATOS PERSONALES DEL VOLUNTARIO
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+const actualizarDatosPersonales = async (
+  idUsuario,
+  {
+    nombre,
+    apellido,
+    telefono
+  }
+) => {
+
+  const resultado = await pool.query(
+    `
+    UPDATE perfil_voluntario
+
+    SET
+      nombre = $1,
+      apellido = $2,
+      telefono = $3
+
+    WHERE id_usuario = $4
+
+    RETURNING
+      id_usuario,
+      nombre,
+      apellido,
+      telefono
+    `,
+    [
+      nombre,
+      apellido,
+      telefono,
+      idUsuario
+    ]
+  );
+
+  return resultado.rows[0] || null;
+
+};
 
 module.exports = {
   obtenerIntereses,
   reemplazarIntereses,
-  obtenerTiposExistentes
+  obtenerTiposExistentes,
+  actualizarDatosPersonales
 };

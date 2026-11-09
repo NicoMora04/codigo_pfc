@@ -483,18 +483,12 @@ const [
 
   useEffect(() => {
 
-    if (
-      !editando ||
-      busquedaUbicacion
-        .trim()
-        .length < 3
-    ) {
-
-      setResultadosUbicacion([])
-
-      return
-
-    }
+  if (
+  !editando ||
+  busquedaUbicacion.trim().length < 3
+) {
+  return;
+}
 
 
     const textoActual =
@@ -512,17 +506,12 @@ const [
         .join(', ')
 
 
-    if (
-      ubicacionSeleccionada &&
-      busquedaUbicacion ===
-        textoActual
-    ) {
-
-      setResultadosUbicacion([])
-
-      return
-
-    }
+ if (
+  ubicacionSeleccionada &&
+  busquedaUbicacion === textoActual
+) {
+  return;
+}
 
 
     const timeout =
@@ -668,6 +657,17 @@ const [
 
           sitioWebUrl:
             perfil.sitio_web_url || '',
+            instagram:
+              perfil.redes_sociales?.instagram || '',
+
+            facebook:
+              perfil.redes_sociales?.facebook || '',
+
+            linkedin:
+              perfil.redes_sociales?.linkedin || '',
+
+            horarioAtencion:
+              perfil.horario_atencion?.texto || '',
 
         })
 
@@ -1044,8 +1044,7 @@ const handleCambiarTipoActividad =
         setGuardando(true)
 
 
-        const perfilActualizado =
-          await actualizarMiPerfilOrganizacion(
+         await actualizarMiPerfilOrganizacion(
             {
               nombreVisible:
                 formulario
@@ -1193,6 +1192,17 @@ const handleCambiarTipoActividad =
             sitioWebUrl:
               perfilRecargado
                 .sitio_web_url || '',
+                instagram:
+                perfilRecargado.redes_sociales?.instagram || '',
+
+              facebook:
+                perfilRecargado.redes_sociales?.facebook || '',
+
+              linkedin:
+                perfilRecargado.redes_sociales?.linkedin || '',
+
+              horarioAtencion:
+                perfilRecargado.horario_atencion?.texto || '',
 
           })
 
@@ -1267,6 +1277,17 @@ const handleCrearPerfil =
           sitioWebUrl:
             perfilCreado
               .sitio_web_url || '',
+              instagram:
+              perfilCreado.redes_sociales?.instagram || '',
+
+            facebook:
+              perfilCreado.redes_sociales?.facebook || '',
+
+            linkedin:
+              perfilCreado.redes_sociales?.linkedin || '',
+
+            horarioAtencion:
+              perfilCreado.horario_atencion?.texto || '',
 
         })
 
@@ -4076,19 +4097,27 @@ const handleEliminarItemActualidad =
                     value={
                       busquedaUbicacion
                     }
-                    onChange={
-                      event => {
+                   onChange={
+                    event => {
 
-                        setBusquedaUbicacion(
-                          event.target.value
-                        )
+                      setBusquedaUbicacion(
+                        event.target.value
+                      );
 
-                        setUbicacionSeleccionada(
-                          null
-                        )
+                      setUbicacionSeleccionada(
+                        null
+                      );
 
-                      }
+                      setResultadosUbicacion(
+                        []
+                      );
+
+                      setBuscandoUbicacion(
+                        false
+                      );
+
                     }
+                  }
                     disabled={
                       !editando ||
                       guardando

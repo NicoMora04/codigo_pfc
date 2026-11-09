@@ -83,19 +83,70 @@ export default function DetalleOrganizacionPublicaScreen({
   // DATOS
   // =====================================================
 
-  const ubicacion =
-    [
-      organizacion
-        .ubicacion_aproximada
-        ?.localidad,
+// =====================================================
+// DESCRIPCIÓN INSTITUCIONAL
+// ACTIVIDAD 3.5.1
+// =====================================================
 
-      organizacion
-        .ubicacion_aproximada
-        ?.provincia,
-    ]
-      .filter(Boolean)
-      .join(', ');
+const descripcion =
+  organizacion.descripcion_institucional?.trim() ||
+  'Esta organización todavía no agregó una descripción institucional.';
 
+
+// =====================================================
+// UBICACIÓN INSTITUCIONAL
+// =====================================================
+
+const ubicacionInstitucional =
+  organizacion.ubicacion_institucional || {};
+
+const tieneDireccion =
+  Boolean(ubicacionInstitucional.direccion);
+
+const ubicacion =
+  [
+    ubicacionInstitucional.direccion,
+
+    ubicacionInstitucional.localidad ||
+      organizacion.ubicacion_aproximada?.localidad,
+
+    ubicacionInstitucional.provincia ||
+      organizacion.ubicacion_aproximada?.provincia,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+
+// =====================================================
+// REPUTACIÓN
+// =====================================================
+
+const cantidadValoraciones =
+  Number(organizacion.reputacion?.cantidad || 0);
+
+const promedioReputacion =
+  organizacion.reputacion?.promedio;
+
+const textoReputacion =
+  cantidadValoraciones > 0 &&
+  promedioReputacion != null
+    ? `⭐ ${Number(promedioReputacion)
+        .toFixed(1)
+        .replace('.', ',')}/5 · ${cantidadValoraciones} ${
+          cantidadValoraciones === 1
+            ? 'valoración'
+            : 'valoraciones'
+        }`
+    : '⭐ Sin valoraciones todavía';
+
+
+// =====================================================
+// PERFIL WEB PUBLICADO
+// =====================================================
+
+const tienePerfilWeb =
+  organizacion.tiene_perfil_publico === true &&
+  Boolean(organizacion.slug);
 
   const oportunidades =
     Array.isArray(
@@ -284,6 +335,10 @@ export default function DetalleOrganizacionPublicaScreen({
 
           </View>
 
+        <Text style={styles.reputationText}>
+          {textoReputacion}
+        </Text>
+
         </View>
 
       </View>
@@ -299,17 +354,14 @@ export default function DetalleOrganizacionPublicaScreen({
           Sobre la organización
         </Text>
 
+        {/* DESCRIPCIÓN */}
 
         <Text style={styles.description}>
-
-          {
-            organizacion
-              .descripcion_publica ||
-            'Esta organización no agregó una descripción pública.'
-          }
-
+          {descripcion}
         </Text>
 
+
+        {/* UBICACIÓN INSTITUCIONAL */}
 
         {ubicacion !== '' && (
 
@@ -317,18 +369,21 @@ export default function DetalleOrganizacionPublicaScreen({
 
             <View style={styles.separator} />
 
-
             <Text style={styles.infoLabel}>
-              Ubicación
+              Ubicación institucional
             </Text>
 
             <Text style={styles.infoValue}>
               📍 {ubicacion}
             </Text>
 
-            <Text style={styles.approximateText}>
-              Ubicación aproximada
-            </Text>
+            {!tieneDireccion && (
+
+              <Text style={styles.approximateText}>
+                Ubicación aproximada
+              </Text>
+
+            )}
 
           </>
 
@@ -485,41 +540,41 @@ export default function DetalleOrganizacionPublicaScreen({
 
 
       {/* ================================================= */}
-      {/* PERFIL PÚBLICO WEB */}
-      {/* ================================================= */}
+{/* PERFIL PÚBLICO WEB */}
+{/* ================================================= */}
 
-      <View style={styles.webCard}>
+{tienePerfilWeb && (
 
-        <Text style={styles.webIcon}>
-          🌐
-        </Text>
+  <View style={styles.webCard}>
 
+    <Text style={styles.webIcon}>
+      🌐
+    </Text>
 
-        <Text style={styles.webTitle}>
-          Perfil público
-        </Text>
+    <Text style={styles.webTitle}>
+      Perfil público
+    </Text>
 
+    <Text style={styles.webDescription}>
+      Consultá el perfil completo de la organización,
+      sus imágenes y contenido institucional en el
+      portal web.
+    </Text>
 
-        <Text style={styles.webDescription}>
-          Consultá el perfil completo de la organización,
-          sus imágenes y contenido institucional en el
-          portal web.
-        </Text>
+    <TouchableOpacity
+      style={styles.webButton}
+      onPress={abrirPerfilWeb}
+    >
 
+      <Text style={styles.webButtonText}>
+        Ver perfil público en la web
+      </Text>
 
-        <TouchableOpacity
-          style={styles.webButton}
-          onPress={abrirPerfilWeb}
-        >
+    </TouchableOpacity>
 
-          <Text style={styles.webButtonText}>
-            Ver perfil público en la web
-          </Text>
+  </View>
 
-        </TouchableOpacity>
-
-      </View>
-
+)}
 
       {/* ================================================= */}
       {/* OPORTUNIDADES */}
@@ -828,6 +883,17 @@ const styles =
       color: '#164C40',
 
     },
+    reputationText: {
+
+        fontSize: 14,
+
+        fontWeight: '600',
+
+        color: '#374151',
+
+        marginTop: 12,
+
+      },
 
 
     infoCard: {

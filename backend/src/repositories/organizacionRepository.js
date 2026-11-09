@@ -29,6 +29,41 @@ exports.solicitarNuevaVerificacion = async (idUsuario) => {
 
 };
 
+// ======================================================
+// ACTUALIZAR DESCRIPCIÓN INSTITUCIONAL
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+exports.actualizarDescripcionInstitucional = async (
+  idOrganizacion,
+  descripcion
+) => {
+
+  const result = await pool.query(
+    `
+    UPDATE organizacion
+
+    SET
+      descripcion = $2,
+      actualizado_en = CURRENT_TIMESTAMP
+
+    WHERE id_organizacion = $1
+
+    RETURNING
+      id_organizacion,
+      descripcion AS descripcion_institucional,
+      actualizado_en
+    `,
+    [
+      idOrganizacion,
+      descripcion
+    ]
+  );
+
+  return result.rows[0] || null;
+
+};
+
 
 // ======================================================
 // LISTAR ORGANIZACIONES DISPONIBLES PARA DONACIÓN

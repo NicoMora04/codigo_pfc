@@ -47,6 +47,9 @@ function clienteSimulado({
   estado = 'PENDIENTE',
   cupoTotal = 3,
   aceptadas = 0,
+  estadoOportunidad = 'PUBLICADA',
+  antesDelInicio = true,
+  eliminada = false,
   existe = true,
   actualiza = true
 } = {}) {
@@ -70,25 +73,29 @@ function clienteSimulado({
       if (s.includes('FOR UPDATE OF o')) {
 
         return {
-          rows: existe ? [{
-            id_inscripcion: ID_INS,
-            id_oportunidad: ID_OP,
-            estado,
-            cupo_total: cupoTotal
-          }] : []
-        };
+        rows: existe ? [{
+          id_inscripcion: ID_INS,
+          id_oportunidad: ID_OP,
+          estado,
+          cupo_total: cupoTotal,
+          oportunidad_estado: estadoOportunidad,
+          antes_del_inicio: antesDelInicio,
+          eliminado_en: eliminada ? new Date() : null
+        }] : []
+      };
       }
 
       // Controlar cupos disponibles.
+if (
+  s.includes('COUNT(*)::int AS cupos_ocupados')
+) {
 
-      if (
-        s.includes('COUNT(*)::int AS aceptadas')
-      ) {
-
-        return {
-          rows: [{ aceptadas }]
-        };
-      }
+  return {
+    rows: [{
+      cupos_ocupados: aceptadas
+    }]
+  };
+}
 
       // Buscar inscripción para cancelación.
 
@@ -189,6 +196,102 @@ beforeEach(() => {
 describe(
   'Actividad 3.3.2 - Aceptar inscripción',
   () => {
+
+    // ======================================================
+// PRUEBA 1: OPORTUNIDAD FINALIZADA
+// ======================================================
+
+test(
+  'rechaza aceptar inscripciones en una oportunidad finalizada',
+  async () => {
+
+    const client = clienteSimulado({
+      estadoOportunidad: 'FINALIZADA'
+    });
+
+    await expect(
+      inscripciones.aceptarConControlCupo(ID_INS)
+    ).rejects.toMatchObject({
+      status: 409
+    });
+
+    expect(huboSQL(client, 'ROLLBACK'))
+      .toBe(true);
+
+    expect(
+      notificaciones.crearPorInscripcionAceptada
+    ).not.toHaveBeenCalled();
+
+  }
+);
+
+
+// ======================================================
+// PRUEBA 2: ACTIVIDAD QUE YA COMENZÓ
+// ======================================================
+
+test(
+  'rechaza aceptar inscripciones cuando la actividad ya comenzó',
+  async () => {
+
+    const client = clienteSimulado({
+      estadoOportunidad: 'PUBLICADA',
+      antesDelInicio: false
+    });
+
+    await expect(
+      inscripciones.aceptarConControlCupo(ID_INS)
+    ).rejects.toMatchObject({
+      status: 409
+    });
+
+    expect(huboSQL(client, 'ROLLBACK'))
+      .toBe(true);
+
+  }
+);
+
+
+// ======================================================
+// PRUEBA 3: CUPO OCUPADO POR PARTICIPACIONES HISTÓRICAS
+// ======================================================
+
+test(
+  'impide superar el cupo considerando participaciones completadas y ausentes',
+  async () => {
+
+    const client = clienteSimulado({
+      cupoTotal: 1,
+      aceptadas: 1
+    });
+
+    await expect(
+      inscripciones.aceptarConControlCupo(ID_INS)
+    ).rejects.toMatchObject({
+      status: 409
+    });
+
+    const consultaCupos =
+      client.query.mock.calls.find(
+        ([sql]) =>
+          sql.includes(
+            'AS cupos_ocupados'
+          )
+      );
+
+    expect(consultaCupos).toBeDefined();
+
+    expect(consultaCupos[0])
+      .toContain("'COMPLETADA'");
+
+    expect(consultaCupos[0])
+      .toContain("'AUSENTE'");
+
+    expect(huboSQL(client, 'ROLLBACK'))
+      .toBe(true);
+
+  }
+);
 
     test(
       'acepta, notifica y programa el push usando la misma transacción',

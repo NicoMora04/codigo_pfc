@@ -282,7 +282,7 @@ const styles =
       alignItems: 'center',
       justifyContent: 'center',
 
-      paddingHorizontal: 2,
+      paddingHorizontal: 1,
 
     },
 
@@ -298,7 +298,7 @@ const styles =
 
     label: {
 
-      fontSize: 10,
+      fontSize: 8,
 
       color: '#5F6B76',
 

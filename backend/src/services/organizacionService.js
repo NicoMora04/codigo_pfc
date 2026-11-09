@@ -29,6 +29,102 @@ exports.solicitarNuevaVerificacion = async (idUsuario) => {
 };
 
 // ======================================================
+// ACTUALIZAR DESCRIPCIÓN INSTITUCIONAL
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+exports.actualizarDescripcionInstitucional =
+  async (
+    idOrganizacion,
+    descripcion
+  ) => {
+
+    // ================================================
+    // 1. VALIDAR TIPO DE DATO
+    // ================================================
+
+    if (
+      descripcion !== null &&
+      typeof descripcion !== 'string'
+    ) {
+
+      const error = new Error(
+        'La descripción institucional debe ser un texto'
+      );
+
+      error.status = 400;
+
+      throw error;
+
+    }
+
+
+    // ================================================
+    // 2. NORMALIZAR DESCRIPCIÓN
+    // ================================================
+
+    const descripcionNormalizada =
+      descripcion?.trim() || null;
+
+
+    // ================================================
+    // 3. VALIDAR LONGITUD
+    // ================================================
+
+    if (
+      descripcionNormalizada &&
+      descripcionNormalizada.length > 500
+    ) {
+
+      const error = new Error(
+        'La descripción institucional no puede superar los 500 caracteres'
+      );
+
+      error.status = 400;
+
+      throw error;
+
+    }
+
+
+    // ================================================
+    // 4. ACTUALIZAR EN BASE DE DATOS
+    // ================================================
+
+    const organizacion =
+      await organizacionRepository
+        .actualizarDescripcionInstitucional(
+          idOrganizacion,
+          descripcionNormalizada
+        );
+
+
+    // ================================================
+    // 5. VERIFICAR RESULTADO
+    // ================================================
+
+    if (!organizacion) {
+
+      const error = new Error(
+        'No se encontró la organización'
+      );
+
+      error.status = 404;
+
+      throw error;
+
+    }
+
+
+    // ================================================
+    // 6. DEVOLVER DATOS ACTUALIZADOS
+    // ================================================
+
+    return organizacion;
+
+  };
+
+// ======================================================
 // LISTAR ORGANIZACIONES DISPONIBLES PARA DONACIÓN
 // ======================================================
 

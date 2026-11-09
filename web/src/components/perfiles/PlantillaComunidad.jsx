@@ -54,34 +54,6 @@ function PlantillaComunidad({
       ) || []
 
 
-  const obtenerSeccion =
-    (tipo) =>
-      perfil.secciones?.find(
-        seccion =>
-          seccion.tipo_seccion === tipo &&
-          seccion.visible !== false
-      )
-
-
-  const sobreNosotros =
-    obtenerSeccion(
-      'SOBRE_NOSOTROS'
-    )
-
-  const mision =
-    obtenerSeccion(
-      'MISION'
-    )
-
-  const impacto =
-    obtenerSeccion(
-      'IMPACTO'
-    )
-
-  const actualidad =
-    obtenerSeccion(
-      'ACTUALIDAD'
-    )
 
   const seccionesOrdenadas =
   Array.isArray(perfil?.secciones)
@@ -98,12 +70,6 @@ function PlantillaComunidad({
     : []
 
 
-  const itemsActualidad =
-    Array.isArray(
-      actualidad?.contenido?.items
-    )
-      ? actualidad.contenido.items
-      : []
 
 
   const iniciales =

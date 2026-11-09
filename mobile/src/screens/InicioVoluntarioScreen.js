@@ -428,7 +428,7 @@ export default function InicioVoluntarioScreen({
                 </View>
 
 
-                {(oportunidad.localidad ||
+                {(oportunidad.direccion || oportunidad.localidad ||
                   oportunidad.provincia) && (
 
                   <Text style={styles.infoText}>
@@ -436,6 +436,7 @@ export default function InicioVoluntarioScreen({
                     📍{' '}
 
                     {[
+                      oportunidad.direccion,
                       oportunidad.localidad,
                       oportunidad.provincia
                     ]

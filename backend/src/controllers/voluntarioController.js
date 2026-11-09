@@ -254,9 +254,93 @@ const obtenerRecomendaciones = async (
 
 };
 
+// ======================================================
+// ACTUALIZAR DATOS PERSONALES DEL VOLUNTARIO
+// ACTIVIDAD 3.5.1
+// ======================================================
 
+const actualizarDatosPersonales = async (
+  req,
+  res
+) => {
+
+  try {
+
+    // ==================================================
+    // 1. OBTENER USUARIO AUTENTICADO
+    // ==================================================
+
+    const idUsuario =
+      req.user.id;
+
+
+    // ==================================================
+    // 2. OBTENER DATOS ENVIADOS
+    // ==================================================
+
+    const datos = req.body || {};
+
+
+    // ==================================================
+    // 3. ACTUALIZAR PERFIL
+    // ==================================================
+
+    const voluntarioActualizado =
+      await voluntarioService
+        .actualizarDatosPersonales(
+          idUsuario,
+          datos
+        );
+
+
+    // ==================================================
+    // 4. DEVOLVER RESPUESTA
+    // ==================================================
+
+    return res.status(200).json({
+
+      mensaje:
+        'Datos personales actualizados correctamente',
+
+      voluntario:
+        voluntarioActualizado
+
+    });
+
+  }
+  catch (error) {
+
+    // ==================================================
+    // 5. MANEJAR ERRORES
+    // ==================================================
+
+    console.error(
+      'ERROR AL ACTUALIZAR DATOS PERSONALES:',
+      error
+    );
+
+    const status =
+      Number.isInteger(error.status) &&
+      error.status >= 400 &&
+      error.status < 500
+        ? error.status
+        : 500;
+
+    return res.status(status).json({
+
+      error:
+        status === 500
+          ? 'No se pudieron actualizar los datos personales'
+          : error.message
+
+    });
+
+  }
+
+};
 module.exports = {
   obtenerIntereses,
   actualizarIntereses,
-  obtenerRecomendaciones
+  obtenerRecomendaciones,
+  actualizarDatosPersonales
 };

@@ -67,6 +67,31 @@ export const listarOrganizacionesPublicas =
 
   };
 
+// ======================================================
+// OBTENER FICHA INSTITUCIONAL POR ID
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+export const obtenerFichaInstitucionalOrganizacion =
+  async (
+    idOrganizacion
+  ) => {
+
+    const response =
+      await axios.get(
+        `${PUBLIC_URL}/organizaciones/id/${encodeURIComponent(
+          idOrganizacion
+        )}`
+      );
+
+    return (
+      response.data
+        ?.organizacion ||
+      null
+    );
+
+  };  
+
 
 // ======================================================
 // OBTENER PERFIL PÚBLICO POR SLUG

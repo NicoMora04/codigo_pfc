@@ -309,7 +309,11 @@ exports.buscarOportunidadesPorOrganizacion = async (
         SELECT COUNT(*)::int
         FROM inscripcion i
         WHERE i.id_oportunidad = o.id_oportunidad
-          AND i.estado = 'ACEPTADA'
+          AND i.estado IN (
+  'ACEPTADA',
+  'COMPLETADA',
+  'AUSENTE'
+)
       ) AS cupos_ocupados,
 
       (
@@ -324,7 +328,11 @@ exports.buscarOportunidadesPorOrganizacion = async (
           SELECT COUNT(*)::int
           FROM inscripcion i
           WHERE i.id_oportunidad = o.id_oportunidad
-            AND i.estado = 'ACEPTADA'
+            AND i.estado IN (
+  'ACEPTADA',
+  'COMPLETADA',
+  'AUSENTE'
+)
         ),
         0
       ) AS cupos_disponibles
@@ -432,9 +440,32 @@ exports.buscarOportunidadesPublicadas = async (filtros = {}) => {
   const valores = [];
 
   const condiciones = [
-    `o.estado = 'PUBLICADA'`,
-    `o.fecha_fin >= NOW()`
-  ];
+
+  // La oportunidad debe estar publicada.
+  `o.estado = 'PUBLICADA'`,
+
+  // No debe estar eliminada.
+  `o.eliminado_en IS NULL`,
+
+  // La inscripción debe continuar abierta.
+  `o.fecha_inicio > NOW()`,
+
+  // La oportunidad no debe estar vencida.
+  `o.fecha_fin >= NOW()`,
+
+  // Debe tener cupos disponibles.
+  `o.cupo_total > (
+    SELECT COUNT(*)::int
+    FROM inscripcion i
+    WHERE i.id_oportunidad = o.id_oportunidad
+      AND i.estado IN (
+  'ACEPTADA',
+  'COMPLETADA',
+  'AUSENTE'
+)
+  )`
+
+];
 
   let selectDistancia = '';
   // FILTRO: NOMBRE DE OPORTUNIDAD
@@ -565,7 +596,11 @@ if (organizacion != null) {
         SELECT COUNT(*)::int
         FROM inscripcion i
         WHERE i.id_oportunidad = o.id_oportunidad
-          AND i.estado = 'ACEPTADA'
+          AND i.estado IN (
+  'ACEPTADA',
+  'COMPLETADA',
+  'AUSENTE'
+)
       ) AS cupos_ocupados,
 
       GREATEST(
@@ -573,7 +608,11 @@ if (organizacion != null) {
           SELECT COUNT(*)::int
           FROM inscripcion i
           WHERE i.id_oportunidad = o.id_oportunidad
-            AND i.estado = 'ACEPTADA'
+            AND i.estado IN (
+  'ACEPTADA',
+  'COMPLETADA',
+  'AUSENTE'
+)
         ),
         0
       ) AS cupos_disponibles
@@ -623,7 +662,11 @@ exports.buscarOportunidadPublicadaPorId = async (
           SELECT COUNT(*)::int
           FROM inscripcion i
           WHERE i.id_oportunidad = o.id_oportunidad
-            AND i.estado = 'ACEPTADA'
+            AND i.estado IN (
+  'ACEPTADA',
+  'COMPLETADA',
+  'AUSENTE'
+)
         ) AS cupos_ocupados,
 
         GREATEST(
@@ -631,7 +674,11 @@ exports.buscarOportunidadPublicadaPorId = async (
             SELECT COUNT(*)::int
             FROM inscripcion i
             WHERE i.id_oportunidad = o.id_oportunidad
-              AND i.estado = 'ACEPTADA'
+              AND i.estado IN (
+  'ACEPTADA',
+  'COMPLETADA',
+  'AUSENTE'
+)
           ),
           0
         ) AS cupos_disponibles
@@ -680,7 +727,11 @@ exports.buscarDetalleOportunidadVoluntario = async (
         SELECT COUNT(*)::int
         FROM inscripcion i
         WHERE i.id_oportunidad = o.id_oportunidad
-          AND i.estado = 'ACEPTADA'
+          AND i.estado IN (
+  'ACEPTADA',
+  'COMPLETADA',
+  'AUSENTE'
+)
       ) AS cupos_ocupados,
 
       GREATEST(
@@ -688,7 +739,11 @@ exports.buscarDetalleOportunidadVoluntario = async (
           SELECT COUNT(*)::int
           FROM inscripcion i
           WHERE i.id_oportunidad = o.id_oportunidad
-            AND i.estado = 'ACEPTADA'
+            AND i.estado IN (
+  'ACEPTADA',
+  'COMPLETADA',
+  'AUSENTE'
+)
         ),
         0
       ) AS cupos_disponibles

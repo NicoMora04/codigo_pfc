@@ -61,56 +61,86 @@ exports.listarOrganizacionesPublicas = async (
       });
 
 
-  return organizaciones.map(
-    organizacion => ({
-      nombre_visible:
-        organizacion.nombre_visible,
+  // ======================================================
+// RESPUESTA DEL DIRECTORIO DE ORGANIZACIONES
+// ACTIVIDAD 3.5.1
+// ======================================================
 
-      slug:
-        organizacion.slug,
+return organizaciones.map(
+  organizacion => ({
 
-      descripcion_publica:
-        organizacion.descripcion_publica,
+    // ================================================
+    // IDENTIFICACIÓN INSTITUCIONAL
+    // ================================================
 
-      ubicacion_aproximada:
-        organizacion.localidad ||
-        organizacion.provincia
-          ? {
-              localidad:
-                organizacion.localidad,
-              provincia:
-                organizacion.provincia
-            }
-          : null,
+    id_organizacion:
+      organizacion.id_organizacion,
 
-      tipos_actividad:
-        organizacion.tipos_actividad || [],
+    nombre_visible:
+      organizacion.nombre_visible,
 
-      portada:
-        organizacion.portada_url
-          ? {
-              url:
-                organizacion.portada_url,
+    // ================================================
+    // DISPONIBILIDAD DEL PERFIL PÚBLICO
+    // ================================================
 
-              texto_alternativo:
-                organizacion
-                  .portada_texto_alternativo
-            }
-          : null,
+    tiene_perfil_publico:
+      organizacion.tiene_perfil_publico === true,
 
-      logo:
-        organizacion.logo_url
-          ? {
-              url:
-                organizacion.logo_url,
+    slug:
+      organizacion.slug || null,
 
-              texto_alternativo:
-                organizacion
-                  .logo_texto_alternativo
-            }
-          : null
-    })
-  );
+    // ================================================
+    // INFORMACIÓN PÚBLICA
+    // ================================================
+
+    descripcion_publica:
+      organizacion.descripcion_publica || null,
+
+    ubicacion_aproximada:
+      organizacion.localidad ||
+      organizacion.provincia
+        ? {
+            localidad:
+              organizacion.localidad,
+
+            provincia:
+              organizacion.provincia
+          }
+        : null,
+
+    tipos_actividad:
+      organizacion.tipos_actividad || [],
+
+    // ================================================
+    // IMÁGENES DEL PERFIL PUBLICADO
+    // ================================================
+
+    portada:
+      organizacion.portada_url
+        ? {
+            url:
+              organizacion.portada_url,
+
+            texto_alternativo:
+              organizacion
+                .portada_texto_alternativo
+          }
+        : null,
+
+    logo:
+      organizacion.logo_url
+        ? {
+            url:
+              organizacion.logo_url,
+
+            texto_alternativo:
+              organizacion
+                .logo_texto_alternativo
+          }
+        : null
+
+  })
+);
 };
 
 // ======================================================
@@ -140,6 +170,239 @@ exports.obtenerPerfilPropio = async (
   }
 
   return resultado;
+};
+
+// ======================================================
+// FICHA INSTITUCIONAL DE ORGANIZACIÓN VERIFICADA
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+exports.obtenerFichaInstitucionalPorId = async (
+  idOrganizacion
+) => {
+
+  // ====================================================
+  // 1. VALIDAR IDENTIFICADOR
+  // ====================================================
+
+  const idNormalizado =
+    typeof idOrganizacion === 'string'
+      ? idOrganizacion.trim()
+      : '';
+
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  if (!uuidRegex.test(idNormalizado)) {
+
+    const error = new Error(
+      'El identificador de la organización no es válido'
+    );
+
+    error.status = 400;
+
+    throw error;
+  }
+
+
+  // ====================================================
+  // 2. OBTENER INFORMACIÓN INSTITUCIONAL
+  // ====================================================
+
+  const ficha =
+    await perfilPublicoRepository
+      .obtenerFichaInstitucionalPorId(
+        idNormalizado
+      );
+
+  if (!ficha) {
+
+    const error = new Error(
+      'Organización no encontrada o no disponible'
+    );
+
+    error.status = 404;
+
+    throw error;
+  }
+
+
+  // ====================================================
+  // 3. CONSULTAR PERFIL PÚBLICO, SI EXISTE
+  // ====================================================
+
+  let perfilPublicado = null;
+
+  if (
+    ficha.tiene_perfil_publico === true &&
+    ficha.slug
+  ) {
+
+    perfilPublicado =
+      await perfilPublicoRepository
+        .obtenerPerfilPublicoPorSlug(
+          ficha.slug
+        );
+
+  }
+
+
+  // ====================================================
+  // 4. NORMALIZAR INFORMACIÓN INSTITUCIONAL
+  // ====================================================
+
+  const ubicacionAproximada =
+    ficha.localidad || ficha.provincia
+      ? {
+          localidad: ficha.localidad,
+          provincia: ficha.provincia
+        }
+      : null;
+
+  const ubicacionInstitucional =
+  ficha.direccion ||
+  ficha.localidad ||
+  ficha.provincia
+    ? {
+        direccion:
+          ficha.direccion || null,
+
+        localidad:
+          ficha.localidad || null,
+
+        provincia:
+          ficha.provincia || null
+      }
+    : null;
+
+
+  const reputacion = {
+
+    promedio:
+      ficha.reputacion_promedio == null
+        ? null
+        : Number(
+            ficha.reputacion_promedio
+          ),
+
+    cantidad:
+      Number(
+        ficha.reputacion_cantidad || 0
+      )
+
+  };
+
+
+  // ====================================================
+  // 5. CONSTRUIR RESPUESTA UNIFICADA
+  // ====================================================
+
+  return {
+
+    // --------------------------------------------------
+    // IDENTIFICACIÓN INSTITUCIONAL
+    // --------------------------------------------------
+
+    id_organizacion:
+      ficha.id_organizacion,
+
+    razon_social:
+      ficha.razon_social,
+
+    nombre_visible:
+      perfilPublicado?.nombre_visible ||
+      ficha.nombre_visible,
+
+    tiene_perfil_publico:
+      perfilPublicado !== null,
+
+    slug:
+      perfilPublicado?.slug || null,
+
+
+    // --------------------------------------------------
+    // INFORMACIÓN DEL PERFIL PUBLICADO
+    // --------------------------------------------------
+
+    descripcion_institucional:
+    ficha.descripcion_institucional || null,
+
+// Descripción personalizada del perfil web publicado
+descripcion_publica:
+  perfilPublicado?.descripcion_publica || null,
+
+    email_contacto_publico:
+      perfilPublicado?.email_contacto_publico || null,
+
+    telefono_contacto_publico:
+      perfilPublicado?.telefono_contacto_publico || null,
+
+    sitio_web_url:
+      perfilPublicado?.sitio_web_url || null,
+
+    redes_sociales:
+      perfilPublicado?.redes_sociales || null,
+
+    horario_atencion:
+      perfilPublicado?.horario_atencion || null,
+
+
+    // --------------------------------------------------
+    // UBICACIÓN Y ACTIVIDADES
+    // --------------------------------------------------
+
+    // Ubicación aproximada para compatibilidad
+ubicacion_aproximada:
+  ubicacionAproximada,
+
+// Ubicación institucional del registro
+ubicacion_institucional:
+  ubicacionInstitucional,
+
+// Tipos de actividad seleccionados
+tipos_actividad:
+  Array.isArray(ficha.tipos_actividad)
+    ? ficha.tipos_actividad
+    : [],
+
+    // --------------------------------------------------
+    // REPUTACIÓN
+    // --------------------------------------------------
+
+    reputacion,
+
+
+    // --------------------------------------------------
+    // PERSONALIZACIÓN DEL PERFIL PUBLICADO
+    // --------------------------------------------------
+
+    plantilla:
+      perfilPublicado?.plantilla || null,
+
+    imagenes:
+      perfilPublicado?.imagenes || [],
+
+    secciones:
+      perfilPublicado?.secciones || [],
+
+
+    // --------------------------------------------------
+    // OPORTUNIDADES PUBLICADAS Y VIGENTES
+    // --------------------------------------------------
+
+    oportunidades:
+      ficha.oportunidades || [],
+
+
+    // --------------------------------------------------
+    // FECHA DE PUBLICACIÓN
+    // --------------------------------------------------
+
+    publicado_en:
+      perfilPublicado?.publicado_en || null
+
+  };
+
 };
 
 // ======================================================

@@ -17,8 +17,7 @@ exports.listarOrganizacionesPublicas = async (filtros = {}) => {
 
   const condiciones = [
     `u.estado_cuenta = 'ACTIVA'`,
-    `o.estado_verificacion = 'VERIFICADA'`,
-    `p.estado_publicacion = 'PUBLICADO'`
+    `o.estado_verificacion = 'VERIFICADA'`
   ];
 
 
@@ -26,14 +25,18 @@ exports.listarOrganizacionesPublicas = async (filtros = {}) => {
   // FILTRO POR NOMBRE VISIBLE
   // ====================================================
 
-  if (nombre) {
+ if (nombre) {
 
-    valores.push(`%${nombre}%`);
+  valores.push(`%${nombre}%`);
 
-    condiciones.push(
-      `p.nombre_visible ILIKE $${valores.length}`
-    );
-  }
+  condiciones.push(`
+    (
+      o.razon_social ILIKE $${valores.length}
+      OR p.nombre_visible ILIKE $${valores.length}
+    )
+  `);
+
+}
 
 
   // ====================================================
@@ -80,10 +83,20 @@ if (ubicacion) {
 
 
   const query = `
-    SELECT
-      p.nombre_visible,
-      p.slug,
-      p.descripcion_publica,
+ SELECT
+  o.id_organizacion,
+
+  COALESCE(
+    NULLIF(p.nombre_visible, ''),
+    o.razon_social
+  ) AS nombre_visible,
+
+  (
+    p.id_perfil_publico IS NOT NULL
+  ) AS tiene_perfil_publico,
+
+  p.slug,
+  p.descripcion_publica,
 
       ub.localidad,
       ub.provincia,
@@ -112,15 +125,18 @@ if (ubicacion) {
       logo.texto_alternativo
         AS logo_texto_alternativo
 
-    FROM perfil_publico_organizacion p
-
-    INNER JOIN organizacion o
-      ON o.id_organizacion =
-        p.id_organizacion
+    FROM organizacion o
 
     INNER JOIN usuario u
       ON u.id_usuario =
         o.id_usuario
+
+    LEFT JOIN perfil_publico_organizacion p
+      ON p.id_organizacion =
+        o.id_organizacion
+
+      AND p.estado_publicacion =
+        'PUBLICADO'
 
     LEFT JOIN ubicacion ub
       ON ub.id_ubicacion =
@@ -155,7 +171,7 @@ if (ubicacion) {
     WHERE ${condiciones.join('\n AND ')}
 
     ORDER BY
-      p.nombre_visible ASC
+      nombre_visible ASC
   `;
 
   const result = await pool.query(
@@ -166,6 +182,191 @@ if (ubicacion) {
   return result.rows;
 };
 
+// ======================================================
+// FICHA INSTITUCIONAL DE ORGANIZACIÓN VERIFICADA
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+exports.obtenerFichaInstitucionalPorId = async (
+  idOrganizacion
+) => {
+
+  // ====================================================
+  // 1. INFORMACIÓN INSTITUCIONAL Y REPUTACIÓN
+  // ====================================================
+
+  const result = await pool.query(
+    `
+    SELECT
+      o.id_organizacion,
+      o.razon_social,
+      o.descripcion AS descripcion_institucional,
+
+      COALESCE(
+        NULLIF(p.nombre_visible, ''),
+        o.razon_social
+      ) AS nombre_visible,
+
+      (
+        p.id_perfil_publico IS NOT NULL
+      ) AS tiene_perfil_publico,
+
+      p.slug,
+      ub.direccion,
+      ub.localidad,
+      ub.provincia,
+
+      COALESCE(
+        (
+          SELECT json_agg(
+            json_build_object(
+              'id_tipo_actividad',
+              ta.id_tipo_actividad,
+              'nombre',
+              ta.nombre
+            )
+            ORDER BY ta.nombre ASC
+          )
+
+          FROM organizacion_tipo_actividad ota
+
+          INNER JOIN tipo_actividad ta
+            ON ta.id_tipo_actividad =
+              ota.id_tipo_actividad
+
+          WHERE ota.id_organizacion =
+            o.id_organizacion
+        ),
+        '[]'::json
+      ) AS tipos_actividad,
+
+      reputacion.promedio AS reputacion_promedio,
+      reputacion.cantidad AS reputacion_cantidad
+
+    FROM organizacion o
+
+    INNER JOIN usuario u
+      ON u.id_usuario =
+        o.id_usuario
+
+    LEFT JOIN ubicacion ub
+      ON ub.id_ubicacion =
+        o.id_ubicacion
+
+    LEFT JOIN perfil_publico_organizacion p
+      ON p.id_organizacion =
+        o.id_organizacion
+
+      AND p.estado_publicacion =
+        'PUBLICADO'
+
+    LEFT JOIN LATERAL (
+
+      SELECT
+        ROUND(
+          AVG(c.puntuacion)::numeric,
+          1
+        ) AS promedio,
+
+        COUNT(*)::integer AS cantidad
+
+      FROM calificacion c
+
+      INNER JOIN inscripcion i
+        ON i.id_inscripcion =
+          c.id_inscripcion
+
+      INNER JOIN oportunidad op
+        ON op.id_oportunidad =
+          i.id_oportunidad
+
+      WHERE op.id_organizacion =
+        o.id_organizacion
+
+        AND i.estado = 'COMPLETADA'
+
+        AND c.autor_rol = 'VOLUNTARIO'
+
+    ) reputacion ON TRUE
+
+    WHERE o.id_organizacion = $1
+
+      AND u.estado_cuenta = 'ACTIVA'
+
+      AND o.estado_verificacion =
+        'VERIFICADA'
+
+    LIMIT 1
+    `,
+    [idOrganizacion]
+  );
+
+
+  // ====================================================
+  // 2. VERIFICAR EXISTENCIA
+  // ====================================================
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+
+  const organizacion = result.rows[0];
+
+
+  // ====================================================
+  // 3. OPORTUNIDADES PUBLICADAS Y VIGENTES
+  // ====================================================
+
+  const oportunidadesResult = await pool.query(
+    `
+    SELECT
+      op.id_oportunidad,
+      op.titulo,
+      op.descripcion,
+      op.fecha_inicio,
+      op.fecha_fin,
+      op.urgencia
+
+    FROM oportunidad op
+
+WHERE op.id_organizacion = $1
+
+  -- Oportunidad publicada y no eliminada
+  AND op.estado = 'PUBLICADA'
+  AND op.eliminado_en IS NULL
+
+  -- La inscripción debe continuar abierta
+  AND op.fecha_inicio > NOW()
+  AND op.fecha_fin >= NOW()
+
+  -- Deben existir cupos disponibles
+  AND op.cupo_total > (
+    SELECT COUNT(*)::int
+    FROM inscripcion i
+    WHERE i.id_oportunidad = op.id_oportunidad
+      AND i.estado = 'ACEPTADA'
+  )
+
+ORDER BY op.fecha_inicio ASC
+    `,
+    [idOrganizacion]
+  );
+
+
+  // ====================================================
+  // 4. DEVOLVER FICHA INSTITUCIONAL
+  // ====================================================
+
+  return {
+
+    ...organizacion,
+
+    oportunidades:
+      oportunidadesResult.rows
+
+  };
+
+};
 // ======================================================
 // CONSULTAR PERFIL PROPIO
 // ======================================================

@@ -17,7 +17,6 @@ import {
 export default function BuscarOportunidadesScreen({
   oportunidades = [],
   loading,
-  onLogout,
   tiposActividad = [],
   onFiltrar,
   onBuscarUbicacion,
@@ -929,18 +928,6 @@ const hayZonasAproximadas =
 
         </View>
 
-
-        <TouchableOpacity
-          onPress={
-            onLogout
-          }
-        >
-
-          <Text style={styles.logoutText}>
-            Cerrar sesión
-          </Text>
-
-        </TouchableOpacity>
 
       </View>
 
@@ -1951,12 +1938,6 @@ const styles =
       marginTop: 4,
     },
 
-
-    logoutText: {
-      color: '#C62828',
-      fontWeight: '600',
-      marginTop: 10,
-    },
 
 
     loader: {

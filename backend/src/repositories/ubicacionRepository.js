@@ -1,22 +1,41 @@
 const pool = require('../config/db');
 
+// ======================================================
+// BUSCAR UBICACIÓN EXISTENTE
+// VALIDACIÓN DE DIRECCIÓN - ACTIVIDAD 3.5.1
+// ======================================================
+
 exports.buscarUbicacion = async (
   latitud,
   longitud,
   localidad,
   provincia,
-  esAproximada
+  esAproximada,
+  direccion
 ) => {
 
   const result = await pool.query(
     `
     SELECT *
     FROM ubicacion
+
     WHERE latitud = $1
       AND longitud = $2
-      AND localidad IS NOT DISTINCT FROM $3
-      AND provincia IS NOT DISTINCT FROM $4
+
+      AND localidad
+        IS NOT DISTINCT FROM $3
+
+      AND provincia
+        IS NOT DISTINCT FROM $4
+
       AND es_aproximada = $5
+
+      AND LOWER(
+        BTRIM(COALESCE(direccion, ''))
+      ) = LOWER(
+        BTRIM(COALESCE($6::text, ''))
+      )
+
     LIMIT 1
     `,
     [
@@ -24,13 +43,14 @@ exports.buscarUbicacion = async (
       longitud,
       localidad,
       provincia,
-      esAproximada
+      esAproximada,
+      direccion
     ]
   );
 
   return result.rows[0] || null;
-};
 
+};
 
 exports.crearUbicacion = async (
   latitud,

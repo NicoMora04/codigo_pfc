@@ -209,6 +209,7 @@ const obtenerOportunidadesCandidatas =
 
         u.latitud,
         u.longitud,
+        u.direccion,
         u.localidad,
         u.provincia,
         u.es_aproximada

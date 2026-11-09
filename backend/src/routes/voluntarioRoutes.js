@@ -42,6 +42,18 @@ router.put(
 );
 
 // ======================================================
+// ACTUALIZAR DATOS PERSONALES DEL VOLUNTARIO
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+router.put(
+  '/perfil',
+  verificarToken,
+  verificarRol('VOLUNTARIO'),
+  voluntarioController.actualizarDatosPersonales
+);
+
+// ======================================================
 // RECOMENDACIONES DEL VOLUNTARIO
 // ======================================================
 

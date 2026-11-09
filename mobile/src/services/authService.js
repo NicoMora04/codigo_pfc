@@ -70,6 +70,107 @@ export const obtenerMiOrganizacion =
 
   };
 
+  // ======================================================
+// ACTUALIZAR DESCRIPCIÓN INSTITUCIONAL
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+export const actualizarDescripcionInstitucional =
+  async (
+    token,
+    descripcion
+  ) => {
+
+    const response =
+      await axios.patch(
+
+        `${BASE_URL}/organizaciones/mi-organizacion/descripcion`,
+
+        {
+          descripcion
+        },
+
+        {
+          headers: {
+            Authorization:
+              `Bearer ${token}`
+          }
+        }
+
+      );
+
+    return response.data;
+
+  };
+
+  // ======================================================
+// ACTUALIZAR TIPOS DE ACTIVIDAD INSTITUCIONALES
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+export const actualizarTiposActividadInstitucional =
+  async (
+    token,
+    idsTiposActividad
+  ) => {
+
+    const response =
+      await axios.patch(
+
+        `${BASE_URL}/organizaciones/mi-organizacion/tipos-actividad`,
+
+        {
+          idsTiposActividad
+        },
+
+        {
+          headers: {
+            Authorization:
+              `Bearer ${token}`
+          }
+        }
+
+      );
+
+    return response.data;
+
+  };
+  // ======================================================
+// ACTUALIZAR UBICACIÓN INSTITUCIONAL
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+export const actualizarUbicacionInstitucional =
+  async (
+    token,
+    ubicacion
+  ) => {
+
+    const response =
+      await axios.patch(
+
+        `${BASE_URL}/organizaciones/mi-organizacion/ubicacion`,
+
+        {
+          latitud: ubicacion.latitud,
+          longitud: ubicacion.longitud,
+          direccion: ubicacion.direccion,
+          localidad: ubicacion.localidad,
+          provincia: ubicacion.provincia
+        },
+
+        {
+          headers: {
+            Authorization:
+              `Bearer ${token}`
+          }
+        }
+
+      );
+
+    return response.data;
+
+  };
 
   // ======================================================
 // OBTENER MI PERFIL DE VOLUNTARIO

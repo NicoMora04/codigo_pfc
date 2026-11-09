@@ -194,7 +194,10 @@ const aceptarConControlCupo = async (
           i.id_inscripcion,
           i.id_oportunidad,
           i.estado,
-          o.cupo_total
+          o.cupo_total,
+          o.estado AS oportunidad_estado,
+          o.eliminado_en,
+          (o.fecha_inicio > NOW()) AS antes_del_inicio
         FROM inscripcion i
         INNER JOIN oportunidad o
           ON o.id_oportunidad = i.id_oportunidad
@@ -223,30 +226,60 @@ const aceptarConControlCupo = async (
     const inscripcion =
       resultadoInscripcion.rows[0];
 
+      // ======================================================
+// VALIDAR QUE LA OPORTUNIDAD ADMITA ACEPTACIONES
+// ======================================================
 
-    // 2. Contar únicamente inscripciones ACEPTADAS
-    const resultadoCupo =
-      await client.query(
-        `
-        SELECT COUNT(*)::int AS aceptadas
-        FROM inscripcion
-        WHERE id_oportunidad = $1
-          AND estado = 'ACEPTADA';
-        `,
-        [
-          inscripcion.id_oportunidad
-        ]
+if (
+  inscripcion.oportunidad_estado !== 'PUBLICADA' ||
+  inscripcion.eliminado_en !== null ||
+  !inscripcion.antes_del_inicio
+) {
+
+  const error = new Error(
+    'La oportunidad ya no admite nuevas aceptaciones'
+  );
+
+  error.status = 409;
+
+  throw error;
+}
+
+
+  // ======================================================
+// CONTAR PARTICIPANTES QUE OCUPARON UN CUPO
+// ======================================================
+
+const resultadoCupo =
+  await client.query(
+    `
+    SELECT
+      COUNT(*)::int AS cupos_ocupados
+
+    FROM inscripcion
+
+    WHERE id_oportunidad = $1
+
+      AND estado IN (
+        'ACEPTADA',
+        'COMPLETADA',
+        'AUSENTE'
       );
+    `,
+    [
+      inscripcion.id_oportunidad
+    ]
+  );
 
 
-    const aceptadas =
-      resultadoCupo.rows[0].aceptadas;
+const cuposOcupados =
+  resultadoCupo.rows[0].cupos_ocupados;
 
 
     // 3. Verificar capacidad
     if (
-      aceptadas >=
-      inscripcion.cupo_total
+        cuposOcupados >=
+  inscripcion.cupo_total
     ) {
 
       const error =

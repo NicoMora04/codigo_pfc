@@ -26,7 +26,6 @@ export default function BuscarVoluntarioScreen({
   onInscribirse,
   onFiltrarOportunidades,
   onBuscarUbicacion,
-  onLogout,
   onVerDetalleOportunidad,
   filtrosOportunidades,
   estadoUbicacionGuardado,
@@ -150,9 +149,6 @@ export default function BuscarVoluntarioScreen({
             onBuscarUbicacion
           }
 
-          onLogout={
-            onLogout
-          }
 
           onVerDetalle={
             onVerDetalleOportunidad

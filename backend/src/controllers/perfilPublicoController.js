@@ -52,6 +52,72 @@ exports.listarOrganizacionesPublicas = async (
       });
   }
 };
+// ======================================================
+// CONSULTAR FICHA INSTITUCIONAL DE ORGANIZACIÓN
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+exports.obtenerFichaInstitucionalPorId = async (
+  req,
+  res
+) => {
+
+  try {
+
+    // ==================================================
+    // 1. OBTENER IDENTIFICADOR
+    // ==================================================
+
+    const idOrganizacion =
+      req.params.idOrganizacion;
+
+
+    // ==================================================
+    // 2. CONSULTAR SERVICIO
+    // ==================================================
+
+    const ficha =
+      await perfilPublicoService
+        .obtenerFichaInstitucionalPorId(
+          idOrganizacion
+        );
+
+
+    // ==================================================
+    // 3. DEVOLVER RESPUESTA
+    // ==================================================
+
+    return res
+      .status(200)
+      .json({
+        organizacion: ficha
+      });
+
+  } catch (error) {
+
+    // ==================================================
+    // 4. MANEJO DE ERRORES
+    // ==================================================
+
+    console.error(
+      'ERROR AL CONSULTAR FICHA INSTITUCIONAL:',
+      error
+    );
+
+    return res
+      .status(error.status || 500)
+      .json({
+
+        error:
+          error.status
+            ? error.message
+            : 'No se pudo consultar la organización'
+
+      });
+
+  }
+
+};
 
 // ======================================================
 // CONSULTAR PERFIL PROPIO

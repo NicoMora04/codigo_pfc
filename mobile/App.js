@@ -58,7 +58,7 @@ import DetalleOrganizacionPublicaScreen
 
 import {
   listarOrganizacionesPublicas,
-  obtenerPerfilPublicoOrganizacion
+  obtenerFichaInstitucionalOrganizacion
 } from './src/services/publicPortalService';
 
 import MisInscripcionesScreen from './src/screens/MisInscripcionesScreen';
@@ -83,6 +83,9 @@ import OrganizacionBottomNav
 
 import AdminBottomNav
   from './src/components/AdminBottomNav';
+
+import InicioAdminScreen
+  from './src/screens/InicioAdminScreen';  
 
 import OrganizacionesPendientesScreen
   from './src/screens/OrganizacionesPendientesScreen';
@@ -152,7 +155,10 @@ import {
   recuperarPassword,
   obtenerPerfilProtegido,
   obtenerMiOrganizacion,
-  obtenerMiVoluntario
+  obtenerMiVoluntario,
+  actualizarDescripcionInstitucional,
+  actualizarTiposActividadInstitucional,
+  actualizarUbicacionInstitucional
 } from './src/services/authService';
 
 import {
@@ -216,7 +222,8 @@ import * as Location
 import {
   obtenerRecomendacionesVoluntario,
   obtenerInteresesVoluntario,
-  actualizarInteresesVoluntario
+  actualizarInteresesVoluntario,
+  actualizarDatosPersonalesVoluntario
 } from './src/services/voluntarioService';
 
 import UsuariosAdminScreen
@@ -593,6 +600,27 @@ const [
   setDatosOrganizacion
 ] = useState(null);
 
+const [
+  guardandoDescripcionInstitucional,
+  setGuardandoDescripcionInstitucional
+] = useState(false);
+
+// ======================================================
+// GUARDADO DE TIPOS DE ACTIVIDAD INSTITUCIONALES
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+const [
+  guardandoTiposActividad,
+  setGuardandoTiposActividad
+] = useState(false);
+
+const [
+  guardandoUbicacionInstitucional,
+  setGuardandoUbicacionInstitucional
+] = useState(false);
+
+
 // ======================================================
 // ESTADÍSTICAS - ORGANIZACIÓN
 // ACTIVIDAD 3.4.1
@@ -624,6 +652,10 @@ const [
   setLoadingDatosVoluntario
 ] = useState(false);
 
+const [
+  guardandoDatosPersonales,
+  setGuardandoDatosPersonales
+] = useState(false);
 const [
   reputacionVoluntario,
   setReputacionVoluntario
@@ -5368,71 +5400,94 @@ setFiltroEstadoOrganizacion('TODAS');
       // DETALLE DE ORGANIZACIÓN PÚBLICA
       // ======================================================
 
-      const cargarDetalleOrganizacionPublica =
-        async (
-          slug
-        ) => {
+      // ======================================================
+// DETALLE INSTITUCIONAL DE ORGANIZACIÓN
+// ACTIVIDAD 3.5.1
+// ======================================================
 
-          setLoadingDetalleOrganizacionPublica(
-            true
-          );
+const cargarDetalleOrganizacionPublica =
+  async (
+    idOrganizacion
+  ) => {
 
+    setLoadingDetalleOrganizacionPublica(
+      true
+    );
 
-          try {
+    try {
 
-            const perfil =
-              await obtenerPerfilPublicoOrganizacion(
-                slug
-              );
+      // ================================================
+      // 1. CONSULTAR FICHA INSTITUCIONAL
+      // ================================================
 
+      const organizacion =
+        await obtenerFichaInstitucionalOrganizacion(
+          idOrganizacion
+        );
 
-            setOrganizacionPublicaSeleccionada(
-              perfil
-            );
+      // ================================================
+      // 2. VALIDAR RESPUESTA
+      // ================================================
 
+      if (!organizacion) {
 
-            setCurrentScreen(
-              'ORGANIZACION_PUBLICA_DETALLE'
-            );
+        throw new Error(
+          'No se encontró la información de la organización.'
+        );
 
+      }
 
-            setTimeout(() => {
+      // ================================================
+      // 3. GUARDAR ORGANIZACIÓN SELECCIONADA
+      // ================================================
 
-              scrollRef.current?.scrollTo({
-                y: 0,
-                animated: false
-              });
+      setOrganizacionPublicaSeleccionada(
+        organizacion
+      );
 
-            }, 0);
+      // ================================================
+      // 4. NAVEGAR AL DETALLE
+      // ================================================
 
-          }
-          catch (error) {
+      setCurrentScreen(
+        'ORGANIZACION_PUBLICA_DETALLE'
+      );
 
-            console.log(
-              'ERROR AL CARGAR PERFIL PÚBLICO:',
-              error
-            );
+      setTimeout(() => {
 
+        scrollRef.current?.scrollTo({
+          y: 0,
+          animated: false
+        });
 
-            showAlert(
-              'error',
-              'Error',
-              error.response
-                ?.data
-                ?.error ||
-              'No se pudo cargar el perfil de la organización.'
-            );
+      }, 0);
 
-          }
-          finally {
+    }
+    catch (error) {
 
-            setLoadingDetalleOrganizacionPublica(
-              false
-            );
+      console.log(
+        'ERROR AL CARGAR FICHA INSTITUCIONAL:',
+        error
+      );
 
-          }
+      showAlert(
+        'error',
+        'Error',
+        error.response?.data?.error ||
+        error.message ||
+        'No se pudo cargar la información de la organización.'
+      );
 
-        };
+    }
+    finally {
+
+      setLoadingDetalleOrganizacionPublica(
+        false
+      );
+
+    }
+
+  };
 
 
   // ======================================================
@@ -6344,6 +6399,129 @@ const cargarDatosVoluntario = async () => {
 };
 
 // ======================================================
+// ACTUALIZAR DATOS PERSONALES DEL VOLUNTARIO
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+const guardarDatosPersonalesVoluntario = async (
+  datos
+) => {
+
+  if (guardandoDatosPersonales) {
+    return false;
+  }
+
+  setGuardandoDatosPersonales(true);
+
+  try {
+
+    // ==================================================
+    // 1. OBTENER TOKEN
+    // ==================================================
+
+    const token = await obtenerToken();
+
+    if (!token) {
+
+      await eliminarToken();
+
+      setDatosVoluntario(null);
+
+      setCurrentScreen('A01');
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión no es válida. Iniciá sesión nuevamente.'
+      );
+
+      return false;
+
+    }
+
+    // ==================================================
+    // 2. ACTUALIZAR DATOS EN EL BACKEND
+    // ==================================================
+
+    const respuesta =
+      await actualizarDatosPersonalesVoluntario(
+        token,
+        datos
+      );
+
+    // ==================================================
+    // 3. ACTUALIZAR EL ESTADO LOCAL
+    // ==================================================
+
+    setDatosVoluntario((actual) => ({
+
+      ...actual,
+
+      ...respuesta.voluntario
+
+    }));
+
+    // ==================================================
+    // 4. MOSTRAR CONFIRMACIÓN
+    // ==================================================
+
+    showAlert(
+      'success',
+      'Perfil actualizado',
+      'Tus datos personales se actualizaron correctamente.'
+    );
+
+    return true;
+
+  }
+  catch (error) {
+
+    // ==================================================
+    // 5. MANEJAR SESIÓN VENCIDA
+    // ==================================================
+
+    if (error.response?.status === 401) {
+
+      await eliminarToken();
+
+      setDatosVoluntario(null);
+
+      setCurrentScreen('A01');
+
+      showAlert(
+        'error',
+        'Sesión finalizada',
+        'Tu sesión venció. Iniciá sesión nuevamente.'
+      );
+
+      return false;
+
+    }
+
+    // ==================================================
+    // 6. MANEJAR OTROS ERRORES
+    // ==================================================
+
+    showAlert(
+      'error',
+      'No se pudo actualizar el perfil',
+      error.response?.data?.error ||
+      error.response?.data?.mensaje ||
+      'Ocurrió un error al actualizar tus datos personales.'
+    );
+
+    return false;
+
+  }
+  finally {
+
+    setGuardandoDatosPersonales(false);
+
+  }
+
+};
+
+// ======================================================
 // CARGAR REPUTACIÓN DEL VOLUNTARIO
 // ACTIVIDAD 3.2.1
 // ======================================================
@@ -6458,7 +6636,446 @@ const cargarReputacionVoluntario = async () => {
   }
 
 };
-   // ======================================================
+
+// ======================================================
+// GUARDAR TIPOS DE ACTIVIDAD INSTITUCIONALES
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+const guardarTiposActividadInstitucional =
+  async (idsTiposActividad) => {
+
+    setGuardandoTiposActividad(true);
+
+    try {
+
+      // ================================================
+      // 1. VALIDAR SELECCIÓN
+      // ================================================
+
+      if (
+        !Array.isArray(idsTiposActividad) ||
+        idsTiposActividad.length === 0
+      ) {
+
+        throw new Error(
+          'Debés seleccionar al menos un tipo de actividad.'
+        );
+
+      }
+
+
+      // ================================================
+      // 2. OBTENER TOKEN
+      // ================================================
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        throw new Error(
+          'La sesión no está disponible. Iniciá sesión nuevamente.'
+        );
+
+      }
+
+
+      // ================================================
+      // 3. ACTUALIZAR EN EL BACKEND
+      // ================================================
+
+      const resultado =
+        await actualizarTiposActividadInstitucional(
+          token,
+          idsTiposActividad
+        );
+
+
+      // ================================================
+      // 4. VALIDAR RESPUESTA
+      // ================================================
+
+      if (
+        !Array.isArray(
+          resultado?.tiposActividad
+        )
+      ) {
+
+        throw new Error(
+          'No se recibió la información actualizada.'
+        );
+
+      }
+
+
+      // ================================================
+      // 5. ACTUALIZAR ESTADO LOCAL
+      // ================================================
+
+      setDatosOrganizacion(
+        datosActuales => ({
+
+          ...datosActuales,
+
+          tipos_actividad:
+            resultado.tiposActividad
+
+        })
+      );
+
+
+      // ================================================
+      // 6. MOSTRAR CONFIRMACIÓN
+      // ================================================
+
+      showAlert(
+        'success',
+        'Cambios guardados',
+        'Los tipos de actividad se actualizaron correctamente.'
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      console.log(
+        'ERROR AL ACTUALIZAR TIPOS DE ACTIVIDAD:',
+        error
+      );
+
+
+      showAlert(
+        'error',
+        'Error',
+        error.response?.data?.error ||
+        error.message ||
+        'No se pudieron actualizar los tipos de actividad.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setGuardandoTiposActividad(false);
+
+    }
+
+  };
+
+// ======================================================
+// GUARDAR DESCRIPCIÓN INSTITUCIONAL
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+const guardarDescripcionInstitucional =
+  async (descripcion) => {
+
+    setGuardandoDescripcionInstitucional(
+      true
+    );
+
+    try {
+
+      // ================================================
+      // 1. OBTENER TOKEN
+      // ================================================
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        throw new Error(
+          'La sesión no está disponible. Iniciá sesión nuevamente.'
+        );
+
+      }
+
+
+      // ================================================
+      // 2. ACTUALIZAR EN EL BACKEND
+      // ================================================
+
+      const resultado =
+        await actualizarDescripcionInstitucional(
+          token,
+          descripcion
+        );
+
+
+      // ================================================
+      // 3. VALIDAR RESPUESTA
+      // ================================================
+
+      if (!resultado?.organizacion) {
+
+        throw new Error(
+          'No se recibió la información actualizada.'
+        );
+
+      }
+
+
+      // ================================================
+      // 4. ACTUALIZAR ESTADO LOCAL
+      // ================================================
+
+      setDatosOrganizacion(
+        datosActuales => ({
+
+          ...datosActuales,
+
+          descripcion_institucional:
+            resultado.organizacion.descripcion_institucional
+
+        })
+      );
+
+
+      // ================================================
+      // 5. MOSTRAR CONFIRMACIÓN
+      // ================================================
+
+      showAlert(
+        'success',
+        'Cambios guardados',
+        'La descripción institucional se actualizó correctamente.'
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      console.log(
+        'ERROR AL ACTUALIZAR DESCRIPCIÓN INSTITUCIONAL:',
+        error
+      );
+
+
+      showAlert(
+        'error',
+        'Error',
+        error.response?.data?.error ||
+        error.message ||
+        'No se pudo actualizar la descripción institucional.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setGuardandoDescripcionInstitucional(
+        false
+      );
+
+    }
+
+  };
+
+  // ======================================================
+// GUARDAR UBICACIÓN INSTITUCIONAL
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+const guardarUbicacionInstitucional =
+  async (ubicacion) => {
+
+    if (guardandoUbicacionInstitucional) {
+      return false;
+    }
+
+    setGuardandoUbicacionInstitucional(true);
+
+    try {
+
+      // ================================================
+      // 1. VALIDAR UBICACIÓN SELECCIONADA
+      // ================================================
+
+      if (
+        !ubicacion ||
+        typeof ubicacion !== 'object' ||
+        Array.isArray(ubicacion)
+      ) {
+
+        throw new Error(
+          'Debés seleccionar una ubicación válida.'
+        );
+
+      }
+
+
+      const latitud =
+        Number(ubicacion.latitud);
+
+      const longitud =
+        Number(ubicacion.longitud);
+
+
+      if (
+        !Number.isFinite(latitud) ||
+        !Number.isFinite(longitud) ||
+        latitud < -90 ||
+        latitud > 90 ||
+        longitud < -180 ||
+        longitud > 180
+      ) {
+
+        throw new Error(
+          'La ubicación seleccionada no tiene coordenadas válidas.'
+        );
+
+      }
+
+
+      if (
+        typeof ubicacion.direccion !== 'string' ||
+        !ubicacion.direccion.trim() ||
+        typeof ubicacion.localidad !== 'string' ||
+        !ubicacion.localidad.trim() ||
+        typeof ubicacion.provincia !== 'string' ||
+        !ubicacion.provincia.trim()
+      ) {
+
+        throw new Error(
+          'La ubicación seleccionada debe incluir dirección, localidad y provincia.'
+        );
+
+      }
+
+
+      // ================================================
+      // 2. OBTENER TOKEN DE AUTENTICACIÓN
+      // ================================================
+
+      const token =
+        await obtenerToken();
+
+      if (!token) {
+
+        throw new Error(
+          'La sesión no está disponible. Iniciá sesión nuevamente.'
+        );
+
+      }
+
+
+      // ================================================
+      // 3. PREPARAR DATOS DE LA UBICACIÓN
+      // ================================================
+
+      const nuevaUbicacion = {
+
+        direccion:
+          ubicacion.direccion.trim(),
+
+        localidad:
+          ubicacion.localidad.trim(),
+
+        provincia:
+          ubicacion.provincia.trim(),
+
+        latitud,
+
+        longitud
+
+      };
+
+
+      // ================================================
+      // 4. ACTUALIZAR EN EL BACKEND
+      // ================================================
+
+      const resultado =
+        await actualizarUbicacionInstitucional(
+          token,
+          nuevaUbicacion
+        );
+
+
+      // ================================================
+      // 5. VALIDAR RESPUESTA
+      // ================================================
+
+      if (!resultado?.ubicacion) {
+
+        throw new Error(
+          'No se recibió la ubicación actualizada.'
+        );
+
+      }
+
+
+      // ================================================
+      // 6. ACTUALIZAR INFORMACIÓN LOCAL
+      // ================================================
+
+      setDatosOrganizacion(
+        datosActuales => ({
+
+          ...datosActuales,
+
+          ubicacion_institucional: {
+            ...resultado.ubicacion
+          }
+
+        })
+      );
+
+
+      // ================================================
+      // 7. MOSTRAR CONFIRMACIÓN
+      // ================================================
+
+      showAlert(
+        'success',
+        'Cambios guardados',
+        'La ubicación institucional se actualizó correctamente.'
+      );
+
+
+      return true;
+
+    }
+    catch (error) {
+
+      console.log(
+        'ERROR AL ACTUALIZAR UBICACIÓN INSTITUCIONAL:',
+        error
+      );
+
+
+      showAlert(
+        'error',
+        'Error',
+        error.response?.data?.error ||
+        error.message ||
+        'No se pudo actualizar la ubicación institucional.'
+      );
+
+
+      return false;
+
+    }
+    finally {
+
+      setGuardandoUbicacionInstitucional(false);
+
+    }
+
+  };
+
+
+// ======================================================
 // CARGAR DATOS DE LA ORGANIZACIÓN - ORGANIZACIÓN
 // ======================================================
 
@@ -8356,11 +8973,17 @@ useEffect(() => {
               styles.scrollContainer,
 
               (
+                 currentScreen ===
+                 'VOLUNTARIO_HOME' ||
+
                 currentScreen ===
                   'ORGANIZACION_HOME' ||
+                  currentScreen ===
+                  'ADMIN_HOME' ||
 
                 currentScreen ===
                   'ADMIN_ORGANIZACIONES' ||
+
                   
                   currentScreen ===
                   'ADMIN_ORGANIZACION_DETALLE'
@@ -8660,6 +9283,13 @@ useEffect(() => {
   onGuardarIntereses={
     guardarInteresesVoluntario
   }
+  onGuardarDatosPersonales={
+  guardarDatosPersonalesVoluntario
+}
+
+guardandoDatosPersonales={
+  guardandoDatosPersonales
+}
 
   onVerReputacion={async () => {
 
@@ -9058,19 +9688,22 @@ useEffect(() => {
                 modoBusquedaVoluntario
               }
 
-              onCambiarModo={async (
-                modo
-              ) => {
+              onCambiarModo={async (modo) => {
 
-                setModoBusquedaVoluntario(
-                  modo
-                );
+                setModoBusquedaVoluntario(modo);
 
+                // Volver al inicio al cambiar de pestaña
+                setTimeout(() => {
 
-                if (
-                  modo ===
-                  'ORGANIZACIONES'
-                ) {
+                  scrollRef.current?.scrollTo({
+                    y: 0,
+                    animated: false
+                  });
+
+                }, 0);
+
+                // Actualizar organizaciones cuando corresponda
+                if (modo === 'ORGANIZACIONES') {
 
                   await cargarOrganizacionesPublicas(
                     filtrosOrganizacionesPublicas
@@ -9124,10 +9757,7 @@ useEffect(() => {
                 buscarUbicaciones
               }
 
-              onLogout={
-                handleLogout
-              }
-
+          
               onVerDetalleOportunidad={async (
                 idOportunidad
               ) => {
@@ -9215,7 +9845,7 @@ useEffect(() => {
               ) => {
 
                 await cargarDetalleOrganizacionPublica(
-                  organizacion.slug
+                  organizacion.id_organizacion
                 );
 
               }}
@@ -11040,6 +11670,30 @@ useEffect(() => {
       loadingDatosOrganizacion
     }
 
+    onGuardarDescripcion={
+      guardarDescripcionInstitucional
+    }
+
+    guardandoDescripcion={
+      guardandoDescripcionInstitucional
+    }
+
+    onGuardarTiposActividad={
+      guardarTiposActividadInstitucional
+    }
+
+    guardandoTiposActividad={
+      guardandoTiposActividad
+    }
+
+    onGuardarUbicacion={
+  guardarUbicacionInstitucional
+    }
+
+    guardandoUbicacion={
+      guardandoUbicacionInstitucional
+    }
+
     perfilPublico={
       perfilPublicoOrganizacion
     }
@@ -11467,73 +12121,129 @@ useEffect(() => {
               ADMIN
           ================================================== */}
 
+          {/* ==================================================
+              ADMIN - PANTALLA PRINCIPAL
+              ACTIVIDAD 3.5.1
+          ================================================== */}
+
           {currentScreen ===
             'ADMIN_HOME' && (
 
-            <View
-              style={{
+            <InicioAdminScreen
 
-                flex: 1,
+              // ================================================
+              // ORGANIZACIONES
+              // ================================================
 
-                justifyContent:
-                  'center',
+              onOrganizaciones={async () => {
 
-                alignItems:
-                  'center'
+                setCurrentScreen(
+                  'ADMIN_ORGANIZACIONES'
+                );
+
+                await cargarOrganizacionesPendientes();
+
+                scrollRef.current?.scrollTo({
+                  y: 0,
+                  animated: false
+                });
 
               }}
-            >
-
-              <Text
-                style={{
-
-                  fontSize:
-                    22,
-
-                  marginBottom:
-                    10
-
-                }}
-              >
-                Inicio Administrador
-              </Text>
 
 
-              <Text
-                style={{
+              // ================================================
+              // USUARIOS
+              // ================================================
 
-                  fontSize:
-                    15,
+              onUsuarios={async () => {
 
-                  marginBottom:
-                    20
+                setCurrentScreen(
+                  'ADMIN_USUARIOS'
+                );
 
-                }}
-              >
-                Rol: ADMIN
-              </Text>
+                await cargarUsuariosAdmin();
+
+                scrollRef.current?.scrollTo({
+                  y: 0,
+                  animated: false
+                });
+
+              }}
 
 
-              <TouchableOpacity
-                onPress={
-                  handleLogout
-                }
-              >
+              // ================================================
+              // PERFILES PÚBLICOS
+              // ================================================
 
-                <Text
-                  style={{
-                    fontSize: 18
-                  }}
-                >
-                  Cerrar sesión
-                </Text>
+              onPerfiles={() => {
 
-              </TouchableOpacity>
+                setCurrentScreen(
+                  'ADMIN_PERFILES'
+                );
 
-            </View>
+                setTimeout(() => {
+
+                  scrollRef.current?.scrollTo({
+                    y: 0,
+                    animated: false
+                  });
+
+                }, 0);
+
+              }}
+
+
+              // ================================================
+              // TIPOS DE ACTIVIDAD
+              // ================================================
+
+              onTiposActividad={async () => {
+
+                setCurrentScreen(
+                  'ADMIN_TIPOS_ACTIVIDAD'
+                );
+
+                await cargarTiposActividadAdmin();
+
+                scrollRef.current?.scrollTo({
+                  y: 0,
+                  animated: false
+                });
+
+              }}
+
+
+              // ================================================
+              // ESTADÍSTICAS GENERALES
+              // ================================================
+
+              onEstadisticas={async () => {
+
+                setCurrentScreen(
+                  'ADMIN_ESTADISTICAS'
+                );
+
+                await cargarEstadisticasAdmin();
+
+                scrollRef.current?.scrollTo({
+                  y: 0,
+                  animated: false
+                });
+
+              }}
+
+
+              // ================================================
+              // CERRAR SESIÓN
+              // ================================================
+
+              onLogout={
+                handleLogout
+              }
+
+            />
 
           )}
-
         {/* ==================================================
             ADMIN - ORGANIZACIONES
         ================================================== */}
@@ -12159,7 +12869,10 @@ useEffect(() => {
 
                 await cargarTiposActividadAdmin();
 
-                scrollToTop?.();
+                scrollRef.current?.scrollTo({
+                  y: 0,
+                  animated: false
+                });
 
               }}
 

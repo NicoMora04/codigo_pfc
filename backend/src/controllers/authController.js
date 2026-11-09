@@ -348,67 +348,63 @@ if (
         } = ubicacion;
 
 
+        // ======================================================
+        // BUSCAR UBICACIÓN INSTITUCIONAL EXISTENTE
+        // ACTIVIDAD 3.5.1
+        // ======================================================
+
         const ubicacionExistente =
           await client.query(
             `
             SELECT
-              id_ubicacion,
-              direccion
+              id_ubicacion
+
             FROM ubicacion
+
             WHERE latitud = $1
               AND longitud = $2
-              AND localidad IS NOT DISTINCT FROM $3
-              AND provincia IS NOT DISTINCT FROM $4
+
+              AND localidad
+                IS NOT DISTINCT FROM $3
+
+              AND provincia
+                IS NOT DISTINCT FROM $4
+
               AND es_aproximada = FALSE
+
+              AND LOWER(
+                BTRIM(COALESCE(direccion, ''))
+              ) = LOWER(
+                BTRIM(COALESCE($5::text, ''))
+              )
+
             LIMIT 1
             `,
             [
               latitud,
               longitud,
               localidad?.trim() || null,
-              provincia?.trim() || null
+              provincia?.trim() || null,
+              direccion?.trim() || null
             ]
           );
-
 
         let idUbicacion;
 
 
-        if (
-          ubicacionExistente.rows.length > 0
-        ) {
-
-          idUbicacion =
-            ubicacionExistente
-              .rows[0]
-              .id_ubicacion;
-
-
-          // Si la ubicación ya existía pero no tenía
-          // dirección, completamos el dato.
           if (
-            !ubicacionExistente
-              .rows[0]
-              .direccion &&
-            direccion?.trim()
+            ubicacionExistente.rows.length > 0
           ) {
 
-            await client.query(
-              `
-              UPDATE ubicacion
-              SET direccion = $1
-              WHERE id_ubicacion = $2
-              `,
-              [
-                direccion.trim(),
-                idUbicacion
-              ]
-            );
+            // ==================================================
+            // REUTILIZAR UBICACIÓN COINCIDENTE
+            // ==================================================
+
+            idUbicacion =
+              ubicacionExistente.rows[0].id_ubicacion;
 
           }
-
-        }
-        else {
+          else {
 
           const nuevaUbicacion =
             await client.query(
@@ -1104,38 +1100,96 @@ exports.resetPassword = async (req, res) => {
 
 
         const resultado =
-          await pool.query(
-            `
-            SELECT
-              u.id_usuario,
-              u.email,
-              u.estado_cuenta,
+        await pool.query(
+          `
+          SELECT
+            u.id_usuario,
+            u.email,
+            u.estado_cuenta,
 
-              o.id_organizacion,
-              o.razon_social,
-              o.cuit,
-              o.estado_verificacion,
+            -- ============================================
+            -- INFORMACIÓN INSTITUCIONAL
+            -- ============================================
 
-              p.slug,
-              p.estado_publicacion
+            o.id_organizacion,
+            o.razon_social,
+            o.cuit,
+            o.descripcion AS descripcion_institucional,
+            o.estado_verificacion,
 
-            FROM usuario u
+            -- ============================================
+            -- UBICACIÓN INSTITUCIONAL
+            -- ============================================
 
-            INNER JOIN organizacion o
-              ON o.id_usuario =
-                u.id_usuario
+            CASE
+              WHEN ub.id_ubicacion IS NOT NULL
+              THEN json_build_object(
+                'id_ubicacion', ub.id_ubicacion,
+                'direccion', ub.direccion,
+                'localidad', ub.localidad,
+                'provincia', ub.provincia,
+                'latitud', ub.latitud,
+                'longitud', ub.longitud,
+                'es_aproximada', ub.es_aproximada
+              )
+              ELSE NULL
+            END AS ubicacion_institucional,
 
-            LEFT JOIN perfil_publico_organizacion p
-              ON p.id_organizacion =
-                o.id_organizacion
+            -- ============================================
+            -- TIPOS DE ACTIVIDAD
+            -- ============================================
 
-            WHERE u.id_usuario = $1
-            `,
-            [
-              idUsuario
-            ]
-          );
+            COALESCE(
+              (
+                SELECT json_agg(
+                  json_build_object(
+                    'id_tipo_actividad',
+                    ta.id_tipo_actividad,
+                    'nombre',
+                    ta.nombre
+                  )
+                  ORDER BY ta.nombre ASC
+                )
 
+                FROM organizacion_tipo_actividad ota
+
+                INNER JOIN tipo_actividad ta
+                  ON ta.id_tipo_actividad =
+                    ota.id_tipo_actividad
+
+                WHERE ota.id_organizacion =
+                  o.id_organizacion
+              ),
+              '[]'::json
+            ) AS tipos_actividad,
+
+            -- ============================================
+            -- PERFIL WEB
+            -- ============================================
+
+            p.slug,
+            p.estado_publicacion
+
+          FROM usuario u
+
+          INNER JOIN organizacion o
+            ON o.id_usuario =
+              u.id_usuario
+
+          LEFT JOIN ubicacion ub
+            ON ub.id_ubicacion =
+              o.id_ubicacion
+
+          LEFT JOIN perfil_publico_organizacion p
+            ON p.id_organizacion =
+              o.id_organizacion
+
+          WHERE u.id_usuario = $1
+          `,
+          [
+            idUsuario
+          ]
+        );
 
         if (
           resultado.rows.length === 0

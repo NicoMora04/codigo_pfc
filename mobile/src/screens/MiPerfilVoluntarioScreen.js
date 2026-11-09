@@ -5,7 +5,8 @@ import {
   Text,
   TouchableOpacity,
   ActivityIndicator,
-  StyleSheet
+  StyleSheet,
+  TextInput
 } from 'react-native';
 
 
@@ -22,10 +23,148 @@ export default function MiPerfilVoluntarioScreen({
   tiposActividad = [],
   intereses,
   loadingIntereses = false,
-  onGuardarIntereses
+  onGuardarIntereses,
+  onGuardarDatosPersonales,
+  guardandoDatosPersonales = false
 }) {
 
   const [interesesSeleccionados, setInteresesSeleccionados] = useState([]);
+  // ======================================================
+// EDICIÓN DE DATOS PERSONALES
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+const [editandoDatos, setEditandoDatos] = useState(false);
+
+const [datosEditables, setDatosEditables] = useState({
+  nombre: '',
+  apellido: '',
+  telefono: ''
+});
+
+const [errorEdicion, setErrorEdicion] = useState('');
+
+
+// ======================================================
+// INICIAR EDICIÓN
+// ======================================================
+
+const iniciarEdicion = () => {
+
+  if (!voluntario) return;
+
+  setDatosEditables({
+    nombre: voluntario.nombre || '',
+    apellido: voluntario.apellido || '',
+    telefono: voluntario.telefono || ''
+  });
+
+  setErrorEdicion('');
+  setEditandoDatos(true);
+
+};
+
+
+// ======================================================
+// CANCELAR EDICIÓN
+// ======================================================
+
+const cancelarEdicion = () => {
+
+  if (guardandoDatosPersonales) return;
+
+  setEditandoDatos(false);
+  setErrorEdicion('');
+
+};
+
+
+// ======================================================
+// GUARDAR DATOS PERSONALES
+// ======================================================
+
+const guardarDatosPersonales = async () => {
+
+  if (
+    !onGuardarDatosPersonales ||
+    guardandoDatosPersonales
+  ) {
+    return;
+  }
+
+  const nombre = datosEditables.nombre.trim();
+  const apellido = datosEditables.apellido.trim();
+  const telefono = datosEditables.telefono.trim();
+
+  // ==================================================
+  // VALIDACIONES
+  // ==================================================
+
+  if (!nombre || nombre.length > 100) {
+
+    setErrorEdicion(
+      'El nombre es obligatorio y no puede superar los 100 caracteres.'
+    );
+
+    return;
+  }
+
+  if (!apellido || apellido.length > 100) {
+
+    setErrorEdicion(
+      'El apellido es obligatorio y no puede superar los 100 caracteres.'
+    );
+
+    return;
+  }
+
+  if (
+    telefono &&
+    !/^\d{7,15}$/.test(telefono)
+  ) {
+
+    setErrorEdicion(
+      'El teléfono debe contener entre 7 y 15 dígitos numéricos.'
+    );
+
+    return;
+  }
+
+  setErrorEdicion('');
+
+  // ==================================================
+  // ACTUALIZAR PERFIL
+  // ==================================================
+
+  try {
+
+    const actualizado = await onGuardarDatosPersonales({
+      nombre,
+      apellido,
+      telefono: telefono || null
+    });
+
+    // Cerrar el formulario únicamente si
+    // la actualización fue satisfactoria.
+
+    if (actualizado === true) {
+
+      setEditandoDatos(false);
+      setErrorEdicion('');
+
+    }
+
+  }
+  catch (error) {
+
+    setErrorEdicion(
+      error.response?.data?.error ||
+      'No se pudieron guardar los cambios.'
+    );
+
+  }
+
+};
 
   // ======================================================
 // DETECTAR MODIFICACIONES EN LOS INTERESES
@@ -253,59 +392,231 @@ const guardarIntereses = async () => {
           Información personal
         </Text>
 
-        <View style={styles.infoRow}>
+        {!editandoDatos ? (
 
-          <Text style={styles.infoLabel}>
-            Nombre
-          </Text>
+          <>
+            {/* ======================================== */}
+            {/* MODO CONSULTA */}
+            {/* ======================================== */}
 
-          <Text style={styles.infoValue}>
-            {voluntario.nombre || 'No disponible'}
-          </Text>
+            <View style={styles.infoRow}>
 
-        </View>
+              <Text style={styles.infoLabel}>
+                Nombre
+              </Text>
 
-        <View style={styles.separator} />
+              <Text style={styles.infoValue}>
+                {voluntario.nombre || 'No disponible'}
+              </Text>
 
-        <View style={styles.infoRow}>
+            </View>
 
-          <Text style={styles.infoLabel}>
-            Apellido
-          </Text>
+            <View style={styles.separator} />
 
-          <Text style={styles.infoValue}>
-            {voluntario.apellido || 'No disponible'}
-          </Text>
+            <View style={styles.infoRow}>
 
-        </View>
+              <Text style={styles.infoLabel}>
+                Apellido
+              </Text>
 
-        <View style={styles.separator} />
+              <Text style={styles.infoValue}>
+                {voluntario.apellido || 'No disponible'}
+              </Text>
 
-        <View style={styles.infoRow}>
+            </View>
 
-          <Text style={styles.infoLabel}>
-            Correo electrónico
-          </Text>
+            <View style={styles.separator} />
 
-          <Text style={styles.infoValue}>
-            {voluntario.email || 'No disponible'}
-          </Text>
+            <View style={styles.infoRow}>
 
-        </View>
+              <Text style={styles.infoLabel}>
+                Correo electrónico
+              </Text>
 
-        <View style={styles.separator} />
+              <Text style={styles.infoValue}>
+                {voluntario.email || 'No disponible'}
+              </Text>
 
-        <View style={styles.infoRow}>
+            </View>
 
-          <Text style={styles.infoLabel}>
-            Teléfono
-          </Text>
+            <View style={styles.separator} />
 
-          <Text style={styles.infoValue}>
-            {voluntario.telefono || 'No registrado'}
-          </Text>
+            <View style={styles.infoRow}>
 
-        </View>
+              <Text style={styles.infoLabel}>
+                Teléfono
+              </Text>
+
+              <Text style={styles.infoValue}>
+                {voluntario.telefono || 'No registrado'}
+              </Text>
+
+            </View>
+
+            {/* ======================================== */}
+            {/* BOTÓN EDITAR */}
+            {/* ======================================== */}
+
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={iniciarEdicion}
+            >
+
+              <Text style={styles.editButtonText}>
+                ✏️ Editar datos personales
+              </Text>
+
+            </TouchableOpacity>
+
+          </>
+
+        ) : (
+
+          <>
+            {/* ======================================== */}
+            {/* MODO EDICIÓN */}
+            {/* ======================================== */}
+
+            <View style={styles.infoRow}>
+
+              <Text style={styles.infoLabel}>
+                Nombre
+              </Text>
+
+              <TextInput
+                style={styles.input}
+                value={datosEditables.nombre}
+                onChangeText={(texto) =>
+                  setDatosEditables((actual) => ({
+                    ...actual,
+                    nombre: texto
+                  }))
+                }
+                placeholder="Ingresá tu nombre"
+                autoCapitalize="words"
+                maxLength={100}
+                editable={!guardandoDatosPersonales}
+              />
+
+            </View>
+
+            <View style={styles.infoRow}>
+
+              <Text style={styles.infoLabel}>
+                Apellido
+              </Text>
+
+              <TextInput
+                style={styles.input}
+                value={datosEditables.apellido}
+                onChangeText={(texto) =>
+                  setDatosEditables((actual) => ({
+                    ...actual,
+                    apellido: texto
+                  }))
+                }
+                placeholder="Ingresá tu apellido"
+                autoCapitalize="words"
+                maxLength={100}
+                editable={!guardandoDatosPersonales}
+              />
+
+            </View>
+
+            <View style={styles.infoRow}>
+
+              <Text style={styles.infoLabel}>
+                Correo electrónico
+              </Text>
+
+              <Text style={styles.infoValue}>
+                {voluntario.email || 'No disponible'}
+              </Text>
+
+              <Text style={styles.readOnlyText}>
+                El correo electrónico no puede modificarse.
+              </Text>
+
+            </View>
+
+            <View style={styles.infoRow}>
+
+              <Text style={styles.infoLabel}>
+                Teléfono
+              </Text>
+
+              <TextInput
+                style={styles.input}
+                value={datosEditables.telefono}
+                onChangeText={(texto) =>
+                  setDatosEditables((actual) => ({
+                    ...actual,
+                    telefono: texto
+                  }))
+                }
+                placeholder="Ingresá tu teléfono"
+                keyboardType="phone-pad"
+                maxLength={15}
+                editable={!guardandoDatosPersonales}
+              />
+
+            </View>
+
+            {/* ======================================== */}
+            {/* ERRORES DE VALIDACIÓN */}
+            {/* ======================================== */}
+
+            {errorEdicion ? (
+
+              <Text style={styles.errorEdicion}>
+                {errorEdicion}
+              </Text>
+
+            ) : null}
+
+            {/* ======================================== */}
+            {/* ACCIONES */}
+            {/* ======================================== */}
+
+            <View style={styles.editActions}>
+
+              <TouchableOpacity
+                style={[
+                  styles.cancelEditButton,
+                  guardandoDatosPersonales && styles.disabledButton
+                ]}
+                onPress={cancelarEdicion}
+                disabled={guardandoDatosPersonales}
+              >
+
+                <Text style={styles.cancelEditButtonText}>
+                  Cancelar
+                </Text>
+
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.saveEditButton,
+                  guardandoDatosPersonales && styles.disabledButton
+                ]}
+                onPress={guardarDatosPersonales}
+                disabled={guardandoDatosPersonales}
+              >
+
+                <Text style={styles.saveEditButtonText}>
+                  {guardandoDatosPersonales
+                    ? 'Guardando...'
+                    : 'Guardar cambios'}
+                </Text>
+
+              </TouchableOpacity>
+
+            </View>
+
+          </>
+
+        )}
 
       </View>
 
@@ -724,6 +1035,95 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 14
-  }
+  },
+  // ======================================================
+// EDICIÓN DE DATOS PERSONALES
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+editButton: {
+  backgroundColor: '#EAF5F2',
+  borderWidth: 1,
+  borderColor: '#1F6F5C',
+  borderRadius: 10,
+  minHeight: 46,
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginTop: 20,
+  paddingHorizontal: 12
+},
+
+editButtonText: {
+  color: '#1F6F5C',
+  fontSize: 14,
+  fontWeight: '700'
+},
+
+input: {
+  width: '100%',
+  minHeight: 46,
+  borderWidth: 1,
+  borderColor: '#C9D6D1',
+  backgroundColor: '#FFFFFF',
+  borderRadius: 10,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  fontSize: 15,
+  color: '#1F2937'
+},
+
+readOnlyText: {
+  fontSize: 12,
+  color: '#6B7280',
+  marginTop: 6
+},
+
+errorEdicion: {
+  color: '#C62828',
+  fontSize: 13,
+  marginTop: 10,
+  marginBottom: 6
+},
+
+editActions: {
+  flexDirection: 'row',
+  gap: 10,
+  marginTop: 20
+},
+
+cancelEditButton: {
+  flex: 1,
+  minHeight: 46,
+  borderRadius: 10,
+  borderWidth: 1,
+  borderColor: '#CBD5D1',
+  backgroundColor: '#FFFFFF',
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingHorizontal: 8
+},
+
+cancelEditButtonText: {
+  color: '#374151',
+  fontSize: 14,
+  fontWeight: '700'
+},
+
+saveEditButton: {
+  flex: 1,
+  minHeight: 46,
+  borderRadius: 10,
+  backgroundColor: '#1F6F5C',
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingHorizontal: 8
+},
+
+saveEditButtonText: {
+  color: '#FFFFFF',
+  fontSize: 14,
+  fontWeight: '700',
+  textAlign: 'center'
+},
 
 });

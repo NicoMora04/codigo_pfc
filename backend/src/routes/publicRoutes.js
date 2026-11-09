@@ -28,6 +28,16 @@ router.get(
 );
 
 // ======================================================
+// FICHA INSTITUCIONAL DE ORGANIZACIÓN VERIFICADA
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+router.get(
+  '/organizaciones/id/:idOrganizacion',
+  perfilPublicoController.obtenerFichaInstitucionalPorId
+);
+
+// ======================================================
 // PERFIL PÚBLICO DE ORGANIZACIÓN POR SLUG
 // ======================================================
 

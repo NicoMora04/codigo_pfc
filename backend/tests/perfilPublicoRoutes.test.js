@@ -127,8 +127,10 @@ describe(
 
               // Dato interno simulado.
               // No debe aparecer en la API.
-              id_organizacion:
-                'id-interno-no-publico'
+              // Identificador público utilizado para consultar
+// la ficha institucional de la organización.
+id_organizacion:
+  '11111111-1111-4111-8111-111111111111'
             }
           ]);
 
@@ -158,10 +160,12 @@ describe(
         );
 
 
-        expect(
-          response.body.organizaciones[0]
-            .id_organizacion
-        ).toBeUndefined();
+      expect(
+  response.body.organizaciones[0]
+    .id_organizacion
+).toBe(
+  '11111111-1111-4111-8111-111111111111'
+);
 
       }
     );

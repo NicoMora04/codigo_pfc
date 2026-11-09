@@ -107,28 +107,20 @@ exports.obtenerOCrearUbicacion = async (datos) => {
 
   // Buscamos si la misma ubicación ya existe
   const ubicacionExistente =
-    await ubicacionRepository.buscarUbicacion(
-      latitud,
-      longitud,
-      localidad ?? null,
-      provincia ?? null,
-      aproximada
-    );
+  await ubicacionRepository.buscarUbicacion(
+    latitud,
+    longitud,
+    localidad?.trim() || null,
+    provincia?.trim() || null,
+    aproximada,
+    direccion?.trim() || null
+  );
 
 
- if (ubicacionExistente) {
-
-  if (
-    !ubicacionExistente.direccion &&
-    direccion?.trim()
-  ) {
-    return await ubicacionRepository.actualizarDireccion(
-      ubicacionExistente.id_ubicacion,
-      direccion.trim()
-    );
-  }
+if (ubicacionExistente) {
 
   return ubicacionExistente;
+
 }
 
 

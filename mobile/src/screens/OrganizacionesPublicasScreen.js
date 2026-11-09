@@ -376,63 +376,60 @@ export default function OrganizacionesPublicasScreen({
 
             <View
               key={
-                organizacion.slug
+                organizacion.id_organizacion
               }
               style={
                 styles.organizacionCard
               }
             >
 
+              {/* =============================================== */}
+              {/* ENCABEZADO DE ORGANIZACIÓN */}
+              {/* =============================================== */}
+
               <View style={styles.cardHeader}>
 
-                <Text
-                  style={
-                    styles.organizacionNombre
-                  }
-                >
-                  {
-                    organizacion
-                      .nombre_visible
-                  }
+                {/* NOMBRE DE LA ORGANIZACIÓN */}
+
+                <Text style={styles.organizacionNombre}>
+                  {organizacion.nombre_visible}
                 </Text>
 
 
-                <View
-                  style={
-                    styles.verifiedBadge
-                  }
-                >
+                {/* INSIGNIAS */}
 
-                  <Text
-                    style={
-                      styles.verifiedText
-                    }
-                  >
-                    ✓ Verificada
-                  </Text>
+                <View style={styles.badgesRow}>
+
+                  {/* VERIFICACIÓN */}
+
+                  <View style={styles.verifiedBadge}>
+
+                    <Text style={styles.verifiedText}>
+                      ✓ Verificada
+                    </Text>
+
+                  </View>
+
+
+                  {/* PERFIL WEB PUBLICADO */}
+
+                  {organizacion.tiene_perfil_publico && (
+
+                    <View style={styles.webBadge}>
+
+                      <Text style={styles.webBadgeText}>
+                        🌐 Perfil web disponible
+                      </Text>
+
+                    </View>
+
+                  )}
 
                 </View>
 
               </View>
 
-
-              {!!organizacion
-                .descripcion_publica && (
-
-                <Text
-                  style={
-                    styles.description
-                  }
-                  numberOfLines={3}
-                >
-                  {
-                    organizacion
-                      .descripcion_publica
-                  }
-                </Text>
-
-              )}
-
+      
 
               {organizacion
                 .ubicacion_aproximada && (
@@ -522,7 +519,7 @@ export default function OrganizacionesPublicasScreen({
                     styles.detailButtonText
                   }
                 >
-                  Ver perfil
+                  Ver organizacion
                 </Text>
 
               </TouchableOpacity>
@@ -837,32 +834,24 @@ const styles =
     },
 
 
-    cardHeader: {
+   cardHeader: {
 
-      flexDirection: 'row',
+  marginBottom: 12,
 
-      justifyContent: 'space-between',
-
-      alignItems: 'flex-start',
-
-      gap: 8,
-
-      marginBottom: 8,
-
-    },
+},
 
 
     organizacionNombre: {
 
-      flex: 1,
+  fontSize: 17,
 
-      fontSize: 17,
+  fontWeight: '700',
 
-      fontWeight: '700',
+  color: '#1F2937',
 
-      color: '#1F2937',
+  marginBottom: 10,
 
-    },
+},
 
 
     verifiedBadge: {
@@ -1013,5 +1002,53 @@ const styles =
       textAlign: 'center',
 
     },
+
+    // ================================================
+// CONTENEDOR DE INSIGNIAS
+// ================================================
+
+badgesRow: {
+
+  flexDirection: 'row',
+
+  flexWrap: 'wrap',
+
+  alignItems: 'center',
+
+  gap: 8,
+
+},
+
+
+// ================================================
+// INSIGNIA DE PERFIL WEB
+// ================================================
+
+webBadge: {
+
+  backgroundColor: '#EFF6FF',
+
+  borderRadius: 12,
+
+  paddingHorizontal: 8,
+
+  paddingVertical: 4,
+
+},
+
+
+// ================================================
+// TEXTO DE PERFIL WEB
+// ================================================
+
+webBadgeText: {
+
+  color: '#1D4ED8',
+
+  fontSize: 11,
+
+  fontWeight: '600',
+
+},
 
   });

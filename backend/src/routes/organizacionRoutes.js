@@ -94,6 +94,50 @@ router.patch(
 );
 
 // ======================================================
+// ACTUALIZAR DESCRIPCIÓN INSTITUCIONAL
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+router.patch(
+  '/mi-organizacion/descripcion',
+
+  verificarToken,
+
+  verificarRol('ORGANIZACION'),
+
+  organizacionController.actualizarDescripcionInstitucional
+);
+
+// ======================================================
+// ACTUALIZAR TIPOS DE ACTIVIDAD INSTITUCIONALES
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+router.patch(
+  '/mi-organizacion/tipos-actividad',
+
+  verificarToken,
+
+  verificarRol('ORGANIZACION'),
+
+  organizacionController.actualizarTiposActividadInstitucional
+);
+
+// ======================================================
+// ACTUALIZAR UBICACIÓN INSTITUCIONAL
+// ACTIVIDAD 3.5.1
+// ======================================================
+
+router.patch(
+  '/mi-organizacion/ubicacion',
+
+  verificarToken,
+
+  verificarRol('ORGANIZACION'),
+
+  organizacionController.actualizarUbicacionInstitucional
+);
+// ======================================================
 // PERFIL PÚBLICO PROPIO
 // ======================================================
 
